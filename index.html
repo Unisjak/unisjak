@@ -402,6 +402,7 @@
                         <div><h3 class="font-black text-base text-white">Kvalitetssikring (KS) Fotodokumentation</h3><p class="text-xs text-gray-400">Klik på et billede for at se og redigere.</p></div>
                         <button onclick="openExport('ks')" class="brand-orange text-white px-4 py-2 rounded-xl text-xs font-bold shadow"><i class="fa-solid fa-file-export mr-1"></i>Eksportér rapport</button>
                     </div>
+                    <div id="pc-ks-extra-bar" class="bg-card border border-card rounded-2xl p-3 hidden"></div>
                     <div id="pc-ks-grid" class="grid grid-cols-3 gap-4"></div>
                 </div>
 
@@ -469,6 +470,7 @@
             <div id="tab-home" class="h-full flex flex-col justify-between space-y-2.5">
                 <div id="quick-home" class="hidden bg-card border border-card rounded-2xl p-3"><div data-voicebox="quick"></div></div>
                 <div id="m-clock-home" class="hidden"></div>
+                <div id="m-extra-home" class="hidden bg-violet-950/30 border border-violet-700/50 rounded-2xl p-3"></div>
                 <div id="ug-today" class="hidden bg-card border border-card rounded-2xl p-3"></div>
                 <button onclick="triggerCamera('ks')" class="flex-1 w-full bg-card border border-card rounded-2xl p-4 text-left flex items-center justify-between shadow-md hover:border-orange-500/50 active:scale-98 transition group">
                     <div class="flex items-center space-x-4">
@@ -518,6 +520,7 @@
                     <div class="flex justify-between items-center px-1"><span class="text-[10px] font-bold uppercase text-gray-400">Byggepladskort</span><span class="text-[10px] text-orange-400 font-semibold" id="map-point-count">0 punkter</span></div>
                     <div id="leaflet-map" class="w-full h-48 rounded-xl overflow-hidden border border-gray-800 z-0"></div>
                 </div>
+                <div id="ks-extra-bar" class="hidden"></div>
                 <div id="ks-list" class="space-y-3"></div>
             </div>
 
@@ -627,7 +630,7 @@
             <button onclick="switchTab('shifts')" id="nav-shifts" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-calendar-week text-lg"></i><span class="text-[9px] font-bold mt-1">Vagter</span></button>
             <button onclick="switchTab('plan')" id="nav-plan" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-chart-gantt text-lg"></i><span id="nav-plan-label" class="text-[9px] font-bold mt-1">Planlægning</span></button>
             <button onclick="switchTab('materials')" id="nav-materials" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[9px] font-bold mt-1">Materiale</span></button>
-            <button onclick="switchTab('tasks')" id="nav-tasks" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-list-check text-lg"></i><span class="text-[9px] font-bold mt-1">Opgaver</span></button>
+            <button onclick="switchTab('tasks')" id="nav-tasks" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><span class="relative"><i class="fa-solid fa-list-check text-lg"></i><span id="nav-tasks-badge" class="hidden absolute -top-2 -right-3 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center">0</span></span><span class="text-[9px] font-bold mt-1">Opgaver</span></button>
         </nav>
     </div>
 
@@ -667,6 +670,11 @@
                 </div>
                 <div><label class="lbl">Bemærkninger</label><textarea id="photo-note-text" maxlength="2000" placeholder="Skriv eller indtal…" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-sm text-white h-20 focus:outline-none focus:border-orange-500"></textarea></div>
             </div>
+            <p id="pf-ref-note" class="hidden text-[11px] text-violet-200 bg-violet-950/30 border border-violet-800/50 rounded-xl p-2.5"></p>
+            <div id="pf-w-extra" class="hidden space-y-2">
+                <label class="flex items-center justify-between gap-3 bg-violet-950/30 border border-violet-800/50 rounded-xl p-3 cursor-pointer"><span class="min-w-0"><span class="font-black text-sm text-white block"><i class="fa-solid fa-plus-circle text-violet-400 mr-1.5"></i>Ekstraarbejde</span><span class="text-[11px] text-gray-400">Opretter automatisk en opgave til udførelse og dokumentation</span></span><input type="checkbox" id="pf-extra" data-chg="pf-extra" class="w-8 h-8 accent-violet-500 shrink-0"></label>
+                <div id="pf-extra-box" class="hidden space-y-2"><span class="lbl">Hvem skal udføre det?</span><div id="pf-extra-assignees" class="flex flex-wrap gap-2"></div><p class="text-[11px] text-violet-300">Du kan vælge modtager senere – opgaven oprettes uanset. Skriv en kort beskrivelse ovenfor.</p></div>
+            </div>
             <button id="btn-save-photo" onclick="savePhotoEntry(this)" class="w-full brand-orange text-white py-4 rounded-xl font-black shadow-lg">Gem</button>
         </div>
     </div>
@@ -681,6 +689,7 @@
             <div id="edit-gallery" class="space-y-2"></div>
             <p class="text-[11px] text-gray-500" id="edit-photo-time">Tidspunkt</p>
             <div id="edit-gps"></div>
+            <div id="edit-extra" class="hidden space-y-3"></div>
             <div id="edit-voice-wrap">
             <div data-voicebox="photo-edit"></div>
             </div>
@@ -858,6 +867,7 @@
                 </div>
             </div>
             <label id="ex-w-extra" class="hidden flex items-center space-x-3 bg-violet-950/30 border border-violet-800/50 rounded-xl p-3"><input type="checkbox" id="ex-extra" class="w-6 h-6 accent-violet-500"><span class="text-sm font-bold text-violet-200">Kun ekstraarbejde<span class="block text-[11px] font-normal text-violet-300/80">Rapporten viser kun registreringer markeret som ekstra</span></span></label>
+            <label id="ex-w-done" class="hidden flex items-center space-x-3 bg-gray-900 border border-gray-800 rounded-xl p-3"><input type="checkbox" id="ex-done" class="w-6 h-6 accent-emerald-500"><span class="text-sm font-bold text-white">Kun udførte ekstraarbejder</span></label>
             <div id="ex-w-pick" class="hidden space-y-2">
                 <div class="flex items-center justify-between"><label class="lbl !mb-0">Vælg punkter til eksport</label><span id="ex-pick-count" class="text-xs font-black text-orange-300"></span></div>
                 <input id="ex-pick-q" type="search" oninput="exPickRender()" placeholder="Søg i punkter…" class="inp">
@@ -1350,6 +1360,7 @@ async function loadCore() {
     await loadSwaps();
     await loadPay();
     await loadPhotoCols();
+    await loadExtraCols();
 }
 
 function keyOf(row) {
@@ -1487,10 +1498,17 @@ function onChange(table, p) {
     const key = { time_entries: 'time', week_approvals: 'approvals', photo_entries: 'photos', tasks: 'tasks', shifts: 'shifts', project_members: 'members', profiles: 'profiles', projects: 'projects' }[table];
     const arr = S[key];
 
+    const prevTask = (table === 'tasks' && row) ? S.tasks.find(t => t.id === row.id) : null;
+    const prevIds = prevTask ? taskAssignees(prevTask).slice() : null;
     if (del) { if (old) dropRow(arr, old); }
     else if (row) mergeRow(arr, row);
 
     const me = myId();
+    if (!del && row && S.extraReady) {
+        if (table === 'photo_entries' && row.is_extra && row.task_id) extraIncoming(row, null).catch(() => {});
+        if (table === 'tasks' && prevIds && extraOfTask(row)) { const ep = extraOfTask(row); if (taskAssignees(row).includes(me) && !prevIds.includes(me)) extraIncoming(ep, prevIds).catch(() => {}); }
+        if (table === 'time_entries' && row.extra_ref && S.extraTime[row.extra_ref]) loadExtraTime(row.extra_ref);
+    }
     if (table === 'projects') {
         if (del && old && old.id === S.currentProject) pickInitialProject();
         if (row && row.id === S.currentProject && row.status !== 'aktiv') pickInitialProject();
@@ -1533,7 +1551,7 @@ window.addEventListener('offline', () => { if (S.started) setLive('off'); });
 async function resolveUrls() {
     const need = S.photos
         .filter(p => p.project_id === S.currentProject)
-        .flatMap(p => photoPaths(p))
+        .flatMap(p => photoPaths(p).concat(p.done_paths || []))
         .filter(path => path && (!S.urls[path] || S.urls[path].exp < Date.now() + 60000));
     if (!need.length) return;
     for (let i = 0; i < need.length; i += 100) {
@@ -1650,6 +1668,7 @@ function renderKpis() {
     $('pc-kpi-ks').textContent = photosOf('ks').length + ' punkter';
     $('pc-kpi-mat').textContent = photosOf('materiale').length + ' leverancer';
     $('pc-kpi-tasks').textContent = S.tasks.filter(t => t.project_id === S.currentProject && !t.done).length + ' åbne';
+    updateExtraBadge();
 }
 
 function renderPcOverview() {
@@ -1775,19 +1794,22 @@ function photoThumb(p, cls, icon, tone) {
     return photoPaths(p).length ? photoImg(p, cls) : `<div class="${cls} bg-gray-800 flex items-center justify-center text-${tone}-400"><i class="fa-solid ${icon} text-xl"></i></div>`;
 }
 function renderPhotos() {
-    if ($('modal-edit-ks') && !$('modal-edit-ks').classList.contains('hidden')) renderEditGallery();
+    if ($('modal-edit-ks') && !$('modal-edit-ks').classList.contains('hidden')) { renderEditGallery(); renderEditExtra(S.photos.find(x => x.id === S.editPhotoId)); }
     const nums = numbering();
-    const ks = photosOf('ks'), mat = photosOf('materiale');
+    const ksAll = photosOf('ks'), mat = photosOf('materiale');
+    const ks = S.ksExtraOnly ? ksAll.filter(p => p.is_extra) : ksAll;
+    const barH = ksBarHtml();
+    ['ks-extra-bar', 'pc-ks-extra-bar'].forEach(id => { const el = $(id); if (el) { el.innerHTML = barH; el.classList.toggle('hidden', !barH); } });
 
     $('ks-list').innerHTML = ks.length ? ks.map(p =>
         `<div data-act="open-photo" data-id="${p.id}" class="bg-card border border-card rounded-xl p-3 flex space-x-3 items-center cursor-pointer hover:border-orange-500/50 transition">${photoThumb(p, 'w-16 h-16 object-cover rounded-lg shrink-0', 'fa-clipboard-check', 'orange')}` +
-        `<div class="flex-1 min-w-0 text-xs"><span class="bg-orange-950 text-orange-400 px-1.5 py-0.5 rounded text-[9px] font-bold">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span>` +
+        `<div class="flex-1 min-w-0 text-xs"><span class="bg-orange-950 text-orange-400 px-1.5 py-0.5 rounded text-[9px] font-bold">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span> ${extraTag(p)}` +
         `<h4 class="font-bold text-white mt-1 text-sm line-clamp-2">${esc(photoHead(p, 'Ingen beskrivelse'))}</h4>${photoMeta(p, 'orange')}<span class="text-[10px] text-gray-500">${whenLabel(p.created_at)}</span>${gpsBlock(p)}</div></div>`
-    ).join('') : '<p class="text-xs text-gray-500 py-4 text-center">Ingen KS-punkter endnu.</p>';
+    ).join('') : '<p class="text-xs text-gray-500 py-4 text-center">' + (S.ksExtraOnly ? 'Intet ekstraarbejde endnu.' : 'Ingen KS-punkter endnu.') + '</p>';
 
     $('pc-ks-grid').innerHTML = ks.length ? ks.map(p =>
         `<div data-act="open-photo" data-id="${p.id}" class="bg-card border border-card rounded-2xl overflow-hidden cursor-pointer hover:border-orange-500/60 transition flex flex-col"><div class="h-44 bg-gray-900 relative">${photoThumb(p, 'w-full h-full object-cover', 'fa-clipboard-check', 'orange')}` +
-        `<span class="absolute top-2 left-2 bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span></div>` +
+        `<span class="absolute top-2 left-2 bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span>${p.is_extra ? '<span class="absolute bottom-2 left-2">' + extraTag(p) + '</span>' : ''}</div>` +
         `<div class="p-3.5 space-y-1"><p class="text-xs font-bold text-white line-clamp-2">${esc(photoHead(p, 'Ingen beskrivelse'))}</p>${photoMeta(p, 'orange')}<span class="text-[10px] text-gray-500">${whenLabel(p.created_at)}</span>${gpsBlock(p)}</div></div>`
     ).join('') : '<p class="col-span-3 text-xs text-gray-500 py-8 text-center">Ingen KS-punkter endnu.</p>';
 
@@ -2647,16 +2669,17 @@ function closeModal(id) { show(id, false); cancelVoice(); }
 
 /* ------------------------------ TIMER ------------------------------ */
 function openTimerModal(voice) { openTimerModalForDate(new Date()); if (voice === true && !$('timer-start').disabled) startVoice('timer'); }
-function openTimerModalForDate(dateObj) {
+function openTimerModalForDate(dateObj, ref) {
+    S.timerRef = ref || null;
     if (!S.currentProject) return toast(isManager() ? 'Opret først en ' + placeW() + '.' : 'Du er ikke tildelt nogen ' + placeW(true) + ' endnu.');
     $('timer-project-label').textContent = placeCap() + ': ' + projLabel(curProj());
     $('timer-date-input').value = fmtDate(dateObj);
-    $('timer-extra').checked = false;
+    $('timer-extra').checked = !!S.timerRef;
     fillTimerModal();
     show('modal-timer', true);
 }
 function onTimerDateChange() { fillTimerModal(); }
-function myEntryFor(ds, extra) { return S.time.find(t => t.user_id === myId() && t.work_date === ds && t.project_id === S.currentProject && !!t.is_extra === !!extra); }
+function myEntryFor(ds, extra, ref) { return S.time.find(t => t.user_id === myId() && t.work_date === ds && t.project_id === S.currentProject && !!t.is_extra === !!extra && (ref ? t.extra_ref === ref : !t.extra_ref)); }
 /* ---- ekstraarbejde ---- */
 S.extraOnly = false;
 const extraBadge = e => e && e.is_extra ? '<span class="ml-1 bg-violet-950 text-violet-300 border border-violet-700/60 px-1.5 py-0.5 rounded text-[9px] font-black align-middle">EKSTRA</span>' : '';
@@ -2674,12 +2697,12 @@ function putExtraBar(id, anchor, where, entries) {
 }
 function onExtraToggle() {
     const ds = $('timer-date-input').value, ext = $('timer-extra').checked;
-    if (S.editTimerId || (ds && myEntryFor(ds, ext))) fillTimerModal();
+    if (S.editTimerId || (ds && myEntryFor(ds, ext, S.timerRef))) fillTimerModal();
 }
 
 function fillTimerModal() {
     const ds = $('timer-date-input').value, ext = $('timer-extra').checked;
-    const ex = ds ? myEntryFor(ds, ext) : null;
+    const ex = ds ? myEntryFor(ds, ext, S.timerRef) : null;
     S.editTimerId = ex ? ex.id : null;
     let st = '06:00', en = '15:30', pv = '30';
     if (ex) { st = hhmm(ex.start_time); en = hhmm(ex.end_time); pv = String(ex.break_minutes); }
@@ -2694,9 +2717,12 @@ function fillTimerModal() {
     ps.value = pv;
     $('timer-notes').value = ex ? (ex.notes || '') : '';
     $('timer-extra-hint').classList.toggle('hidden', !ext);
+    { const rp = S.timerRef ? S.photos.find(x => x.id === S.timerRef) : null;
+      $('timer-extra-hint').innerHTML = rp ? 'Timerne knyttes til <b>' + esc(exNo(rp)) + '</b> – ' + esc(photoHead(rp, 'Ekstraarbejde').slice(0, 70)) + '.' : 'Denne registrering gemmes som <b>ekstraarbejde</b>. Skriv i beskrivelsen, hvad der er lavet ekstra, og hvem der bad om det.'; }
     calcModalHours();
     const locked = ds ? dayLockedForMe(ds) : false;
     ['timer-start', 'timer-end', 'timer-pause', 'timer-notes', 'timer-extra'].forEach(id => { $(id).disabled = locked; });
+    if (S.timerRef) $('timer-extra').disabled = true;
     show('timer-locked-banner', locked);
     show('btn-save-timer', !locked);
     show('btn-delete-timer', !locked && !!ex);
@@ -2725,6 +2751,7 @@ async function saveTimerEntry(btn) {
         };
         const ext = $('timer-extra').checked;
         if (ext || S.time.some(t => 'is_extra' in t)) fields.is_extra = ext;
+        if (S.timerRef) fields.extra_ref = S.timerRef;
         let res;
         if (S.editTimerId) res = await sb.from('time_entries').update(fields).eq('id', S.editTimerId).select().single();
         else res = await sb.from('time_entries').insert(Object.assign({ company_id: S.profile.company_id, project_id: S.currentProject, user_id: myId() }, fields)).select().single();
@@ -2732,6 +2759,7 @@ async function saveTimerEntry(btn) {
         if (res.error) throw res.error;
         mergeRow(S.time, res.data);
         closeModal('modal-timer');
+        if (S.timerRef) loadExtraTime(S.timerRef);
         renderAll();
     } catch (e) { fail(e); }
     btn.disabled = false;
@@ -2743,6 +2771,7 @@ async function deleteCurrentTimerEntry(btn) {
         const { error } = await sb.from('time_entries').delete().eq('id', S.editTimerId);
         if (error) throw error;
         dropRow(S.time, { id: S.editTimerId });
+        if (S.timerRef) loadExtraTime(S.timerRef);
         closeModal('modal-timer');
         renderAll();
     } catch (e) { fail(e); }
@@ -2960,7 +2989,7 @@ async function loadPhotoCols() {
 function clearShots() { tempShots.forEach(s => { try { URL.revokeObjectURL(s.url); } catch (e) { /* ignore */ } }); tempShots = []; }
 function triggerCamera(kind) {
     if (!S.currentProject) return toast(isManager() ? 'Opret først en ' + placeW() + '.' : 'Du er ikke tildelt nogen ' + placeW(true) + ' endnu.');
-    activeKind = kind; PH.target = 'new';
+    activeKind = kind; PH.target = 'new'; S.matRef = null;
     U.photoZone = U.pendingZone || null; U.pendingZone = null;
     clearShots();
     acquireGps();
@@ -2984,7 +3013,8 @@ function shotDelete(i) {
     tempShots.splice(i, 1); renderShotGallery();
 }
 function shotAdd(src, tgt) {
-    PH.target = tgt === 'edit' ? 'edit' : 'new';
+    PH.target = tgt === 'edit' ? 'edit' : tgt === 'after' ? 'after' : 'new';
+    if (PH.target === 'after') activeKind = 'ks';
     if (PH.target === 'edit') { const p = S.photos.find(x => x.id === S.editPhotoId); if (p) activeKind = p.kind; }
     pickPhotos(src);
 }
@@ -2998,6 +3028,7 @@ async function ingestFiles(files) {
     files = files.filter(f => !f.type || /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name || ''));
     if (!files.length) return;
     if (PH.target === 'edit') return editAddFiles(files);
+    if (PH.target === 'after') return afterAddFiles(files);
     let room = MAX_PHOTOS - tempShots.length;
     if (!S.multiPhoto) {
         const left = Math.max(0, 1 - tempShots.length);
@@ -3020,6 +3051,7 @@ function openPhotoModal(kind) {
         ['pf-title', 'pf-qty', 'pf-loc', 'photo-note-text'].forEach(id => { $(id).value = ''; });
         $('pf-cat').value = '';
         setPhotoMode('pf', kind);
+        extraFormReset(kind);
         renderVoiceBoxes();
         renderGpsStatus();
         show('modal-photo-note', true);
@@ -3030,7 +3062,7 @@ function openPhotoModal(kind) {
 function quickVoice(kind) {
     if (!S.currentProject) return toast(isManager() ? 'Opret først en ' + placeW() + '.' : 'Du er ikke tildelt nogen ' + placeW(true) + ' endnu.');
     acquireGps();
-    clearShots(); PH.target = 'new';
+    clearShots(); PH.target = 'new'; S.matRef = null;
     $('modal-photo-note').classList.add('hidden');
     openPhotoModal(kind);
     startVoice('photo');
@@ -3039,6 +3071,8 @@ async function savePhotoEntry(btn) {
     if (!S.currentProject) return;
     const base = photoPayload('pf', activeKind, 'photo-note-text');
     if (!tempShots.length && !base.title && !base.note && !base.quantity) return toast('Indtal eller skriv noget først – eller tilføj et billede.');
+    const wantExtra = activeKind === 'ks' && S.extraReady && isManager() && $('pf-extra').checked;
+    if (wantExtra && !base.note) return toast('Skriv eller indtal en kort beskrivelse af ekstraarbejdet.', 'info');
     if (S.gpsState === 'denied' || S.gpsState === 'fail') toast('Gemmer uden GPS-position.', 'info');
     btn.disabled = true;
     const label = btn.textContent;
@@ -3059,6 +3093,8 @@ async function savePhotoEntry(btn) {
             gps_accuracy: gps ? Math.round(gps.accuracy * 10) / 10 : null, gps_at: gps ? new Date(gps.ts).toISOString() : null
         }, base);
         if (S.multiPhoto) row.image_paths = paths;
+        if (wantExtra) { row.is_extra = true; row.extra_assignees = [...S.extraAssign]; }
+        if (activeKind === 'materiale' && S.matRef && S.extraReady) row.extra_ref = S.matRef;
         if (U.ready && U.photoZone && activeKind === 'ks') row.zone_id = U.photoZone;
         const { data, error } = await photoWrite(row, pl => sb.from('photo_entries').insert(pl).select().single());
         U.photoZone = null;
@@ -3066,8 +3102,11 @@ async function savePhotoEntry(btn) {
         mergeRow(S.photos, data);
         clearShots();
         closeModal('modal-photo-note');
+        if (data.is_extra) { await pullExtraTask(data); toast('Ekstraarbejde ' + exNo(data) + ' er oprettet – opgaven ligger under Opgaver' + (S.extraAssign.size ? '.' : ' (modtager kan vælges senere).'), 'ok'); }
+        const keepRef = S.matRef; S.matRef = null;
         fillAddress(data);
         resolveUrls();
+        if (keepRef && data.kind === 'materiale') { const ep = S.photos.find(x => x.id === keepRef); if (ep) { openPhoto(ep.id); renderAll(); btn.textContent = label; btn.disabled = false; return; } }
         switchTab(activeKind === 'ks' ? 'ks' : 'materials');
         renderAll();
     } catch (e) { fail(e); }
@@ -3130,6 +3169,8 @@ function openPhoto(id) {
     const canEdit = isManager() || p.user_id === myId();
     $('edit-modal-title').textContent = (p.kind === 'ks' ? 'KS' : 'Materiale') + ' – ' + userName(p.user_id);
     renderEditGallery();
+    renderEditExtra(p);
+    if (p.is_extra) loadExtraTime(p.id);
     $('edit-photo-time').textContent = whenLabel(p.created_at);
     $('edit-gps').innerHTML = gpsBlock(p, true);
     setPhotoMode('ef', p.kind);
@@ -3147,13 +3188,14 @@ function openPhoto(id) {
 }
 async function deleteCurrentPhoto(btn) {
     const p = S.photos.find(x => x.id === S.editPhotoId);
-    if (!p || !confirm('Slet hele punktet' + (photoPaths(p).length > 1 ? ' med alle ' + photoPaths(p).length + ' billeder' : '') + ' permanent?')) return;
+    if (!p || !confirm('Slet hele punktet' + (photoPaths(p).length > 1 ? ' med alle ' + photoPaths(p).length + ' billeder' : '') + (p.is_extra ? ' og den tilhørende opgave' : '') + ' permanent?')) return;
     btn.disabled = true;
     try {
         const { error } = await sb.from('photo_entries').delete().eq('id', p.id);
         if (error) throw error;
-        const paths = photoPaths(p);
+        const paths = photoPaths(p).concat(p.done_paths || []);
         if (paths.length) await sb.storage.from(BUCKET).remove(paths);
+        if (p.is_extra && p.task_id) { S.tasks = S.tasks.filter(t => t.id !== p.task_id); S.taskItems = S.taskItems.filter(i => i.task_id !== p.task_id); renderTasks(); }
         dropRow(S.photos, p);
         closeModal('modal-edit-ks');
         renderAll();
@@ -3175,6 +3217,275 @@ async function saveEditedPhoto(btn) {
     btn.disabled = false;
 }
 
+/* ------------------------------ EKSTRAARBEJDE (KS-punkt + automatisk opgave) ------------------------------ */
+S.extraReady = false; S.extraAssign = new Set(); S.ksExtraOnly = false; S.timerRef = null; S.matRef = null; S.extraTime = {}; S.extraSeen = new Set();
+async function loadExtraCols() {
+    try { const r = await sb.from('photo_entries').select('is_extra,task_id,done_paths').limit(1); S.extraReady = !r.error; } catch (e) { S.extraReady = false; }
+}
+const exNo = p => 'EX-' + String(p && p.extra_no || 0).padStart(3, '0');
+const extraPoints = () => S.photos.filter(p => p.project_id === S.currentProject && p.kind === 'ks' && p.is_extra);
+const extraTaskOf = p => (p && p.task_id) ? (S.tasks.find(t => t.id === p.task_id) || null) : null;
+const extraOfTask = t => t ? (S.photos.find(p => p.is_extra && p.task_id === t.id) || null) : null;
+function extraStatus(p) {
+    const t = extraTaskOf(p);
+    if (!t) return 'notask';
+    if (t.done) return 'done';
+    return taskAssignees(t).length ? 'open' : 'unassigned';
+}
+const isUnassignedExtra = t => !!t && !t.done && !!extraOfTask(t) && !taskAssignees(t).length;
+function extraChip(p) {
+    const m = { done: ['Udført', 'bg-emerald-950 text-emerald-300 border-emerald-700/60'], open: ['Åben', 'bg-violet-950 text-violet-300 border-violet-700/60'], unassigned: ['Mangler modtager', 'bg-amber-950 text-amber-300 border-amber-700/60'], notask: ['Uden opgave', 'bg-gray-800 text-gray-300 border-gray-700'] }[extraStatus(p)];
+    return `<span class="border px-1.5 py-0.5 rounded text-[9px] font-black ${m[1]}">${m[0]}</span>`;
+}
+const extraTag = p => p && p.is_extra ? `<span class="inline-flex items-center gap-1 flex-wrap"><span class="bg-violet-600 text-white px-1.5 py-0.5 rounded text-[9px] font-black">EKSTRA ${exNo(p)}</span>${extraChip(p)}</span>` : '';
+const extraTagBlock = t => { const p = extraOfTask(t); return p ? `<span class="block mb-1">${extraTag(p)}</span>` : ''; };
+const pathImg = (path, cls) => { const u = path ? S.urls[path] : null; return u ? `<img src="${esc(u.url)}" loading="lazy" alt="" class="${cls}">` : `<div class="${cls} bg-gray-800 animate-pulse"></div>`; };
+
+function ksBarHtml() {
+    const pts = extraPoints();
+    if (!S.extraReady || (!pts.length && !isManager())) return '';
+    const open = pts.filter(p => extraStatus(p) !== 'done').length;
+    return `<div class="flex flex-wrap items-center gap-2"><button type="button" data-act="ks-extra-filter" class="chip ${S.ksExtraOnly ? 'chip-on' : ''}" aria-pressed="${S.ksExtraOnly}"><i class="fa-solid fa-plus-circle mr-1"></i>Ekstraarbejde (${pts.length})</button>` +
+        (pts.length ? `<span class="text-[11px] ${open ? 'text-violet-300 font-bold' : 'text-gray-500'}">${open} ${open === 1 ? 'åbent' : 'åbne'}</span>` : '') +
+        (isManager() && pts.length ? `<button type="button" data-act="extra-report" class="chip ml-auto"><i class="fa-solid fa-file-export mr-1"></i>Ekstra-rapport</button>` : '') + `</div>`;
+}
+function updateExtraBadge() {
+    const me = myId(), mine = S.extraReady ? S.tasks.filter(t => !t.done && extraOfTask(t) && (taskAssignees(t).includes(me) || (isManager() && !taskAssignees(t).length))) : [];
+    const b = $('nav-tasks-badge'); if (b) { b.textContent = mine.length; b.classList.toggle('hidden', !mine.length); }
+    const h = $('m-extra-home'); if (!h) return;
+    if (!mine.length) { h.classList.add('hidden'); h.innerHTML = ''; return; }
+    h.classList.remove('hidden');
+    h.innerHTML = `<button type="button" data-act="goto-tasks" class="w-full text-left"><div class="flex items-center justify-between"><span class="text-xs font-black text-violet-200"><i class="fa-solid fa-plus-circle mr-1.5 text-violet-400"></i>Ekstraarbejde der venter (${mine.length})</span><i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i></div>` +
+        mine.slice(0, 2).map(t => { const p = extraOfTask(t); return `<p class="text-[11px] mt-1 ${taskAssignees(t).length ? 'text-gray-300' : 'text-amber-300'} truncate">${esc(exNo(p))} · ${esc(photoHead(p, t.text))}${taskAssignees(t).length ? '' : ' – mangler modtager'}</p>`; }).join('') + `</button>`;
+}
+
+/* ---- oprettelse (formand/admin) i "Nyt KS-punkt" ---- */
+function extraFormReset(kind) {
+    S.extraAssign = new Set();
+    const can = kind === 'ks' && S.extraReady && isManager() && !S.matRef;
+    show('pf-w-extra', can); $('pf-extra').checked = false; show('pf-extra-box', false);
+    const ref = kind === 'materiale' && S.matRef ? S.photos.find(x => x.id === S.matRef) : null;
+    show('pf-ref-note', !!ref);
+    if (ref) $('pf-ref-note').innerHTML = `<i class="fa-solid fa-link mr-1"></i>Knyttes til <b>${esc(exNo(ref))}</b> – ${esc(photoHead(ref, 'Ekstraarbejde').slice(0, 60))}`;
+}
+function extraFormRender() {
+    const on = $('pf-extra').checked;
+    show('pf-extra-box', on);
+    if (on) $('pf-extra-assignees').innerHTML = assignChipsHtml(S.extraAssign, 'extra-assign', '', 'Vælges senere');
+}
+async function pullExtraTask(p) {
+    if (!p || !p.task_id) return;
+    const [a, b] = await Promise.all([sb.from('tasks').select('*').eq('id', p.task_id), sb.from('task_items').select('*').eq('task_id', p.task_id)]);
+    if (a.data && a.data[0]) mergeRow(S.tasks, a.data[0]);
+    (b.data || []).forEach(r => mergeRow(S.taskItems, r));
+    renderTasks(); renderKpis(); scheduleRender();
+}
+async function extraIncoming(p, prevIds) {
+    await pullExtraTask(p);
+    const t = extraTaskOf(p), me = myId(); if (!t) return;
+    const mine = taskAssignees(t).includes(me), was = prevIds ? prevIds.includes(me) : false;
+    if (mine && !was && p.user_id !== me && !S.extraSeen.has(p.id + (prevIds ? ':u' : ''))) {
+        S.extraSeen.add(p.id + (prevIds ? ':u' : ''));
+        toast((prevIds ? 'Du er tilføjet til ekstraarbejde ' : 'Nyt ekstraarbejde fra ' + firstName(userName(p.user_id)) + ': ') + exNo(p), 'info');
+    }
+}
+
+/* ---- panel i punktet: modtagere, efter-billeder, timer, materialer ---- */
+async function loadExtraTime(id) {
+    try {
+        const r = await sb.from('time_entries').select('*').eq('extra_ref', id).order('work_date', { ascending: true });
+        if (r.error) throw r.error;
+        S.extraTime[id] = r.data || [];
+    } catch (e) { S.extraTime[id] = S.extraTime[id] || []; }
+    const p = S.photos.find(x => x.id === S.editPhotoId);
+    if (p && p.id === id && !$('modal-edit-ks').classList.contains('hidden')) renderEditExtra(p);
+}
+function renderEditExtra(p) {
+    const box = $('edit-extra'); if (!box) return;
+    if (!p || p.kind !== 'ks' || !S.extraReady) { show('edit-extra', false); return; }
+    if (!p.is_extra) {
+        const can = isManager();
+        show('edit-extra', can);
+        box.innerHTML = can ? `<button type="button" data-act="extra-make" class="w-full bg-violet-950/40 border border-violet-700/60 text-violet-200 py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-plus-circle mr-1.5"></i>Gør til ekstraarbejde</button><p class="text-[11px] text-gray-500">Opretter en opgave til punktet. Beskrivelsen skal være udfyldt.</p>` : '';
+        return;
+    }
+    show('edit-extra', true);
+    const t = extraTaskOf(p), mgr = isManager(), ids = t ? taskAssignees(t) : [], me = myId();
+    const canWork = mgr || (!!t && (ids.includes(me) || !ids.length));
+    const after = p.done_paths || [];
+    if (S.extraTime[p.id] === undefined) { S.extraTime[p.id] = null; loadExtraTime(p.id); }
+    const times = S.extraTime[p.id] || [], tot = times.reduce((a, r) => a + Number(r.hours), 0);
+    const mats = S.photos.filter(m => m.kind === 'materiale' && m.extra_ref === p.id);
+    let h = `<div class="rounded-2xl border border-violet-700/50 bg-violet-950/20 p-3 space-y-3"><div class="flex items-center justify-between gap-2"><span class="text-xs font-black text-violet-200"><i class="fa-solid fa-plus-circle mr-1.5 text-violet-400"></i>Ekstraarbejde ${esc(exNo(p))}</span>${extraChip(p)}</div>`;
+    if (!t) h += `<p class="text-[11px] text-gray-400">Opgaven er slettet. Punktet og dokumentationen er bevaret.</p>`;
+    else {
+        h += `<div><span class="lbl">Modtager</span>`;
+        h += mgr ? `<div class="flex flex-wrap gap-2">${assignChipsHtml(new Set(ids), 'extra-pt-assign', '', 'Ikke valgt endnu')}</div><p class="text-[10px] text-gray-500 mt-1">Du kan tilføje eller ændre modtagere når som helst.</p>`
+            : `<p class="text-xs ${ids.length ? 'text-emerald-300' : 'text-amber-300'} font-bold">${ids.length ? esc(ids.map(u => firstName(userName(u))).join(', ')) : 'Ikke valgt endnu'}</p>`;
+        h += `</div>`;
+    }
+    h += `<div class="space-y-2"><div class="flex items-center justify-between"><span class="lbl !mb-0">Efter-billeder</span><span class="text-xs font-black text-violet-300">${after.length ? after.length + (after.length === 1 ? ' billede' : ' billeder') : 'Ingen endnu'}</span></div><div class="grid grid-cols-4 gap-2">` +
+        after.map((pt, i) => `<div class="relative aspect-square rounded-xl overflow-hidden border border-gray-800 bg-gray-900">${pathImg(pt, 'w-full h-full object-cover')}` +
+            (canWork ? `<button type="button" data-act="after-del" data-i="${i}" class="absolute top-0.5 right-0.5 w-8 h-8 rounded-full bg-stone-900/85 text-red-400 flex items-center justify-center text-xs" aria-label="Slet efter-billede ${i + 1}"><i class="fa-solid fa-xmark"></i></button>` : '') + `</div>`).join('') +
+        (canWork && after.length < MAX_PHOTOS ? addTilesHtml('after') : '') + `</div></div>`;
+    h += `<div class="space-y-1"><div class="flex items-center justify-between"><span class="lbl !mb-0">Timer</span><span class="text-xs font-black text-violet-300">${times.length ? hFmt(tot) + ' t' : ''}</span></div>` +
+        (S.extraTime[p.id] === null ? '<p class="text-[11px] text-gray-500">Henter…</p>' : times.length ? times.map(r => `<div class="flex items-center justify-between text-xs bg-gray-900/70 border border-gray-800 rounded-lg px-2.5 py-1.5"><span class="text-gray-200 min-w-0 truncate">${esc(dkFull(r.work_date))} · ${esc(firstName(userName(r.user_id)))}</span><span class="shrink-0 font-black text-white">${hFmt(r.hours)} t${r.user_id === me ? ` <button type="button" data-act="extra-time" data-id="${p.id}" data-date="${r.work_date}" class="ml-2 text-violet-300 underline text-[11px]">Ret</button>` : ''}</span></div>`).join('') : '<p class="text-[11px] text-gray-500">Ingen timer registreret på ekstraarbejdet endnu.</p>') + `</div>`;
+    h += `<div class="space-y-1"><span class="lbl">Materialer</span>` + (mats.length ? mats.map(m => `<button type="button" data-act="open-photo" data-id="${m.id}" class="w-full text-left text-xs bg-gray-900/70 border border-gray-800 rounded-lg px-2.5 py-1.5 text-gray-200 truncate">${esc(photoHead(m, 'Materiale'))}${m.quantity ? ' · ' + esc(m.quantity) : ''}</button>`).join('') : '<p class="text-[11px] text-gray-500">Ingen materialer knyttet endnu.</p>') + `</div>`;
+    h += `<div class="grid grid-cols-2 gap-2">` +
+        `<button type="button" data-act="extra-time" data-id="${p.id}" class="bg-violet-600 text-white py-3 rounded-xl text-xs font-black"><i class="fa-solid fa-clock mr-1"></i>Registrér timer</button>` +
+        `<button type="button" data-act="extra-mat" data-id="${p.id}" class="bg-violet-600 text-white py-3 rounded-xl text-xs font-black"><i class="fa-solid fa-boxes-stacked mr-1"></i>Registrér materiale</button>` +
+        (t && canWork ? `<button type="button" data-act="extra-done" data-id="${p.id}" class="${t.done ? 'bg-gray-800 border border-gray-700 text-gray-100' : 'bg-emerald-500 text-gray-950'} py-3 rounded-xl text-xs font-black col-span-2"><i class="fa-solid ${t.done ? 'fa-rotate-left' : 'fa-check'} mr-1"></i>${t.done ? 'Åbn igen' : 'Færdig – markér udført'}</button>` : '') + `</div></div>`;
+    box.innerHTML = h;
+}
+async function extraSetAssignees(set) {
+    const p = S.photos.find(x => x.id === S.editPhotoId), t = extraTaskOf(p); if (!t) return;
+    const ids = [...set];
+    const res = await sb.from('tasks').update({ assignees: ids, assigned_to: ids[0] || null }).eq('id', t.id).select().single();
+    if (res.error) return fail(res.error);
+    mergeRow(S.tasks, res.data); renderEditExtra(p); renderTasks(); renderKpis(); scheduleRender();
+}
+async function extraMake() {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p || p.is_extra) return;
+    if (!(($('edit-note-text').value || '').trim())) return toast('Skriv en kort beskrivelse af ekstraarbejdet først.', 'info');
+    if (!confirm('Gøre punktet til ekstraarbejde og oprette en opgave?')) return;
+    const note = $('edit-note-text').value.trim();
+    const res = await sb.from('photo_entries').update({ is_extra: true, note }).eq('id', p.id).select().single();
+    if (res.error) return fail(res.error);
+    mergeRow(S.photos, res.data); await pullExtraTask(res.data);
+    renderEditExtra(res.data); renderAll();
+    toast('Ekstraarbejde ' + exNo(res.data) + ' er oprettet – opgaven ligger under Opgaver.', 'ok');
+}
+async function afterSave(p, paths) {
+    const res = await sb.rpc('extra_set_after', { p_id: p.id, p_paths: paths });
+    if (res.error) throw res.error;
+    mergeRow(S.photos, res.data);
+    await resolveUrls(); renderEditExtra(res.data); renderAll();
+}
+async function afterAddFiles(files) {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
+    const have = (p.done_paths || []).slice(), room = MAX_PHOTOS - have.length;
+    if (files.length > room) toast(room > 0 ? 'Højst ' + MAX_PHOTOS + ' billeder – de første ' + room + ' er med.' : 'Der er allerede ' + MAX_PHOTOS + ' billeder.', 'info');
+    files = files.slice(0, Math.max(0, room)); if (!files.length) return;
+    const added = [];
+    try {
+        for (const f of files) {
+            const blob = await compressImage(f), path = p.company_id + '/' + p.project_id + '/' + newUuid() + '.jpg';
+            const up = await sb.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+            if (up.error) throw up.error;
+            added.push(path);
+        }
+        await afterSave(p, have.concat(added));
+        toast(added.length === 1 ? 'Efter-billedet er tilføjet.' : added.length + ' efter-billeder er tilføjet.', 'ok');
+    } catch (e) { if (added.length) { try { await sb.storage.from(BUCKET).remove(added); } catch (x) { /* ignore */ } } fail(e); }
+}
+async function afterDelete(i) {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
+    const have = (p.done_paths || []), gone = have[i]; if (!gone || !confirm('Slet dette efter-billede?')) return;
+    try {
+        await afterSave(p, have.filter((_, k) => k !== i));
+        try { await sb.storage.from(BUCKET).remove([gone]); } catch (x) { /* ignore */ }
+    } catch (e) { fail(e); }
+}
+function extraTimeOpen(id, date) {
+    const p = S.photos.find(x => x.id === id); if (!p) return;
+    if (p.project_id !== S.currentProject) return toast('Skift først til sagen for ekstraarbejdet.', 'info');
+    openTimerModalForDate(date ? parseDate(date) : new Date(), id);
+}
+function extraMatOpen(id) {
+    const p = S.photos.find(x => x.id === id); if (!p) return;
+    if (p.project_id !== S.currentProject) return toast('Skift først til sagen for ekstraarbejdet.', 'info');
+    closeModal('modal-edit-ks');
+    acquireGps(); clearShots(); PH.target = 'new'; S.matRef = id;
+    $('modal-photo-note').classList.add('hidden');
+    openPhotoModal('materiale');
+}
+async function extraDoneToggle(id) {
+    const p = S.photos.find(x => x.id === id), t = extraTaskOf(p); if (!t) return;
+    await toggleTask(t.id, !t.done);
+    const q = S.photos.find(x => x.id === id); renderEditExtra(q); renderAll();
+}
+function extraGotoTask() {
+    closeModal('modal-edit-ks');
+    if (document.body.classList.contains('force-mobile') || window.innerWidth < 1024) switchTab('tasks'); else switchPcView('tasks');
+}
+
+/* ---- rapport til bygherre/Munck ---- */
+async function buildExtraReport(fmt, opt) {
+    opt = opt || {};
+    const enc = s => new TextEncoder().encode(s), comp = reportCompany(), pr = curProj();
+    if (!pr) return { empty: 'Vælg en sag først.' };
+    const all = extraPoints().slice().sort((a, b) => (a.extra_no || 0) - (b.extra_no || 0));
+    if (!all.length) return { empty: 'Der er intet ekstraarbejde på sagen endnu.' };
+    let list = all.filter(p => !EX.sel || EX.sel.has(p.id));
+    if ($('ex-done') && $('ex-done').checked) list = list.filter(p => extraStatus(p) === 'done');
+    if (!list.length) return { empty: 'Vælg mindst ét ekstraarbejde (og tjek "kun udførte").' };
+    const tr = await sb.from('time_entries').select('*').in('extra_ref', list.map(p => p.id));
+    if (tr.error) throw tr.error;
+    const times = tr.data || [];
+    const tOf = id => times.filter(r => r.extra_ref === id), hOf = id => tOf(id).reduce((a, r) => a + Number(r.hours), 0);
+    const matsOf = id => S.photos.filter(m => m.kind === 'materiale' && m.extra_ref === id);
+    const whoOf = p => { const t = extraTaskOf(p), ids = t ? taskAssignees(t) : []; return ids.length ? ids.map(u => userName(u)).join(', ') : 'Ikke valgt'; };
+    const stTxt = p => ({ done: 'Udført', open: 'Åben', unassigned: 'Mangler modtager', notask: 'Uden opgave' })[extraStatus(p)];
+    const descOf = p => (p.note || '').replace(/\s+/g, ' ').trim() || 'Ekstraarbejde';
+    const totalH = list.reduce((a, p) => a + hOf(p.id), 0);
+    const subject = comp + ' – Ekstraarbejde – ' + projLabel(pr);
+    const matTxt = id => matsOf(id).map(m => [m.title || m.note || 'Materiale', m.quantity].filter(Boolean).join(' ')).join('; ');
+    if (fmt === 'csv') {
+        const rows = list.map(p => [exNo(p), descOf(p), dkWhen(p.created_at), userName(p.user_id), whoOf(p), stTxt(p), String(hOf(p.id)).replace('.', ','), new Set(tOf(p.id).map(r => r.user_id)).size, matTxt(p.id), photoPaths(p).length, (p.done_paths || []).length, p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.lat != null ? mapsUrl(p.lat, p.lng) : '']);
+        rows.push(['I ALT', list.length + ' ekstraarbejder', '', '', '', '', String(Math.round(totalH * 100) / 100).replace('.', ','), '', '', '', '', '', '', '']);
+        return { bytes: enc(csvOf(['Nr', 'Beskrivelse', 'Oprettet', 'Oprettet af', 'Modtagere', 'Status', 'Timer i alt', 'Antal medarbejdere', 'Materialer', 'Billeder før', 'Billeder efter', 'Lat', 'Lng', 'Google Maps'], rows)), mime: 'text/csv', filename: 'UniSjak_Ekstraarbejde_' + safeName(pr.case_number || pr.name) + '.csv', subject };
+    }
+    const doc = newReport({ company: comp, title: 'Ekstraarbejde', sub: placeCap() + ': ' + projLabel(pr), sub2: 'Rapport pr. ' + dkFull(fmtDate(new Date())) }, false);
+    doc.paragraph(list.length + (list.length === 1 ? ' ekstraarbejde' : ' ekstraarbejder') + ' – ' + hFmt(totalH) + ' timer i alt', { size: 10, bold: true });
+    doc.y += 6;
+    doc.table([{ title: 'Nr', w: 46 }, { title: 'Beskrivelse', w: 200 }, { title: 'Status', w: 74 }, { title: 'Modtager', w: 120 }, { title: 'Timer', w: 75.28, align: 'right' }],
+        list.map(p => [{ t: exNo(p), bold: true }, descOf(p).slice(0, 120), { t: stTxt(p), color: extraStatus(p) === 'done' ? [20, 130, 60] : [180, 110, 0] }, whoOf(p), { t: hFmt(hOf(p.id)) + ' t', bold: true }]).concat([[{ t: 'I alt', bold: true }, '', '', '', { t: hFmt(totalH) + ' t', bold: true }]]));
+    const usePhotos = opt.photos !== false;
+    let shown = 0;
+    const strip = async (label, paths) => {
+        if (!usePhotos || !paths.length) return;
+        doc.ensure(24); doc.text(doc.margin, doc.y, label + ' (' + paths.length + ')', { size: 8.5, bold: true, color: [90, 90, 90] }); doc.y += 12;
+        const show = paths.slice(0, 5); doc.ensure(78); const ty = doc.y; let x = doc.margin;
+        for (const pt of show) {
+            const im = shown < 90 ? await pathBytes(pt, opt.max ? Math.min(opt.max, 640) : 640, opt.q || 0.58) : null; if (im) shown++;
+            doc.rect(x, ty, 98, 70, { fill: [240, 242, 244] }); if (im) doc.image(im, x, ty, 98, 70);
+            x += 104;
+        }
+        if (paths.length > 5) doc.text(x, ty + 30, '+' + (paths.length - 5), { size: 9, bold: true, color: [110, 110, 110] });
+        doc.y = ty + 76;
+    };
+    for (const p of list) {
+        doc.addPage();
+        doc.paragraph(exNo(p) + ' – ' + descOf(p), { size: 13, bold: true });
+        doc.paragraph(['Oprettet af ' + userName(p.user_id), dkWhen(p.created_at), 'Status: ' + stTxt(p), 'Modtager: ' + whoOf(p)].join('  ·  '), { size: 8.5, color: [110, 110, 110] });
+        if (p.lat != null) {
+            doc.y += 2;
+            doc.paragraph('GPS: ' + Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5) + (p.gps_accuracy != null ? ' (±' + Math.round(p.gps_accuracy) + ' m)' : '') + (p.address ? ' – ' + p.address : ''), { size: 8, color: [110, 110, 110] });
+            doc.ensure(14);
+            const lw = doc.text(doc.margin, doc.y, 'Åbn i Google Maps', { size: 8.5, bold: true, color: [0, 90, 200] });
+            doc.line(doc.margin, doc.y + 9.5, doc.margin + lw, doc.y + 9.5, { color: [0, 90, 200], lw: 0.6 });
+            doc.link(doc.margin, doc.y - 1, lw, 12, mapsUrl(p.lat, p.lng));
+            doc.y += 14;
+        }
+        doc.y += 4;
+        await strip('Før', photoPaths(p));
+        await strip('Efter', p.done_paths || []);
+        const rs = tOf(p.id);
+        doc.y += 4; doc.ensure(40); doc.text(doc.margin, doc.y, 'Timer', { size: 10, bold: true }); doc.y += 14;
+        if (rs.length) {
+            const per = {}; rs.forEach(r => { per[r.user_id] = per[r.user_id] || { d: new Set(), h: 0 }; per[r.user_id].d.add(r.work_date); per[r.user_id].h += Number(r.hours); });
+            const rows = Object.keys(per).sort((a, b) => userName(a).localeCompare(userName(b), 'da')).map(u => [userName(u), String(per[u].d.size), { t: hFmt(per[u].h) + ' t', bold: true }]);
+            rows.push([{ t: 'I alt', bold: true }, '', { t: hFmt(hOf(p.id)) + ' t', bold: true }]);
+            doc.table([{ title: 'Medarbejder', w: 220 }, { title: 'Dage', w: 60, align: 'right' }, { title: 'Timer', w: 90, align: 'right' }], rows);
+        } else doc.paragraph('Ingen timer registreret.', { size: 9, color: [130, 130, 130] });
+        const ms = matsOf(p.id);
+        doc.y += 6; doc.ensure(30); doc.text(doc.margin, doc.y, 'Materialer', { size: 10, bold: true }); doc.y += 14;
+        if (ms.length) doc.table([{ title: 'Materiale', w: 260 }, { title: 'Antal', w: 100 }, { title: 'Dato', w: 90 }], ms.map(m => [m.title || m.note || 'Materiale', m.quantity || '', dkFull(String(m.created_at).slice(0, 10))]));
+        else doc.paragraph('Ingen materialer registreret.', { size: 9, color: [130, 130, 130] });
+    }
+    return { bytes: doc.build(), mime: 'application/pdf', filename: 'UniSjak_Ekstraarbejde_' + safeName(pr.case_number || pr.name) + '.pdf', subject };
+}
+
 /* ------------------------------ OPGAVER (flere medarbejdere + underpunkter) ------------------------------ */
 S.taskItems = []; S.itemsReady = false; S.templates = []; S.tplReady = false; S.taskAssign = { pc: new Set(), mobile: new Set() }; S.editTask = null; S.noAssignees = false;
 const missingCol = e => !!e && (e.code === 'PGRST204' || /schema cache|could not find the .* column|column .* does not exist/i.test(e.message || ''));
@@ -3194,11 +3505,11 @@ async function loadTaskItems() {
 }
 function assigneeLabel(t) {
     const ids = taskAssignees(t);
-    return ids.length ? ids.map(u => firstName(userName(u))).join(', ') : 'Alle / Sjak';
+    return ids.length ? ids.map(u => firstName(userName(u))).join(', ') : (extraOfTask(t) ? 'Ingen modtager valgt endnu' : 'Alle / Sjak');
 }
-function assignChipsHtml(set, act, extra) {
+function assignChipsHtml(set, act, extra, allLabel) {
     const people = S.profiles.filter(p => p.active).sort((a, b) => a.full_name.localeCompare(b.full_name, 'da'));
-    return `<button type="button" data-act="${act}" ${extra} data-user="all" class="chip ${set.size === 0 ? 'chip-on' : ''}">Alle / Sjak</button>` +
+    return `<button type="button" data-act="${act}" ${extra} data-user="all" class="chip ${set.size === 0 ? 'chip-on' : ''}">${esc(allLabel || 'Alle / Sjak')}</button>` +
         people.map(p => `<button type="button" data-act="${act}" ${extra} data-user="${esc(p.id)}" class="chip ${set.has(p.id) ? 'chip-on' : ''}">${esc(firstName(p.full_name))}</button>`).join('');
 }
 function toggleAssign(set, uid) { if (uid === 'all') set.clear(); else if (set.has(uid)) set.delete(uid); else set.add(uid); }
@@ -3209,8 +3520,16 @@ function taskPlanChipHtml(t) {
     const z = zoneOf(cs[0].zone_id), a = dkDate(parseDate(cs[0].work_date)).slice(0, 5), b = dkDate(parseDate(cs[cs.length - 1].work_date)).slice(0, 5);
     return `<span class="text-[11px] text-sky-300 font-semibold ml-2"><i class="fa-solid fa-calendar-days mr-1 text-[9px]"></i>${esc(z ? z.name + ' · ' : '')}${cs.length} ${cs.length === 1 ? 'dag' : 'dage'} · ${a}${cs.length > 1 ? '–' + b : ''}</span>`;
 }
+function taskPointHtml(t) {
+    const p = extraOfTask(t); if (!p) return '';
+    const after = (p.done_paths || []).length;
+    const btn = (act, ic, label, tone) => `<button type="button" data-act="${act}" data-id="${p.id}" class="${tone || 'bg-violet-950/50 border border-violet-700/60 text-violet-100'} px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid ${ic} mr-1.5"></i>${label}</button>`;
+    return `<div class="pl-9 space-y-2"><div class="flex items-center gap-2.5 min-w-0">${photoPaths(p).length ? photoImg(p, 'w-14 h-14 object-cover rounded-lg shrink-0') : ''}<div class="min-w-0 text-[11px] text-gray-400"><span class="block truncate">Fra ${esc(firstName(userName(p.user_id)))} · ${esc(dkWhen(p.created_at))}</span><span class="block">${photoPaths(p).length} før · ${after} efter</span></div></div>` +
+        `<div class="flex flex-wrap gap-2">${btn('open-photo', 'fa-images', 'Åbn punkt & billeder')}${btn('extra-time', 'fa-clock', 'Timer')}${btn('extra-mat', 'fa-boxes-stacked', 'Materiale')}` +
+        (isUnassignedExtra(t) ? `<button type="button" data-act="edit-task" data-id="${t.id}" class="bg-amber-950/50 border border-amber-700/60 text-amber-200 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-user-plus mr-1.5"></i>Vælg modtager</button>` : '') + `</div></div>`;
+}
 function taskExtraHtml(t) {
-    let h = '';
+    let h = taskPointHtml(t);
     const ask = typeof finishPromptHtml === 'function' ? finishPromptHtml(t, 'da') : '';
     if (ask) h += `<div class="pl-9">${ask}</div>`;
     const btns = [];
@@ -3237,8 +3556,8 @@ function renderTasks() {
         const prog = items.length ? `<div class="flex items-center space-x-2 mt-1"><div class="h-1.5 flex-1 bg-gray-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${Math.round(nDone / items.length * 100)}%"></div></div><span class="text-[10px] text-gray-400 font-bold shrink-0">${nDone}/${items.length}</span></div>` : '';
         return `<div class="border rounded-xl p-3 space-y-2 transition ${t.done ? 'bg-gray-950/60 border-gray-800/60 opacity-60' : (pc ? 'bg-gray-900/90 border-gray-800' : 'bg-card border-card')}">` +
             `<div class="flex justify-between items-start"><label class="flex items-start space-x-3 flex-1 cursor-pointer pr-2 min-w-0"><input type="checkbox" ${t.done ? 'checked' : ''} data-chg="toggle-task" data-id="${t.id}" class="w-6 h-6 rounded accent-emerald-500 shrink-0 cursor-pointer mt-0.5">` +
-            `<div class="min-w-0 flex-1"><span class="text-sm font-bold block ${t.done ? 'line-through text-gray-500' : 'text-white'}">${esc(t.text)}</span>` +
-            `<span class="text-[11px] text-emerald-400 font-semibold"><i class="fa-solid fa-user-group mr-1 text-[9px]"></i>${esc(assigneeLabel(t))}</span>${taskPlanChipHtml(t)}${prog}</div></label>` +
+            `<div class="min-w-0 flex-1">${extraTagBlock(t)}<span class="text-sm font-bold block ${t.done ? 'line-through text-gray-500' : 'text-white'}">${esc(t.text)}</span>` +
+            `<span class="text-[11px] ${isUnassignedExtra(t) ? 'text-amber-400' : 'text-emerald-400'} font-semibold"><i class="fa-solid fa-user-group mr-1 text-[9px]"></i>${esc(assigneeLabel(t))}</span>${taskPlanChipHtml(t)}${prog}</div></label>` +
             `<div class="flex shrink-0"><button data-act="edit-task" data-id="${t.id}" class="text-gray-500 hover:text-orange-400 text-sm p-2" aria-label="Rediger"><i class="fa-solid fa-pen"></i></button>` +
             `<button data-act="delete-task" data-id="${t.id}" class="text-gray-500 hover:text-red-400 text-sm p-2" aria-label="Slet"><i class="fa-solid fa-trash"></i></button></div></div>` +
             (items.length ? `<div class="space-y-1 pl-9">` + items.map(i => `<div class="flex items-center justify-between"><label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0 py-1"><input type="checkbox" ${i.done ? 'checked' : ''} data-chg="toggle-item" data-id="${i.id}" class="w-5 h-5 rounded accent-emerald-500 shrink-0"><span class="text-[13px] ${i.done ? 'line-through text-gray-500' : 'text-gray-200'} min-w-0">${esc(i.text)}</span></label><button data-act="del-item" data-id="${i.id}" class="text-gray-600 hover:text-red-400 p-1.5 text-xs shrink-0"><i class="fa-solid fa-xmark"></i></button></div>`).join('') + `</div>` : '') +
@@ -3247,6 +3566,7 @@ function renderTasks() {
     const empty = '<p class="text-xs text-gray-500 py-6 text-center">Ingen opgaver på listen endnu.</p>';
     $('tasks-list').innerHTML = list.length ? list.map(t => card(t, false)).join('') : empty;
     $('pc-tasks-list').innerHTML = list.length ? list.map(t => card(t, true)).join('') : empty;
+    updateExtraBadge();
     renderVoiceBoxes();
 }
 document.addEventListener('focusout', e => { if (tasksDirty && e.target.dataset && e.target.dataset.subInput !== undefined) setTimeout(() => { if (S.started) renderTasks(); }, 300); });
@@ -3357,7 +3677,7 @@ function openTaskEdit(id) {
     const t = S.tasks.find(x => x.id === id); if (!t) return;
     S.editTask = { id, set: new Set(taskAssignees(t)) };
     $('tk-text').value = t.text; $('tk-items').value = ''; $('tk-items').style.height = '';
-    $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', '');
+    $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', '', extraOfTask(t) ? 'Ikke valgt endnu' : undefined);
     renderVoiceBoxes();
     show('modal-task', true);
 }
@@ -5949,7 +6269,7 @@ async function ugSetLang(val) {
 
 /* ------------------------------ EKSPORT (PDF + CSV + e-mail) ------------------------------ */
 const EX = { kind: null, fmt: 'pdf', busy: false, sel: null, vis: [] };
-const EX_TITLES = { timer: 'Eksportér timer', plan: 'Print planlægning', planrapport: 'Bygherre-ugerapport', ks: 'Eksportér kvalitetssikring', materiale: 'Eksportér materialer', shifts: 'Eksportér vagtplan' };
+const EX_TITLES = { timer: 'Eksportér timer', plan: 'Print planlægning', planrapport: 'Bygherre-ugerapport', ks: 'Eksportér kvalitetssikring', materiale: 'Eksportér materialer', shifts: 'Eksportér vagtplan', extra: 'Ekstraarbejde-rapport' };
 function csvSafe(v) {
     let s = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').replace(/;/g, ',');
     if (/^[=+\-@\t]/.test(s)) s = "'" + s;
@@ -5961,10 +6281,10 @@ function lastMailTo() { try { return JSON.parse(localStorage.getItem('unisjak_ma
 function rememberMailTo(a) { try { const l = [a].concat(lastMailTo().filter(x => x !== a)).slice(0, 8); localStorage.setItem('unisjak_mail_to', JSON.stringify(l)); } catch (e) { /* ignore */ } }
 
 function openExport(kind) {
-    if ((kind === 'ks' || kind === 'materiale') && !S.currentProject) return toast(isManager() ? 'Opret først en ' + placeW() + '.' : 'Du er ikke tildelt nogen ' + placeW(true) + ' endnu.');
+    if ((kind === 'ks' || kind === 'materiale' || kind === 'extra') && !S.currentProject) return toast(isManager() ? 'Opret først en ' + placeW() + '.' : 'Du er ikke tildelt nogen ' + placeW(true) + ' endnu.');
     EX.kind = kind; EX.fmt = 'pdf';
     show('ex-w-extra', kind === 'timer'); if ($('ex-extra')) $('ex-extra').checked = false;
-    if (kind === 'ks' || kind === 'materiale') {
+    if (kind === 'ks' || kind === 'materiale' || kind === 'extra') {
         const all = exPickList(); EX.sel = new Set(all.map(p => p.id));
         const cats = [...new Set(all.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'da'));
         $('ex-pick-q').value = '';
@@ -5974,7 +6294,7 @@ function openExport(kind) {
     } else { EX.sel = null; show('ex-w-pick', false); }
     $('ex-title').textContent = EX_TITLES[kind] || 'Eksportér';
     const wk = kind === 'timer' || kind === 'shifts' || kind === 'plan' || kind === 'planrapport';
-    show('ex-w-week', wk); show('ex-w-scope', kind === 'timer'); show('ex-w-lang', kind === 'plan'); if (kind === 'plan') $('ex-lang').value = myLang(); show('ex-w-photos', kind === 'ks');
+    show('ex-w-week', wk); show('ex-w-scope', kind === 'timer'); show('ex-w-lang', kind === 'plan'); if (kind === 'plan') $('ex-lang').value = myLang(); show('ex-w-photos', kind === 'ks' || kind === 'extra'); show('ex-w-done', kind === 'extra'); if ($('ex-done')) $('ex-done').checked = false;
     if (wk) {
         const base = kind === 'timer' ? activeMonday() : (kind === 'plan' || kind === 'planrapport') ? ugMonday() : shiftMonday(), cur = mondayOf(new Date());
         let h = '';
@@ -5986,8 +6306,8 @@ function openExport(kind) {
     }
     const p = curProj();
     $('ex-scope').innerHTML = `<option value="project">Kun denne sag${p ? ': ' + esc(projLabel(p)) : ''}</option><option value="all">Alle sager</option>`;
-    $('ex-project-line').textContent = (kind === 'ks' || kind === 'materiale') && p ? placeCap() + ': ' + projLabel(p) : '';
-    show('ex-project-line', (kind === 'ks' || kind === 'materiale') && !!p);
+    $('ex-project-line').textContent = (kind === 'ks' || kind === 'materiale' || kind === 'extra') && p ? placeCap() + ': ' + projLabel(p) : '';
+    show('ex-project-line', (kind === 'ks' || kind === 'materiale' || kind === 'extra') && !!p);
     show('ex-w-mail', isManager());
     const rec = lastMailTo();
     $('ex-email').value = rec[0] || '';
@@ -5997,13 +6317,13 @@ function openExport(kind) {
     renderVoiceBoxes();
     show('modal-export', true);
 }
-function exPickList() { return photosOf(EX.kind === 'materiale' ? 'materiale' : 'ks').slice().reverse(); }
+function exPickList() { return EX.kind === 'extra' ? extraPoints().slice().sort((a, b) => (a.extra_no || 0) - (b.extra_no || 0)) : photosOf(EX.kind === 'materiale' ? 'materiale' : 'ks').slice().reverse(); }
 function exPickCount() {
     const list = exPickList(), n = list.filter(p => EX.sel && EX.sel.has(p.id)).length;
     const el = $('ex-pick-count'); if (el) el.textContent = n + ' af ' + list.length + ' valgt';
 }
 function exPickRender() {
-    const on = (EX.kind === 'ks' || EX.kind === 'materiale');
+    const on = (EX.kind === 'ks' || EX.kind === 'materiale' || EX.kind === 'extra');
     show('ex-w-pick', on); if (!on) return;
     const list = exPickList(), nums = numbering(), q = ($('ex-pick-q').value || '').trim().toLowerCase(), cat = $('ex-pick-cat').value;
     const vis = list.filter(p => (!cat || (p.category || '') === cat) && (!q || ('#' + nums[p.id] + ' ' + (p.title || '') + ' ' + (p.note || '') + ' ' + (p.category || '') + ' ' + userName(p.user_id)).toLowerCase().includes(q)));
@@ -6011,7 +6331,7 @@ function exPickRender() {
     $('ex-pick-list').innerHTML = vis.length ? vis.map(p => {
         const on1 = EX.sel.has(p.id), n = photoPaths(p).length;
         return `<label class="flex items-center gap-3 bg-gray-900 border ${on1 ? 'border-orange-500/60' : 'border-gray-800'} rounded-xl p-2.5 cursor-pointer"><input type="checkbox" data-chg="ex-pick" data-id="${p.id}" ${on1 ? 'checked' : ''} class="w-6 h-6 accent-orange-500 shrink-0">` +
-            `<span class="min-w-0 flex-1 text-xs"><span class="font-black text-white">${EX.kind === 'ks' ? '#' + nums[p.id] : ''}</span> <span class="text-gray-200">${esc(photoHead(p, EX.kind === 'ks' ? 'Ingen beskrivelse' : 'Materiale').slice(0, 80))}</span>` +
+            `<span class="min-w-0 flex-1 text-xs"><span class="font-black text-white">${EX.kind === 'ks' ? '#' + nums[p.id] : EX.kind === 'extra' ? exNo(p) : ''}</span> <span class="text-gray-200">${esc(photoHead(p, EX.kind === 'ks' ? 'Ingen beskrivelse' : 'Materiale').slice(0, 80))}</span>` +
             `<span class="block text-[10px] text-gray-500">${esc(p.category || '')}${p.category ? ' · ' : ''}${dkWhen(p.created_at)}${n > 1 ? ' · ' + n + ' billeder' : n === 1 ? ' · 1 billede' : ' · uden billede'}</span></span></label>`;
     }).join('') : '<p class="text-xs text-gray-500 text-center py-3">Ingen punkter matcher søgningen.</p>';
     exPickCount();
@@ -6021,7 +6341,7 @@ function exSetFmt(f) {
     EX.fmt = f;
     $('ex-fmt-pdf').className = 'rounded-xl p-4 border text-left transition ' + (f === 'pdf' ? 'bg-orange-950/40 border-orange-500 text-orange-300' : 'bg-gray-900 border-gray-700 text-gray-300');
     $('ex-fmt-csv').className = 'rounded-xl p-4 border text-left transition ' + (f === 'csv' ? 'bg-emerald-950/40 border-emerald-500 text-emerald-300' : 'bg-gray-900 border-gray-700 text-gray-300');
-    show('ex-w-photos', EX.kind === 'ks' && f === 'pdf');
+    show('ex-w-photos', (EX.kind === 'ks' || EX.kind === 'extra') && f === 'pdf');
 }
 
 /* ---- billeder til PDF: hent signeret URL, skaler ned, returnér JPEG-bytes ---- */
@@ -6036,8 +6356,8 @@ async function shrinkToJpeg(blob, max, q) {
         return out ? new Uint8Array(await out.arrayBuffer()) : null;
     } finally { URL.revokeObjectURL(url); }
 }
-async function photoBytes(p, max, q, idx) {
-    const path = photoPaths(p)[idx || 0];
+async function photoBytes(p, max, q, idx) { return pathBytes(photoPaths(p)[idx || 0], max, q); }
+async function pathBytes(path, max, q) {
     if (!path) return null;
     try {
         await resolveUrls();
@@ -6062,6 +6382,7 @@ async function buildExport(kind, fmt, opt) {
     opt = opt || {};
     const enc = s => new TextEncoder().encode(s);
     const comp = reportCompany();
+    if (kind === 'extra') return buildExtraReport(fmt, opt);
     if (kind === 'timer') {
         const mon = parseDate($('ex-week').value), wk = fmtDate(mon), sun = fmtDate(addDays(mon, 6)), week = isoWeek(mon).week;
         await ensureRange('time', mon, addDays(mon, 6));
@@ -6278,7 +6599,7 @@ async function exportSend() {
         let r = await buildExport(EX.kind, EX.fmt, opt);
         if (r.empty) return toast(r.empty, 'info');
         const LIMIT = 4.2 * 1024 * 1024;
-        if (r.bytes.length > LIMIT && EX.kind === 'ks' && opt.photos) { setExBusy(true, 'Komprimerer…'); r = await buildExport('ks', 'pdf', { photos: true, max: 640, q: 0.5 }); }
+        if (r.bytes.length > LIMIT && (EX.kind === 'ks' || EX.kind === 'extra') && opt.photos) { setExBusy(true, 'Komprimerer…'); r = await buildExport(EX.kind, 'pdf', { photos: true, max: 480, q: 0.45 }); }
         if (r.bytes.length > LIMIT) {
             toast('Rapporten er for stor til at sende (' + (r.bytes.length / 1048576).toFixed(1) + ' MB). Fjern fotos eller hent filen og send den selv.');
             return;
@@ -6588,6 +6909,16 @@ async function handleAct(act, el) {
         case 'ug-photo': return ugPhoto(d.id);
         case 'ug-open-plan': return ugOpenPlan();
         case 'open-photo': return openPhoto(d.id);
+        case 'ks-extra-filter': S.ksExtraOnly = !S.ksExtraOnly; return scheduleRender();
+        case 'extra-report': return openExport('extra');
+        case 'extra-assign': toggleAssign(S.extraAssign, d.user); return extraFormRender();
+        case 'extra-pt-assign': { const p = S.photos.find(x => x.id === S.editPhotoId), t = extraTaskOf(p); if (!t) return; const set = new Set(taskAssignees(t)); toggleAssign(set, d.user); return extraSetAssignees(set); }
+        case 'extra-make': return extraMake();
+        case 'after-del': return afterDelete(Number(d.i));
+        case 'extra-time': return extraTimeOpen(d.id, d.date);
+        case 'extra-mat': return extraMatOpen(d.id);
+        case 'extra-done': return extraDoneToggle(d.id);
+        case 'goto-tasks': return switchTab('tasks');
         case 'timer-day': return openTimerModalForDate(parseDate(d.date));
         case 'toggle-approval': return approvedFor(d.user, d.week) ? setApprovedThrough(d.user, d.week, null) : setApprovedThrough(d.user, d.week, sundayOf(d.week));
         case 'sick-assign': return sickApply(d.shift, d.to);
@@ -6621,7 +6952,7 @@ async function handleAct(act, el) {
         case 'add-item': { const inp = document.querySelector('[data-sub-input="' + d.id + '"]'); return inp && addItem(d.id, inp); }
         case 'del-item': return delItem(d.id);
         case 'task-assign': { const set = S.taskAssign[d.src]; if (!set) return; toggleAssign(set, d.user); return renderTasks(); }
-        case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', ''); return; }
+        case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', '', extraOfTask(S.tasks.find(x => x.id === S.editTask.id)) ? 'Ikke valgt endnu' : undefined); return; }
         case 'edit-shift': return isManager() ? openShiftModal(d.user, d.date) : undefined;
         case 'copy-shifts': return copyLastWeek();
         case 'toggle-member': return toggleMember(d.project, d.user);
@@ -6676,6 +7007,7 @@ async function handleChg(act, el) {
         case 'staff-lang': return setStaffLang(el.dataset.user, el.value);
         case 'set-eno': return setEmpNo(el.dataset.user, el.value);
         case 'ex-pick': return exPickToggle(el.dataset.id, el.checked);
+        case 'pf-extra': return extraFormRender();
         case 'panel-project': S.panelProject = el.value; el.blur(); setTimeout(renderTeam, 0); return;
     }
 }
