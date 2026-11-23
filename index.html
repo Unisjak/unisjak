@@ -3582,22 +3582,27 @@ function renderEditSafety(p) {
     const canWork = isManager() || p.user_id === me || ids.includes(me) || !ids.length;
     const canLv = !closed && (isManager() || p.user_id === me);
     const after = p.done_paths || [];
-    let h = `<div class="rounded-2xl border border-gray-700 bg-gray-900/60 p-3 space-y-3"><div class="flex items-center justify-between gap-2 flex-wrap"><span class="text-xs font-black text-white"><i class="fa-solid fa-shield-halved mr-1.5 text-sky-400"></i>Sikkerhed</span>${safetyTag(p)}</div>`;
-    if (canLv) h += `<div><span class="lbl">Farve</span>${safeLevelBtns(p.safety_level, 'edit-safe-lv')}</div>`;
-    h += `<div><span class="lbl">Opgave</span>`;
-    if (t) h += `<div class="flex flex-wrap gap-2">${assignChipsHtml(new Set(ids), 'extra-pt-assign', '', 'Ikke valgt endnu')}</div><div class="flex items-center justify-between mt-1"><p class="text-[10px] text-gray-500">Modtagere kan tilføjes eller ændres når som helst.</p><button type="button" data-act="extra-goto" class="text-[11px] text-sky-300 underline shrink-0 ml-2">Gå til opgaven</button></div>`;
-    else h += canWork ? `<button type="button" data-act="safe-mktask" class="w-full bg-sky-950/50 border border-sky-700/60 text-sky-100 py-3 rounded-xl text-xs font-black"><i class="fa-solid fa-list-check mr-1.5"></i>Opret opgave til punktet</button>` : `<p class="text-[11px] text-gray-500">Ingen opgave oprettet.</p>`;
-    h += `</div>`;
-    h += `<div class="space-y-2"><div class="flex items-center justify-between"><span class="lbl !mb-0">Efter-billeder</span><span class="text-xs font-black text-sky-300">${after.length ? after.length + (after.length === 1 ? ' billede' : ' billeder') : 'Ingen endnu'}</span></div><div class="grid grid-cols-4 gap-2">` +
+    const afterHtml = `<div class="grid grid-cols-4 gap-2">` +
         after.map((pt, i) => `<div class="relative aspect-square rounded-xl overflow-hidden border border-gray-800 bg-gray-900">${pathImg(pt, 'w-full h-full object-cover')}` +
             (canWork ? `<button type="button" data-act="after-del" data-i="${i}" class="absolute top-0.5 right-0.5 w-8 h-8 rounded-full bg-stone-900/85 text-red-400 flex items-center justify-center text-xs" aria-label="Slet efter-billede ${i + 1}"><i class="fa-solid fa-xmark"></i></button>` : '') + `</div>`).join('') +
-        (canWork && after.length < MAX_PHOTOS ? addTilesHtml('after') : '') + `</div></div>`;
+        (canWork && after.length < MAX_PHOTOS ? addTilesHtml('after') : '') + `</div>`;
+    let h = `<div class="rounded-2xl border border-gray-700 bg-gray-900/60 p-3 space-y-3"><div class="flex items-center justify-between gap-2 flex-wrap"><span class="text-xs font-black text-white"><i class="fa-solid fa-shield-halved mr-1.5 text-sky-400"></i>Sikkerhed</span>${safetyTag(p)}</div>`;
     if (closed) {
-        h += `<div class="rounded-xl border border-gray-700 bg-gray-950/60 p-3 space-y-1"><p class="text-xs font-black text-gray-200">Lukket ${esc(dkWhen(p.safety_closed_at))}${p.safety_closed_by ? ' af ' + esc(userName(p.safety_closed_by)) : ''}</p>${p.safety_close_note ? `<p class="text-xs text-gray-300 whitespace-pre-line">${esc(p.safety_close_note)}</p>` : '<p class="text-[11px] text-gray-500">Ingen afslutningskommentar.</p>'}</div>` +
+        h += (after.length ? afterHtml : '') +
+            `<div class="rounded-xl border border-gray-700 bg-gray-950/60 p-3 space-y-1"><p class="text-xs font-black text-gray-200">Lukket ${esc(dkWhen(p.safety_closed_at))}${p.safety_closed_by ? ' af ' + esc(userName(p.safety_closed_by)) : ''}</p>${p.safety_close_note ? `<p class="text-xs text-gray-300 whitespace-pre-line">${esc(p.safety_close_note)}</p>` : ''}</div>` +
             (canWork ? `<button type="button" data-act="safe-reopen" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-xs font-black"><i class="fa-solid fa-rotate-left mr-1.5"></i>Åbn igen</button>` : '');
     } else if (canWork) {
-        h += `<div><span class="lbl">Afslutningskommentar</span><textarea id="safe-close-note" maxlength="2000" placeholder="Hvad er gjort? (valgfrit)" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-sm text-white h-20 focus:outline-none focus:border-emerald-500">${esc(p.safety_close_note || '')}</textarea></div>` +
-            `<button type="button" data-act="safe-close" class="w-full bg-emerald-500 text-gray-950 py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-check mr-1.5"></i>Luk punktet</button>`;
+        h += `<div class="space-y-2"><span class="lbl !mb-0">Efter-billeder (valgfrit)</span>${afterHtml}</div>` +
+            `<textarea id="safe-close-note" maxlength="2000" rows="2" placeholder="Kommentar ved afslutning (valgfrit)" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500">${esc(p.safety_close_note || '')}</textarea>` +
+            `<button type="button" data-act="safe-close" class="w-full bg-emerald-500 text-gray-950 py-4 rounded-xl text-base font-black"><i class="fa-solid fa-check mr-1.5"></i>Luk punktet</button>`;
+    } else h += (after.length ? afterHtml : '');
+    if (!closed && (canLv || t || canWork)) {
+        h += `<details class="rounded-xl border border-gray-800"><summary class="px-3 py-2.5 text-xs font-bold text-gray-400 cursor-pointer">Flere valg (farve, opgave, modtager)</summary><div class="p-3 space-y-3">`;
+        if (canLv) h += `<div><span class="lbl">Farve</span>${safeLevelBtns(p.safety_level, 'edit-safe-lv')}</div>`;
+        h += `<div><span class="lbl">Opgave</span>`;
+        if (t) h += `<div class="flex flex-wrap gap-2">${assignChipsHtml(new Set(ids), 'extra-pt-assign', '', 'Ikke valgt endnu')}</div><button type="button" data-act="extra-goto" class="text-[11px] text-sky-300 underline mt-1">Gå til opgaven</button>`;
+        else h += canWork ? `<button type="button" data-act="safe-mktask" class="w-full bg-sky-950/50 border border-sky-700/60 text-sky-100 py-3 rounded-xl text-xs font-black"><i class="fa-solid fa-list-check mr-1.5"></i>Opret opgave til punktet</button>` : `<p class="text-[11px] text-gray-500">Ingen opgave oprettet.</p>`;
+        h += `</div></div></details>`;
     }
     box.innerHTML = h + `</div>`;
 }
@@ -3614,6 +3619,12 @@ async function safeCreateTask() {
     if (res.error) return fail(res.error);
     mergeRow(S.photos, res.data); await pullExtraTask(res.data); renderEditSafety(res.data); renderAll();
     toast('Opgaven er oprettet – du kan vælge modtager her eller under Opgaver.', 'ok');
+}
+async function safeQuickClose(id) {
+    const res = await sb.rpc('safety_close', { p_id: id, p_close: true, p_note: null });
+    if (res.error) return fail(res.error);
+    mergeRow(S.photos, res.data); await pullExtraTask(res.data); renderAll(); renderTasks();
+    toast(sfNo(res.data) + ' er lukket.', 'ok');
 }
 async function safeClose(close) {
     const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
@@ -3734,7 +3745,8 @@ function taskPlanChipHtml(t) {
 }
 function taskPointHtml(t) {
     const sp = safetyOfTask(t);
-    if (sp) return `<div class="pl-9 space-y-2"><div class="flex items-center gap-2.5 min-w-0">${photoPaths(sp).length ? photoImg(sp, 'w-14 h-14 object-cover rounded-lg shrink-0') : ''}<div class="min-w-0 text-[11px] text-gray-400"><span class="block truncate">Fra ${esc(firstName(userName(sp.user_id)))} · ${esc(dkWhen(sp.created_at))}</span><span class="block">${photoPaths(sp).length} før · ${(sp.done_paths || []).length} efter</span></div></div><div class="flex flex-wrap gap-2"><button type="button" data-act="open-photo" data-id="${sp.id}" class="bg-sky-950/50 border border-sky-700/60 text-sky-100 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-images mr-1.5"></i>Åbn punkt, billeder & luk</button>` +
+    if (sp) return `<div class="pl-9 space-y-2"><div class="flex items-center gap-2.5 min-w-0">${photoPaths(sp).length ? photoImg(sp, 'w-14 h-14 object-cover rounded-lg shrink-0') : ''}<div class="min-w-0 text-[11px] text-gray-400"><span class="block truncate">Fra ${esc(firstName(userName(sp.user_id)))} · ${esc(dkWhen(sp.created_at))}</span><span class="block">${photoPaths(sp).length} før · ${(sp.done_paths || []).length} efter</span></div></div><div class="flex flex-wrap gap-2"><button type="button" data-act="open-photo" data-id="${sp.id}" class="bg-sky-950/50 border border-sky-700/60 text-sky-100 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-images mr-1.5"></i>Åbn punkt</button>` +
+        (!sp.safety_closed_at ? `<button type="button" data-act="safe-quick-close" data-id="${sp.id}" class="bg-emerald-500 text-gray-950 px-4 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-check mr-1.5"></i>Luk</button>` : '') +
         (isUnassignedExtra(t) ? `<button type="button" data-act="edit-task" data-id="${t.id}" class="bg-amber-950/50 border border-amber-700/60 text-amber-200 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-user-plus mr-1.5"></i>Vælg modtager</button>` : '') + `</div></div>`;
     const p = extraOfTask(t); if (!p) return '';
     const after = (p.done_paths || []).length;
@@ -7138,6 +7150,7 @@ async function handleAct(act, el) {
         case 'edit-safe-lv': return safeSetLevel(d.lv);
         case 'safe-mktask': return safeCreateTask();
         case 'safe-close': return safeClose(true);
+        case 'safe-quick-close': return safeQuickClose(d.id);
         case 'safe-reopen': return safeClose(false);
         case 'extra-goto': return extraGotoTask();
         case 'extra-report': return openExport('extra');
