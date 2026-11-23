@@ -671,6 +671,7 @@
                 <div><label class="lbl">Bemærkninger</label><textarea id="photo-note-text" maxlength="2000" placeholder="Skriv eller indtal…" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-sm text-white h-20 focus:outline-none focus:border-orange-500"></textarea></div>
             </div>
             <p id="pf-ref-note" class="hidden text-[11px] text-violet-200 bg-violet-950/30 border border-violet-800/50 rounded-xl p-2.5"></p>
+            <div id="pf-w-safety" class="hidden space-y-2"><div id="pf-safe-body" class="space-y-2"></div></div>
             <div id="pf-w-extra" class="hidden space-y-2">
                 <label class="flex items-center justify-between gap-3 bg-violet-950/30 border border-violet-800/50 rounded-xl p-3 cursor-pointer"><span class="min-w-0"><span class="font-black text-sm text-white block"><i class="fa-solid fa-plus-circle text-violet-400 mr-1.5"></i>Ekstraarbejde</span><span class="text-[11px] text-gray-400">Opretter automatisk en opgave til udførelse og dokumentation</span></span><input type="checkbox" id="pf-extra" data-chg="pf-extra" class="w-8 h-8 accent-violet-500 shrink-0"></label>
                 <div id="pf-extra-box" class="hidden space-y-2"><span class="lbl">Hvem skal udføre det?</span><div id="pf-extra-assignees" class="flex flex-wrap gap-2"></div><p class="text-[11px] text-violet-300">Du kan vælge modtager senere – opgaven oprettes uanset. Skriv en kort beskrivelse ovenfor.</p></div>
@@ -690,6 +691,7 @@
             <p class="text-[11px] text-gray-500" id="edit-photo-time">Tidspunkt</p>
             <div id="edit-gps"></div>
             <div id="edit-extra" class="hidden space-y-3"></div>
+            <div id="edit-safety" class="hidden space-y-3"></div>
             <div id="edit-voice-wrap">
             <div data-voicebox="photo-edit"></div>
             </div>
@@ -867,6 +869,8 @@
                 </div>
             </div>
             <label id="ex-w-extra" class="hidden flex items-center space-x-3 bg-violet-950/30 border border-violet-800/50 rounded-xl p-3"><input type="checkbox" id="ex-extra" class="w-6 h-6 accent-violet-500"><span class="text-sm font-bold text-violet-200">Kun ekstraarbejde<span class="block text-[11px] font-normal text-violet-300/80">Rapporten viser kun registreringer markeret som ekstra</span></span></label>
+            <div id="ex-w-range" class="hidden grid grid-cols-2 gap-2"><div><label class="lbl">Fra dato</label><input type="date" id="ex-from" onchange="exSafetyReset()" class="inp"></div><div><label class="lbl">Til dato</label><input type="date" id="ex-to" onchange="exSafetyReset()" class="inp"></div></div>
+            <label id="ex-w-open" class="hidden flex items-center space-x-3 bg-gray-900 border border-gray-800 rounded-xl p-3"><input type="checkbox" id="ex-open" class="w-6 h-6 accent-amber-500"><span class="text-sm font-bold text-white">Kun åbne punkter</span></label>
             <label id="ex-w-done" class="hidden flex items-center space-x-3 bg-gray-900 border border-gray-800 rounded-xl p-3"><input type="checkbox" id="ex-done" class="w-6 h-6 accent-emerald-500"><span class="text-sm font-bold text-white">Kun udførte ekstraarbejder</span></label>
             <div id="ex-w-pick" class="hidden space-y-2">
                 <div class="flex items-center justify-between"><label class="lbl !mb-0">Vælg punkter til eksport</label><span id="ex-pick-count" class="text-xs font-black text-orange-300"></span></div>
@@ -1361,6 +1365,7 @@ async function loadCore() {
     await loadPay();
     await loadPhotoCols();
     await loadExtraCols();
+    await loadSafetyCols();
 }
 
 function keyOf(row) {
@@ -1794,22 +1799,23 @@ function photoThumb(p, cls, icon, tone) {
     return photoPaths(p).length ? photoImg(p, cls) : `<div class="${cls} bg-gray-800 flex items-center justify-center text-${tone}-400"><i class="fa-solid ${icon} text-xl"></i></div>`;
 }
 function renderPhotos() {
-    if ($('modal-edit-ks') && !$('modal-edit-ks').classList.contains('hidden')) { renderEditGallery(); renderEditExtra(S.photos.find(x => x.id === S.editPhotoId)); }
+    if ($('modal-edit-ks') && !$('modal-edit-ks').classList.contains('hidden')) { renderEditGallery(); const ep0 = S.photos.find(x => x.id === S.editPhotoId); renderEditExtra(ep0); renderEditSafety(ep0); }
     const nums = numbering();
     const ksAll = photosOf('ks'), mat = photosOf('materiale');
-    const ks = S.ksExtraOnly ? ksAll.filter(p => p.is_extra) : ksAll;
+    const sf = S.safeFilter;
+    const ks = S.ksExtraOnly ? ksAll.filter(p => p.is_extra) : sf ? ksAll.filter(p => p.safety_level && (sf === 'open' ? !isClosed(p) : p.safety_level === sf)) : ksAll;
     const barH = ksBarHtml();
     ['ks-extra-bar', 'pc-ks-extra-bar'].forEach(id => { const el = $(id); if (el) { el.innerHTML = barH; el.classList.toggle('hidden', !barH); } });
 
     $('ks-list').innerHTML = ks.length ? ks.map(p =>
         `<div data-act="open-photo" data-id="${p.id}" class="bg-card border border-card rounded-xl p-3 flex space-x-3 items-center cursor-pointer hover:border-orange-500/50 transition">${photoThumb(p, 'w-16 h-16 object-cover rounded-lg shrink-0', 'fa-clipboard-check', 'orange')}` +
-        `<div class="flex-1 min-w-0 text-xs"><span class="bg-orange-950 text-orange-400 px-1.5 py-0.5 rounded text-[9px] font-bold">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span> ${extraTag(p)}` +
+        `<div class="flex-1 min-w-0 text-xs"><span class="bg-orange-950 text-orange-400 px-1.5 py-0.5 rounded text-[9px] font-bold">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span> ${extraTag(p)}${safetyTag(p)}` +
         `<h4 class="font-bold text-white mt-1 text-sm line-clamp-2">${esc(photoHead(p, 'Ingen beskrivelse'))}</h4>${photoMeta(p, 'orange')}<span class="text-[10px] text-gray-500">${whenLabel(p.created_at)}</span>${gpsBlock(p)}</div></div>`
     ).join('') : '<p class="text-xs text-gray-500 py-4 text-center">' + (S.ksExtraOnly ? 'Intet ekstraarbejde endnu.' : 'Ingen KS-punkter endnu.') + '</p>';
 
     $('pc-ks-grid').innerHTML = ks.length ? ks.map(p =>
         `<div data-act="open-photo" data-id="${p.id}" class="bg-card border border-card rounded-2xl overflow-hidden cursor-pointer hover:border-orange-500/60 transition flex flex-col"><div class="h-44 bg-gray-900 relative">${photoThumb(p, 'w-full h-full object-cover', 'fa-clipboard-check', 'orange')}` +
-        `<span class="absolute top-2 left-2 bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span>${p.is_extra ? '<span class="absolute bottom-2 left-2">' + extraTag(p) + '</span>' : ''}</div>` +
+        `<span class="absolute top-2 left-2 bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span>${(p.is_extra || p.safety_level) ? '<span class="absolute bottom-2 left-2">' + extraTag(p) + safetyTag(p) + '</span>' : ''}</div>` +
         `<div class="p-3.5 space-y-1"><p class="text-xs font-bold text-white line-clamp-2">${esc(photoHead(p, 'Ingen beskrivelse'))}</p>${photoMeta(p, 'orange')}<span class="text-[10px] text-gray-500">${whenLabel(p.created_at)}</span>${gpsBlock(p)}</div></div>`
     ).join('') : '<p class="col-span-3 text-xs text-gray-500 py-8 text-center">Ingen KS-punkter endnu.</p>';
 
@@ -3051,7 +3057,7 @@ function openPhotoModal(kind) {
         ['pf-title', 'pf-qty', 'pf-loc', 'photo-note-text'].forEach(id => { $(id).value = ''; });
         $('pf-cat').value = '';
         setPhotoMode('pf', kind);
-        extraFormReset(kind);
+        extraFormReset(kind); safeFormReset();
         renderVoiceBoxes();
         renderGpsStatus();
         show('modal-photo-note', true);
@@ -3071,7 +3077,9 @@ async function savePhotoEntry(btn) {
     if (!S.currentProject) return;
     const base = photoPayload('pf', activeKind, 'photo-note-text');
     if (!tempShots.length && !base.title && !base.note && !base.quantity) return toast('Indtal eller skriv noget først – eller tilføj et billede.');
-    const wantExtra = activeKind === 'ks' && S.extraReady && isManager() && $('pf-extra').checked;
+    const wantSafety = activeKind === 'ks' && S.safetyReady && base.category === 'Sikkerhed';
+    if (wantSafety && !S.safeLv) return toast('Vælg Grøn, Gul eller Rød for Sikkerhed.');
+    const wantExtra = !wantSafety && activeKind === 'ks' && S.extraReady && isManager() && $('pf-extra').checked;
     if (wantExtra && !base.note) return toast('Skriv eller indtal en kort beskrivelse af ekstraarbejdet.', 'info');
     if (S.gpsState === 'denied' || S.gpsState === 'fail') toast('Gemmer uden GPS-position.', 'info');
     btn.disabled = true;
@@ -3093,6 +3101,7 @@ async function savePhotoEntry(btn) {
             gps_accuracy: gps ? Math.round(gps.accuracy * 10) / 10 : null, gps_at: gps ? new Date(gps.ts).toISOString() : null
         }, base);
         if (S.multiPhoto) row.image_paths = paths;
+        if (wantSafety) { row.safety_level = S.safeLv; if (S.safeTask) { row.safety_make_task = true; row.safety_assignees = [...S.safeAssign]; } }
         if (wantExtra) { row.is_extra = true; row.extra_assignees = [...S.extraAssign]; }
         if (activeKind === 'materiale' && S.matRef && S.extraReady) row.extra_ref = S.matRef;
         if (U.ready && U.photoZone && activeKind === 'ks') row.zone_id = U.photoZone;
@@ -3103,6 +3112,7 @@ async function savePhotoEntry(btn) {
         clearShots();
         closeModal('modal-photo-note');
         if (data.is_extra) { await pullExtraTask(data); toast('Ekstraarbejde ' + exNo(data) + ' er oprettet – opgaven ligger under Opgaver' + (S.extraAssign.size ? '.' : ' (modtager kan vælges senere).'), 'ok'); }
+        if (data.safety_level) { if (data.task_id) await pullExtraTask(data); toast(sfNo(data) + ' (' + SAFE[data.safety_level].n + ') er gemt' + (data.task_id ? ' – opgaven ligger under Opgaver.' : '.'), 'ok'); }
         const keepRef = S.matRef; S.matRef = null;
         fillAddress(data);
         resolveUrls();
@@ -3169,7 +3179,7 @@ function openPhoto(id) {
     const canEdit = isManager() || p.user_id === myId();
     $('edit-modal-title').textContent = (p.kind === 'ks' ? 'KS' : 'Materiale') + ' – ' + userName(p.user_id);
     renderEditGallery();
-    renderEditExtra(p);
+    S.editSafeLv = ''; renderEditExtra(p); renderEditSafety(p);
     if (p.is_extra) loadExtraTime(p.id);
     $('edit-photo-time').textContent = whenLabel(p.created_at);
     $('edit-gps').innerHTML = gpsBlock(p, true);
@@ -3205,9 +3215,15 @@ async function deleteCurrentPhoto(btn) {
 async function saveEditedPhoto(btn) {
     const p = S.photos.find(x => x.id === S.editPhotoId);
     if (!p) return;
+    const cat0 = p.kind === 'ks' ? ($('ef-cat').value || null) : null;
+    if (p.kind === 'ks' && S.safetyReady) {
+        if (p.safety_level && cat0 !== 'Sikkerhed') return toast('Et punkt med sikkerhedsfarve skal blive i kategorien Sikkerhed.');
+        if (!p.safety_level && cat0 === 'Sikkerhed' && p.category !== 'Sikkerhed' && !S.editSafeLv) return toast('Vælg Grøn, Gul eller Rød for Sikkerhed.');
+    }
     btn.disabled = true;
     try {
         const payload = photoPayload('ef', p.kind, 'edit-note-text');
+        if (p.kind === 'ks' && S.safetyReady && !p.safety_level && cat0 === 'Sikkerhed' && S.editSafeLv) payload.safety_level = S.editSafeLv;
         const { data, error } = await photoWrite(payload, pl => sb.from('photo_entries').update(pl).eq('id', p.id).select().single());
         if (error) throw error;
         mergeRow(S.photos, data);
@@ -3232,31 +3248,42 @@ function extraStatus(p) {
     if (t.done) return 'done';
     return taskAssignees(t).length ? 'open' : 'unassigned';
 }
-const isUnassignedExtra = t => !!t && !t.done && !!extraOfTask(t) && !taskAssignees(t).length;
+const isUnassignedExtra = t => !!t && !t.done && !!pointOfTask(t) && !taskAssignees(t).length;
 function extraChip(p) {
     const m = { done: ['Udført', 'bg-emerald-950 text-emerald-300 border-emerald-700/60'], open: ['Åben', 'bg-violet-950 text-violet-300 border-violet-700/60'], unassigned: ['Mangler modtager', 'bg-amber-950 text-amber-300 border-amber-700/60'], notask: ['Uden opgave', 'bg-gray-800 text-gray-300 border-gray-700'] }[extraStatus(p)];
     return `<span class="border px-1.5 py-0.5 rounded text-[9px] font-black ${m[1]}">${m[0]}</span>`;
 }
 const extraTag = p => p && p.is_extra ? `<span class="inline-flex items-center gap-1 flex-wrap"><span class="bg-violet-600 text-white px-1.5 py-0.5 rounded text-[9px] font-black">EKSTRA ${exNo(p)}</span>${extraChip(p)}</span>` : '';
-const extraTagBlock = t => { const p = extraOfTask(t); return p ? `<span class="block mb-1">${extraTag(p)}</span>` : ''; };
+const extraTagBlock = t => { const p = extraOfTask(t); if (p) return `<span class="block mb-1">${extraTag(p)}</span>`; const sp = safetyOfTask(t); return sp ? `<span class="block mb-1">${safetyTag(sp)}</span>` : ''; };
 const pathImg = (path, cls) => { const u = path ? S.urls[path] : null; return u ? `<img src="${esc(u.url)}" loading="lazy" alt="" class="${cls}">` : `<div class="${cls} bg-gray-800 animate-pulse"></div>`; };
 
+function safetyBarHtml() {
+    const sp = safetyPoints();
+    if (!S.safetyReady || !sp.length) return '';
+    const chip = (f, label, n, cls) => `<button type="button" data-act="safe-filter" data-f="${f}" class="chip ${S.safeFilter === f ? 'chip-on' : ''}" aria-pressed="${S.safeFilter === f}">${cls ? `<span class="inline-block w-2.5 h-2.5 rounded-full mr-1.5 ${cls}"></span>` : ''}${label} (${n})</button>`;
+    return `<div class="flex flex-wrap items-center gap-2">` + chip('roed', 'Rød', sp.filter(p => p.safety_level === 'roed').length, 'bg-red-500') + chip('gul', 'Gul', sp.filter(p => p.safety_level === 'gul').length, 'bg-amber-400') + chip('groen', 'Grøn', sp.filter(p => p.safety_level === 'groen').length, 'bg-emerald-500') +
+        chip('open', 'Åbne', sp.filter(p => !isClosed(p)).length, '') + `<button type="button" data-act="safe-report" class="chip ml-auto"><i class="fa-solid fa-file-export mr-1"></i>Sikkerhedsrapport</button></div>`;
+}
 function ksBarHtml() {
-    const pts = extraPoints();
-    if (!S.extraReady || (!pts.length && !isManager())) return '';
+    const pts = extraPoints(), sb2 = safetyBarHtml();
+    if (!S.extraReady || (!pts.length && !isManager())) return sb2;
+    if (sb2) return ksBarExtra(pts) + '<div class="h-2"></div>' + sb2;
+    return ksBarExtra(pts);
+}
+function ksBarExtra(pts) {
     const open = pts.filter(p => extraStatus(p) !== 'done').length;
     return `<div class="flex flex-wrap items-center gap-2"><button type="button" data-act="ks-extra-filter" class="chip ${S.ksExtraOnly ? 'chip-on' : ''}" aria-pressed="${S.ksExtraOnly}"><i class="fa-solid fa-plus-circle mr-1"></i>Ekstraarbejde (${pts.length})</button>` +
         (pts.length ? `<span class="text-[11px] ${open ? 'text-violet-300 font-bold' : 'text-gray-500'}">${open} ${open === 1 ? 'åbent' : 'åbne'}</span>` : '') +
         (isManager() && pts.length ? `<button type="button" data-act="extra-report" class="chip ml-auto"><i class="fa-solid fa-file-export mr-1"></i>Ekstra-rapport</button>` : '') + `</div>`;
 }
 function updateExtraBadge() {
-    const me = myId(), mine = S.extraReady ? S.tasks.filter(t => !t.done && extraOfTask(t) && (taskAssignees(t).includes(me) || (isManager() && !taskAssignees(t).length))) : [];
+    const me = myId(), mine = S.extraReady ? S.tasks.filter(t => !t.done && pointOfTask(t) && (taskAssignees(t).includes(me) || (isManager() && !taskAssignees(t).length))) : [];
     const b = $('nav-tasks-badge'); if (b) { b.textContent = mine.length; b.classList.toggle('hidden', !mine.length); }
     const h = $('m-extra-home'); if (!h) return;
     if (!mine.length) { h.classList.add('hidden'); h.innerHTML = ''; return; }
     h.classList.remove('hidden');
-    h.innerHTML = `<button type="button" data-act="goto-tasks" class="w-full text-left"><div class="flex items-center justify-between"><span class="text-xs font-black text-violet-200"><i class="fa-solid fa-plus-circle mr-1.5 text-violet-400"></i>Ekstraarbejde der venter (${mine.length})</span><i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i></div>` +
-        mine.slice(0, 2).map(t => { const p = extraOfTask(t); return `<p class="text-[11px] mt-1 ${taskAssignees(t).length ? 'text-gray-300' : 'text-amber-300'} truncate">${esc(exNo(p))} · ${esc(photoHead(p, t.text))}${taskAssignees(t).length ? '' : ' – mangler modtager'}</p>`; }).join('') + `</button>`;
+    h.innerHTML = `<button type="button" data-act="goto-tasks" class="w-full text-left"><div class="flex items-center justify-between"><span class="text-xs font-black text-violet-200"><i class="fa-solid fa-plus-circle mr-1.5 text-violet-400"></i>Opfølgning der venter (${mine.length})</span><i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i></div>` +
+        mine.slice(0, 2).map(t => { const p = pointOfTask(t); return `<p class="text-[11px] mt-1 ${taskAssignees(t).length ? 'text-gray-300' : 'text-amber-300'} truncate">${esc(pointNo(p))} · ${esc(photoHead(p, t.text))}${taskAssignees(t).length ? '' : ' – mangler modtager'}</p>`; }).join('') + `</button>`;
 }
 
 /* ---- oprettelse (formand/admin) i "Nyt KS-punkt" ---- */
@@ -3304,7 +3331,7 @@ function renderEditExtra(p) {
     const box = $('edit-extra'); if (!box) return;
     if (!p || p.kind !== 'ks' || !S.extraReady) { show('edit-extra', false); return; }
     if (!p.is_extra) {
-        const can = isManager();
+        const can = isManager() && !p.safety_level && p.category !== 'Sikkerhed' && (($('ef-cat') ? $('ef-cat').value : p.category) !== 'Sikkerhed');
         show('edit-extra', can);
         box.innerHTML = can ? `<button type="button" data-act="extra-make" class="w-full bg-violet-950/40 border border-violet-700/60 text-violet-200 py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-plus-circle mr-1.5"></i>Gør til ekstraarbejde</button><p class="text-[11px] text-gray-500">Opretter en opgave til punktet. Beskrivelsen skal være udfyldt.</p>` : '';
         return;
@@ -3342,7 +3369,7 @@ async function extraSetAssignees(set) {
     const ids = [...set];
     const res = await sb.from('tasks').update({ assignees: ids, assigned_to: ids[0] || null }).eq('id', t.id).select().single();
     if (res.error) return fail(res.error);
-    mergeRow(S.tasks, res.data); renderEditExtra(p); renderTasks(); renderKpis(); scheduleRender();
+    mergeRow(S.tasks, res.data); renderEditExtra(p); renderEditSafety(p); renderTasks(); renderKpis(); scheduleRender();
 }
 async function extraMake() {
     const p = S.photos.find(x => x.id === S.editPhotoId); if (!p || p.is_extra) return;
@@ -3359,7 +3386,7 @@ async function afterSave(p, paths) {
     const res = await sb.rpc('extra_set_after', { p_id: p.id, p_paths: paths });
     if (res.error) throw res.error;
     mergeRow(S.photos, res.data);
-    await resolveUrls(); renderEditExtra(res.data); renderAll();
+    await resolveUrls(); renderEditExtra(res.data); renderEditSafety(res.data); renderAll();
 }
 async function afterAddFiles(files) {
     const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
@@ -3486,6 +3513,191 @@ async function buildExtraReport(fmt, opt) {
     return { bytes: doc.build(), mime: 'application/pdf', filename: 'UniSjak_Ekstraarbejde_' + safeName(pr.case_number || pr.name) + '.pdf', subject };
 }
 
+/* ------------------------------ SIKKERHED (farve + valgfri opgave + luk) ------------------------------ */
+S.safetyReady = false; S.safeLv = ''; S.safeTask = false; S.safeAssign = new Set(); S.safeFilter = ''; S.editSafeLv = '';
+async function loadSafetyCols() {
+    try { const r = await sb.from('photo_entries').select('safety_level,safety_no,safety_closed_at').limit(1); S.safetyReady = !r.error; } catch (e) { S.safetyReady = false; }
+}
+const SAFE = {
+    groen: { n: 'Grøn', cls: 'bg-emerald-600 text-white', rgb: [22, 163, 74] },
+    gul: { n: 'Gul', cls: 'bg-amber-500 text-gray-950', rgb: [202, 138, 4] },
+    roed: { n: 'Rød', cls: 'bg-red-600 text-white', rgb: [220, 38, 38] }
+};
+const SAFE_ORDER = ['roed', 'gul', 'groen'];
+const sfNo = p => 'SIK-' + String(p && p.safety_no || 0).padStart(3, '0');
+const safetyPoints = () => S.photos.filter(p => p.project_id === S.currentProject && p.kind === 'ks' && p.safety_level);
+const safetyOfTask = t => t ? (S.photos.find(p => p.safety_level && p.task_id === t.id) || null) : null;
+const pointOfTask = t => extraOfTask(t) || safetyOfTask(t);
+const pointNo = p => p.is_extra ? exNo(p) : sfNo(p);
+const isClosed = p => !!p.safety_closed_at;
+function ageDays(p) { const end = p.safety_closed_at ? new Date(p.safety_closed_at) : new Date(); return Math.max(0, Math.floor((end - new Date(p.created_at)) / 86400000)); }
+function ageTxt(p) {
+    const d = ageDays(p), n = d === 0 ? 'samme dag' : d + (d === 1 ? ' dag' : ' dage');
+    return p.safety_closed_at ? 'Lukket efter ' + n : (d === 0 ? 'Åbent i dag' : 'Åbent i ' + n);
+}
+function safetyTag(p) {
+    if (!p || p.kind !== 'ks') return '';
+    if (!p.safety_level) return (p.category === 'Sikkerhed' && S.safetyReady) ? '<span class="border border-gray-700 bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded text-[9px] font-black">Sikkerhed · uden farve</span>' : '';
+    const c = SAFE[p.safety_level];
+    return `<span class="inline-flex items-center gap-1 flex-wrap"><span class="${c.cls} px-1.5 py-0.5 rounded text-[9px] font-black">${sfNo(p)} · ${c.n.toUpperCase()}</span><span class="border px-1.5 py-0.5 rounded text-[9px] font-black ${isClosed(p) ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-amber-950 text-amber-300 border-amber-700/60'}">${esc(ageTxt(p))}</span></span>`;
+}
+async function refreshPhotoRow(id) {
+    const r = await sb.from('photo_entries').select('*').eq('id', id);
+    if (r.data && r.data[0]) { mergeRow(S.photos, r.data[0]); await pullExtraTask(r.data[0]); renderAll(); }
+}
+
+/* ---- oprettelse: farvevælger + valgfri opgave (alle medarbejdere) ---- */
+const extraCan = () => activeKind === 'ks' && S.extraReady && isManager() && !S.matRef;
+function safeFormRender() {
+    const on = S.safetyReady && activeKind === 'ks' && $('pf-cat').value === 'Sikkerhed';
+    show('pf-w-safety', on);
+    if (on && $('pf-extra').checked) { $('pf-extra').checked = false; extraFormRender(); }
+    show('pf-w-extra', extraCan() && !on);
+    if (!on) return;
+    $('pf-safe-body').innerHTML = `<span class="lbl">Farve <span class="text-red-400">(påkrævet)</span></span><div class="grid grid-cols-3 gap-2">` +
+        SAFE_ORDER.slice().reverse().map(lv => `<button type="button" data-act="safe-lv" data-lv="${lv}" aria-pressed="${S.safeLv === lv}" class="py-4 rounded-xl text-sm font-black border-2 transition active:scale-95 ${S.safeLv === lv ? SAFE[lv].cls + ' border-white' : 'bg-gray-900 border-gray-700 text-gray-200'}">${SAFE[lv].n}</button>`).join('') + `</div>` +
+        `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl p-3 cursor-pointer"><span class="min-w-0"><span class="font-black text-sm text-white block"><i class="fa-solid fa-list-check text-sky-400 mr-1.5"></i>Opret opgave</span><span class="text-[11px] text-gray-400">Valgfrit – til opfølgning og udbedring</span></span><input type="checkbox" data-chg="pf-safe-task" ${S.safeTask ? 'checked' : ''} class="w-8 h-8 accent-sky-500 shrink-0"></label>` +
+        (S.safeTask ? `<div class="space-y-2"><span class="lbl">Hvem skal løse den?</span><div class="flex flex-wrap gap-2">${assignChipsHtml(S.safeAssign, 'safe-assign', '', 'Vælges senere')}</div></div>` : '');
+}
+function safeFormReset() { S.safeLv = ''; S.safeTask = false; S.safeAssign = new Set(); safeFormRender(); }
+
+/* ---- panel i punktet: farve, opgave, efter-billeder, luk ---- */
+function editSafeRender() { renderEditSafety(S.photos.find(x => x.id === S.editPhotoId)); }
+function safeLevelBtns(cur, act) {
+    return `<div class="grid grid-cols-3 gap-2">` + SAFE_ORDER.slice().reverse().map(lv => `<button type="button" data-act="${act}" data-lv="${lv}" aria-pressed="${cur === lv}" class="py-3 rounded-xl text-xs font-black border-2 ${cur === lv ? SAFE[lv].cls + ' border-white' : 'bg-gray-900 border-gray-700 text-gray-200'}">${SAFE[lv].n}</button>`).join('') + `</div>`;
+}
+function renderEditSafety(p) {
+    const box = $('edit-safety'); if (!box) return;
+    if (!p || p.kind !== 'ks' || !S.safetyReady) { show('edit-safety', false); return; }
+    const catNow = $('ef-cat') ? $('ef-cat').value : p.category;
+    if (!p.safety_level) {
+        const pend = catNow === 'Sikkerhed' && !p.is_extra;
+        show('edit-safety', pend);
+        const canEdit = isManager() || p.user_id === myId();
+        box.innerHTML = pend && canEdit ? `<div class="rounded-2xl border border-gray-700 bg-gray-900/60 p-3 space-y-2"><span class="lbl">Sikkerhedsfarve${p.category === 'Sikkerhed' ? ' (ældre punkt uden farve)' : ' <span class="text-red-400">(påkrævet)</span>'}</span>${safeLevelBtns(S.editSafeLv, 'edit-safe-lv')}<p class="text-[11px] text-gray-500">Farven gemmes, når du trykker "Gem ændringer".</p></div>` : '';
+        return;
+    }
+    show('edit-safety', true);
+    const t = extraTaskOf(p), ids = t ? taskAssignees(t) : [], me = myId(), closed = isClosed(p);
+    const canWork = isManager() || p.user_id === me || ids.includes(me) || !ids.length;
+    const canLv = !closed && (isManager() || p.user_id === me);
+    const after = p.done_paths || [];
+    let h = `<div class="rounded-2xl border border-gray-700 bg-gray-900/60 p-3 space-y-3"><div class="flex items-center justify-between gap-2 flex-wrap"><span class="text-xs font-black text-white"><i class="fa-solid fa-shield-halved mr-1.5 text-sky-400"></i>Sikkerhed</span>${safetyTag(p)}</div>`;
+    if (canLv) h += `<div><span class="lbl">Farve</span>${safeLevelBtns(p.safety_level, 'edit-safe-lv')}</div>`;
+    h += `<div><span class="lbl">Opgave</span>`;
+    if (t) h += `<div class="flex flex-wrap gap-2">${assignChipsHtml(new Set(ids), 'extra-pt-assign', '', 'Ikke valgt endnu')}</div><div class="flex items-center justify-between mt-1"><p class="text-[10px] text-gray-500">Modtagere kan tilføjes eller ændres når som helst.</p><button type="button" data-act="extra-goto" class="text-[11px] text-sky-300 underline shrink-0 ml-2">Gå til opgaven</button></div>`;
+    else h += canWork ? `<button type="button" data-act="safe-mktask" class="w-full bg-sky-950/50 border border-sky-700/60 text-sky-100 py-3 rounded-xl text-xs font-black"><i class="fa-solid fa-list-check mr-1.5"></i>Opret opgave til punktet</button>` : `<p class="text-[11px] text-gray-500">Ingen opgave oprettet.</p>`;
+    h += `</div>`;
+    h += `<div class="space-y-2"><div class="flex items-center justify-between"><span class="lbl !mb-0">Efter-billeder</span><span class="text-xs font-black text-sky-300">${after.length ? after.length + (after.length === 1 ? ' billede' : ' billeder') : 'Ingen endnu'}</span></div><div class="grid grid-cols-4 gap-2">` +
+        after.map((pt, i) => `<div class="relative aspect-square rounded-xl overflow-hidden border border-gray-800 bg-gray-900">${pathImg(pt, 'w-full h-full object-cover')}` +
+            (canWork ? `<button type="button" data-act="after-del" data-i="${i}" class="absolute top-0.5 right-0.5 w-8 h-8 rounded-full bg-stone-900/85 text-red-400 flex items-center justify-center text-xs" aria-label="Slet efter-billede ${i + 1}"><i class="fa-solid fa-xmark"></i></button>` : '') + `</div>`).join('') +
+        (canWork && after.length < MAX_PHOTOS ? addTilesHtml('after') : '') + `</div></div>`;
+    if (closed) {
+        h += `<div class="rounded-xl border border-gray-700 bg-gray-950/60 p-3 space-y-1"><p class="text-xs font-black text-gray-200">Lukket ${esc(dkWhen(p.safety_closed_at))}${p.safety_closed_by ? ' af ' + esc(userName(p.safety_closed_by)) : ''}</p>${p.safety_close_note ? `<p class="text-xs text-gray-300 whitespace-pre-line">${esc(p.safety_close_note)}</p>` : '<p class="text-[11px] text-gray-500">Ingen afslutningskommentar.</p>'}</div>` +
+            (canWork ? `<button type="button" data-act="safe-reopen" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-xs font-black"><i class="fa-solid fa-rotate-left mr-1.5"></i>Åbn igen</button>` : '');
+    } else if (canWork) {
+        h += `<div><span class="lbl">Afslutningskommentar</span><textarea id="safe-close-note" maxlength="2000" placeholder="Hvad er gjort? (valgfrit)" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-sm text-white h-20 focus:outline-none focus:border-emerald-500">${esc(p.safety_close_note || '')}</textarea></div>` +
+            `<button type="button" data-act="safe-close" class="w-full bg-emerald-500 text-gray-950 py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-check mr-1.5"></i>Luk punktet</button>`;
+    }
+    box.innerHTML = h + `</div>`;
+}
+async function safeSetLevel(lv) {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
+    if (!p.safety_level) { S.editSafeLv = lv; return renderEditSafety(p); }
+    const res = await sb.from('photo_entries').update({ safety_level: lv }).eq('id', p.id).select().single();
+    if (res.error) return fail(res.error);
+    mergeRow(S.photos, res.data); await pullExtraTask(res.data); renderEditSafety(res.data); renderAll();
+}
+async function safeCreateTask() {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
+    const res = await sb.rpc('safety_create_task', { p_id: p.id });
+    if (res.error) return fail(res.error);
+    mergeRow(S.photos, res.data); await pullExtraTask(res.data); renderEditSafety(res.data); renderAll();
+    toast('Opgaven er oprettet – du kan vælge modtager her eller under Opgaver.', 'ok');
+}
+async function safeClose(close) {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
+    const note = close && $('safe-close-note') ? $('safe-close-note').value : null;
+    const res = await sb.rpc('safety_close', { p_id: p.id, p_close: close, p_note: note });
+    if (res.error) return fail(res.error);
+    mergeRow(S.photos, res.data); await pullExtraTask(res.data); renderEditSafety(res.data); renderAll();
+    toast(close ? sfNo(res.data) + ' er lukket.' : sfNo(res.data) + ' er åbnet igen.', 'ok');
+}
+
+/* ---- sikkerhedsrapport (PDF/CSV) ---- */
+function exSafetyRange() {
+    const f = $('ex-from').value, t = $('ex-to').value;
+    return p => { const d = String(p.created_at).slice(0, 10); return (!f || d >= f) && (!t || d <= t); };
+}
+function exSafetyReset() { EX.sel = new Set(exPickList().map(p => p.id)); exPickRender(); }
+async function buildSafetyReport(fmt, opt) {
+    opt = opt || {};
+    const enc = s => new TextEncoder().encode(s), comp = reportCompany(), pr = curProj();
+    if (!pr) return { empty: 'Vælg en sag først.' };
+    const inRange = exSafetyRange();
+    let list = safetyPoints().filter(inRange).filter(p => !EX.sel || EX.sel.has(p.id));
+    if ($('ex-open') && $('ex-open').checked) list = list.filter(p => !isClosed(p));
+    if (!list.length) return { empty: safetyPoints().length ? 'Ingen sikkerhedspunkter matcher valget.' : 'Der er ingen sikkerhedspunkter med farve på sagen endnu.' };
+    list.sort((a, b) => (Number(isClosed(a)) - Number(isClosed(b))) || (SAFE_ORDER.indexOf(a.safety_level) - SAFE_ORDER.indexOf(b.safety_level)) || ((a.safety_no || 0) - (b.safety_no || 0)));
+    const whoOf = p => { const t = extraTaskOf(p), ids = t ? taskAssignees(t) : []; return t ? (ids.length ? ids.map(u => userName(u)).join(', ') : 'Ikke valgt') : 'Ingen opgave'; };
+    const cnt = lv => list.filter(p => p.safety_level === lv), openN = arr => arr.filter(p => !isClosed(p)).length;
+    const subject = comp + ' – Sikkerhed – ' + projLabel(pr);
+    const periodTxt = ($('ex-from').value || $('ex-to').value) ? (($('ex-from').value ? dkFull($('ex-from').value) : '…') + ' – ' + ($('ex-to').value ? dkFull($('ex-to').value) : '…')) : 'Alle datoer';
+    if (fmt === 'csv') {
+        const rows = list.map(p => [sfNo(p), SAFE[p.safety_level].n, isClosed(p) ? 'Lukket' : 'Åben', dkWhen(p.created_at), userName(p.user_id), (p.note || '').replace(/\s+/g, ' '), whoOf(p), p.safety_closed_at ? dkWhen(p.safety_closed_at) : '', p.safety_closed_by ? userName(p.safety_closed_by) : '', (p.safety_close_note || '').replace(/\s+/g, ' '), ageDays(p), photoPaths(p).length, (p.done_paths || []).length, p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.lat != null ? mapsUrl(p.lat, p.lng) : '']);
+        return { bytes: enc(csvOf(['Nr', 'Farve', 'Status', 'Oprettet', 'Oprettet af', 'Kommentar', 'Opgave modtager', 'Lukket', 'Lukket af', 'Afslutningskommentar', 'Dage åben', 'Billeder før', 'Billeder efter', 'Lat', 'Lng', 'Google Maps'], rows)), mime: 'text/csv', filename: 'UniSjak_Sikkerhed_' + safeName(pr.case_number || pr.name) + '.csv', subject };
+    }
+    const doc = newReport({ company: comp, title: 'Sikkerhedsrapport', sub: placeCap() + ': ' + projLabel(pr), sub2: 'Periode: ' + periodTxt + ' · pr. ' + dkFull(fmtDate(new Date())) }, false);
+    doc.paragraph(list.length + (list.length === 1 ? ' punkt' : ' punkter') + ' – ' + openN(list) + ' åbne, ' + (list.length - openN(list)) + ' lukkede', { size: 10, bold: true });
+    doc.y += 6;
+    doc.table([{ title: 'Farve', w: 90 }, { title: 'Åbne', w: 80, align: 'right' }, { title: 'Lukkede', w: 80, align: 'right' }, { title: 'I alt', w: 80, align: 'right' }],
+        SAFE_ORDER.map(lv => [{ t: SAFE[lv].n, bold: true, color: SAFE[lv].rgb }, String(openN(cnt(lv))), String(cnt(lv).length - openN(cnt(lv))), { t: String(cnt(lv).length), bold: true }]));
+    doc.y += 8;
+    doc.table([{ title: 'Nr', w: 50 }, { title: 'Farve', w: 40 }, { title: 'Kommentar', w: 215 }, { title: 'Status', w: 110 }, { title: 'Modtager', w: 100.28 }],
+        list.map(p => [{ t: sfNo(p), bold: true }, { t: SAFE[p.safety_level].n, bold: true, color: SAFE[p.safety_level].rgb }, (p.note || '').replace(/\s+/g, ' ').slice(0, 110), ageTxt(p), whoOf(p)]));
+    const usePhotos = opt.photos !== false;
+    let shown = 0;
+    const strip = async (label, paths) => {
+        if (!usePhotos || !paths.length) return;
+        doc.ensure(100); doc.text(doc.margin, doc.y, label + ' (' + paths.length + ')', { size: 8.5, bold: true, color: [90, 90, 90] }); doc.y += 12;
+        const ty = doc.y; let x = doc.margin;
+        for (const pt of paths.slice(0, 5)) {
+            const im = shown < 90 ? await pathBytes(pt, opt.max ? Math.min(opt.max, 640) : 640, opt.q || 0.58) : null; if (im) shown++;
+            doc.rect(x, ty, 98, 70, { fill: [240, 242, 244] }); if (im) doc.image(im, x, ty, 98, 70);
+            x += 104;
+        }
+        if (paths.length > 5) doc.text(x, ty + 30, '+' + (paths.length - 5), { size: 9, bold: true, color: [110, 110, 110] });
+        doc.y = ty + 76;
+    };
+    doc.addPage();
+    for (const p of list) {
+        doc.ensure(usePhotos ? 220 : 120);
+        const c = SAFE[p.safety_level], top = doc.y;
+        doc.rect(doc.margin, top, doc.W - doc.margin * 2, 18, { fill: c.rgb });
+        doc.text(doc.margin + 6, top + 4, sfNo(p) + '  ·  ' + c.n.toUpperCase() + '  ·  ' + ageTxt(p), { size: 9.5, bold: true, color: [255, 255, 255] });
+        doc.y = top + 24;
+        doc.paragraph((p.note || 'Ingen kommentar').trim(), { size: 10, bold: true });
+        doc.paragraph(['Oprettet af ' + userName(p.user_id), dkWhen(p.created_at), 'Modtager: ' + whoOf(p)].join('  ·  '), { size: 8.5, color: [110, 110, 110] });
+        if (p.lat != null) {
+            doc.paragraph('GPS: ' + Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5) + (p.address ? ' – ' + p.address : ''), { size: 8, color: [110, 110, 110] });
+            doc.ensure(14);
+            const lw = doc.text(doc.margin, doc.y, 'Åbn i Google Maps', { size: 8.5, bold: true, color: [0, 90, 200] });
+            doc.line(doc.margin, doc.y + 9.5, doc.margin + lw, doc.y + 9.5, { color: [0, 90, 200], lw: 0.6 });
+            doc.link(doc.margin, doc.y - 1, lw, 12, mapsUrl(p.lat, p.lng));
+            doc.y += 14;
+        }
+        doc.y += 3;
+        await strip('Før', photoPaths(p));
+        await strip('Efter', p.done_paths || []);
+        if (isClosed(p)) {
+            doc.ensure(30);
+            doc.paragraph('Afsluttet ' + dkWhen(p.safety_closed_at) + (p.safety_closed_by ? ' af ' + userName(p.safety_closed_by) : '') + (p.safety_close_note ? ': ' + p.safety_close_note : ''), { size: 9, color: [20, 110, 60], bold: true });
+        }
+        doc.y += 4; doc.line(doc.margin, doc.y, doc.W - doc.margin, doc.y, { color: [225, 228, 232] }); doc.y += 10;
+    }
+    return { bytes: doc.build(), mime: 'application/pdf', filename: 'UniSjak_Sikkerhed_' + safeName(pr.case_number || pr.name) + '.pdf', subject };
+}
+
 /* ------------------------------ OPGAVER (flere medarbejdere + underpunkter) ------------------------------ */
 S.taskItems = []; S.itemsReady = false; S.templates = []; S.tplReady = false; S.taskAssign = { pc: new Set(), mobile: new Set() }; S.editTask = null; S.noAssignees = false;
 const missingCol = e => !!e && (e.code === 'PGRST204' || /schema cache|could not find the .* column|column .* does not exist/i.test(e.message || ''));
@@ -3505,7 +3717,7 @@ async function loadTaskItems() {
 }
 function assigneeLabel(t) {
     const ids = taskAssignees(t);
-    return ids.length ? ids.map(u => firstName(userName(u))).join(', ') : (extraOfTask(t) ? 'Ingen modtager valgt endnu' : 'Alle / Sjak');
+    return ids.length ? ids.map(u => firstName(userName(u))).join(', ') : (pointOfTask(t) ? 'Ingen modtager valgt endnu' : 'Alle / Sjak');
 }
 function assignChipsHtml(set, act, extra, allLabel) {
     const people = S.profiles.filter(p => p.active).sort((a, b) => a.full_name.localeCompare(b.full_name, 'da'));
@@ -3521,6 +3733,9 @@ function taskPlanChipHtml(t) {
     return `<span class="text-[11px] text-sky-300 font-semibold ml-2"><i class="fa-solid fa-calendar-days mr-1 text-[9px]"></i>${esc(z ? z.name + ' · ' : '')}${cs.length} ${cs.length === 1 ? 'dag' : 'dage'} · ${a}${cs.length > 1 ? '–' + b : ''}</span>`;
 }
 function taskPointHtml(t) {
+    const sp = safetyOfTask(t);
+    if (sp) return `<div class="pl-9 space-y-2"><div class="flex items-center gap-2.5 min-w-0">${photoPaths(sp).length ? photoImg(sp, 'w-14 h-14 object-cover rounded-lg shrink-0') : ''}<div class="min-w-0 text-[11px] text-gray-400"><span class="block truncate">Fra ${esc(firstName(userName(sp.user_id)))} · ${esc(dkWhen(sp.created_at))}</span><span class="block">${photoPaths(sp).length} før · ${(sp.done_paths || []).length} efter</span></div></div><div class="flex flex-wrap gap-2"><button type="button" data-act="open-photo" data-id="${sp.id}" class="bg-sky-950/50 border border-sky-700/60 text-sky-100 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-images mr-1.5"></i>Åbn punkt, billeder & luk</button>` +
+        (isUnassignedExtra(t) ? `<button type="button" data-act="edit-task" data-id="${t.id}" class="bg-amber-950/50 border border-amber-700/60 text-amber-200 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-user-plus mr-1.5"></i>Vælg modtager</button>` : '') + `</div></div>`;
     const p = extraOfTask(t); if (!p) return '';
     const after = (p.done_paths || []).length;
     const btn = (act, ic, label, tone) => `<button type="button" data-act="${act}" data-id="${p.id}" class="${tone || 'bg-violet-950/50 border border-violet-700/60 text-violet-100'} px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid ${ic} mr-1.5"></i>${label}</button>`;
@@ -3637,7 +3852,7 @@ function syncTaskDone(taskId) {
     // Opgaver på planen markeres først færdige, når brugeren svarer "Ja, færdigt" – ellers følger de punkterne som før
     const planned = typeof U !== 'undefined' && U.ready && U.cells.some(c => c.task_id === taskId);
     const want = planned ? (all ? t.done : false) : all;
-    if (t.done !== want) { t.done = want; sb.from('tasks').update({ done: want }).eq('id', taskId).then(r => { if (r && r.error) console.error(r.error); }); }
+    if (t.done !== want) { t.done = want; sb.from('tasks').update({ done: want }).eq('id', taskId).then(r => { if (r && r.error) console.error(r.error); const sp = safetyOfTask(t); if (sp) refreshPhotoRow(sp.id); }); }
 }
 async function delItem(id) {
     const it = S.taskItems.find(x => x.id === id); if (!it) return;
@@ -3655,6 +3870,7 @@ async function toggleTask(id, done) {
     const { error } = await sb.from('tasks').update({ done }).eq('id', id);
     if (error) { t.done = !done; items.forEach(i => { i.done = !done; }); renderTasks(); renderKpis(); scheduleRender(); return fail(error); }
     if (items.length) { const r = await sb.from('task_items').update({ done }).eq('task_id', id); if (r.error) console.error(r.error); }
+    const sp = safetyOfTask(t); if (sp) refreshPhotoRow(sp.id);
 }
 async function deleteTask(id) {
     const { error } = await sb.from('tasks').delete().eq('id', id);
@@ -3677,7 +3893,7 @@ function openTaskEdit(id) {
     const t = S.tasks.find(x => x.id === id); if (!t) return;
     S.editTask = { id, set: new Set(taskAssignees(t)) };
     $('tk-text').value = t.text; $('tk-items').value = ''; $('tk-items').style.height = '';
-    $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', '', extraOfTask(t) ? 'Ikke valgt endnu' : undefined);
+    $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', '', pointOfTask(t) ? 'Ikke valgt endnu' : undefined);
     renderVoiceBoxes();
     show('modal-task', true);
 }
@@ -4809,7 +5025,7 @@ async function applyVoice(box, kind, d, text, usedAi) {
         const got = [];
         const put = (id, v) => { if (v) { $(id).value = v; got.push(id); } };
         if (kind === 'ks') { d = Object.assign({}, d, { note: [d.title, d.note].filter(Boolean).join('. ') }); d.title = ''; } else put(p + '-title', d.title);
-        if (kind === 'ks') { if (d.category) { setSelectValue($(p + '-cat'), d.category); got.push(p + '-cat'); } }
+        if (kind === 'ks') { if (d.category) { setSelectValue($(p + '-cat'), d.category); got.push(p + '-cat'); if (p === 'pf') safeFormRender(); else editSafeRender(); } }
         else { put(p + '-qty', d.quantity); put(p + '-loc', d.location); }
         put(noteId, d.note);
         if (!got.length) { put(noteId, vCap(text)); }
@@ -5069,7 +5285,8 @@ function openMultiCard(d, text) {
         `<div><label class="lbl">Beskrivelse</label><input type="text" id="qm-notes" maxlength="400" class="${f}" value="${esc(d.notes || '')}"></div><p class="text-xs font-black text-emerald-300" id="qm-total"></p></div>`;
     h += `<div class="rounded-xl border border-gray-700 bg-gray-900/60 p-3 space-y-3"><label class="flex items-center gap-2 text-[10px] font-black uppercase text-orange-300"><input type="checkbox" id="qm-ks-on" ${d.hasKs ? 'checked' : ''} class="w-5 h-5"><i class="fa-solid fa-clipboard-check mr-1"></i>Opret KS-punkt</label>` +
         `<div id="qm-ks-box" class="${d.hasKs ? '' : 'hidden'} space-y-3"><div><label class="lbl">Beskrivelse</label><textarea id="qm-ks-note" rows="2" maxlength="1000" class="${f}">${esc((d.ks && d.ks.note) || '')}</textarea></div>` +
-        `<div><label class="lbl">Kategori</label><select id="qm-ks-cat" class="${f}">${KS_CATS.map(c => `<option ${d.ks && d.ks.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div><p class="text-[11px] text-gray-400" id="qm-gps">GPS-position tages ved gem.</p></div></div>`;
+        `<div><label class="lbl">Kategori</label><select id="qm-ks-cat" class="${f}">${KS_CATS.map(c => `<option ${d.ks && d.ks.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div><p class="text-[11px] text-gray-400" id="qm-gps">GPS-position tages ved gem.</p>`+
+        `<div id="qm-ks-lvbox" class="${(S.safetyReady && d.ks && d.ks.category === 'Sikkerhed') ? '' : 'hidden'}"><label class="lbl">Sikkerhedsfarve (påkrævet)</label><select id="qm-ks-lv" class="${f}"><option value="">Vælg farve…</option><option value="groen">Grøn</option><option value="gul">Gul</option><option value="roed">Rød</option></select></div></div></div>`;
     h += `<button data-act="multi-save" id="qm-save" class="w-full brand-orange text-white py-4 rounded-xl font-black shadow-lg"><i class="fa-solid fa-check mr-1"></i><span id="qm-save-txt"></span></button>`;
     $('qk-body').innerHTML = h;
     qmSync();
@@ -5080,7 +5297,7 @@ const cap1 = w => w.charAt(0).toUpperCase() + w.slice(1);
 function qmSync() {
     if (!S.quick || S.quick.kind !== 'multi' || !$('qm-start')) return;
     const ks = $('qm-ks-on').checked, hrs = hoursBetween($('qm-start').value, $('qm-end').value, parseInt($('qm-pause').value, 10) || 0);
-    show('qm-ks-box', ks);
+    show('qm-ks-box', ks); show('qm-ks-lvbox', S.safetyReady && ks && $('qm-ks-cat') && $('qm-ks-cat').value === 'Sikkerhed');
     $('qm-total').textContent = hrs > 0 ? 'I alt ' + hFmt(hrs) + ' t' : '';
     $('qm-save-txt').textContent = ks ? 'Gem timer + KS-punkt' : 'Gem timer';
     const g = S.gps;
@@ -5095,6 +5312,8 @@ async function saveQuickMulti(btn) {
     if (!(hours > 0) || hours > 24) return toast('Tjek start, slut og pause – timerne skal være over 0.');
     if (dayLockedForMe(ds)) return toast('Dagen er godkendt og låst – kun admin kan rette den.');
     if (ks && !ksNote) return toast('Skriv en kort beskrivelse til KS-punktet – eller fjern fluebenet.');
+    const qLv = (ks && S.safetyReady && $('qm-ks-cat').value === 'Sikkerhed') ? $('qm-ks-lv').value : '';
+    if (ks && S.safetyReady && $('qm-ks-cat').value === 'Sikkerhed' && !qLv) return toast('Vælg Grøn, Gul eller Rød for Sikkerhed.');
     btn.disabled = true;
     try {
         const t = await sb.from('time_entries').insert({ company_id: S.profile.company_id, project_id: pid, user_id: myId(), work_date: ds, start_time: st, end_time: en, break_minutes: pause, hours, notes: $('qm-notes').value.trim() || null }).select().single();
@@ -5104,7 +5323,7 @@ async function saveQuickMulti(btn) {
         if (ks) {
             if (S.gpsPromise) await S.gpsPromise;
             const gps = (S.gps && Date.now() - S.gps.ts < 15 * 60000) ? S.gps : null;
-            const row = { company_id: S.profile.company_id, project_id: pid, user_id: myId(), kind: 'ks', image_path: null, category: $('qm-ks-cat').value || null, note: ksNote,
+            const row = { company_id: S.profile.company_id, project_id: pid, user_id: myId(), kind: 'ks', image_path: null, category: $('qm-ks-cat').value || null, note: ksNote, ...(qLv ? { safety_level: qLv } : {}),
                 lat: gps ? gps.lat : null, lng: gps ? gps.lng : null, gps_accuracy: gps ? Math.round(gps.accuracy * 10) / 10 : null, gps_at: gps ? new Date(gps.ts).toISOString() : null };
             const k = await photoWrite(row, pl => sb.from('photo_entries').insert(pl).select().single());
             if (k.error) { ksOk = false; toast('Timerne er gemt, men KS-punktet kunne ikke gemmes: ' + errText(k.error)); }
@@ -6269,7 +6488,7 @@ async function ugSetLang(val) {
 
 /* ------------------------------ EKSPORT (PDF + CSV + e-mail) ------------------------------ */
 const EX = { kind: null, fmt: 'pdf', busy: false, sel: null, vis: [] };
-const EX_TITLES = { timer: 'Eksportér timer', plan: 'Print planlægning', planrapport: 'Bygherre-ugerapport', ks: 'Eksportér kvalitetssikring', materiale: 'Eksportér materialer', shifts: 'Eksportér vagtplan', extra: 'Ekstraarbejde-rapport' };
+const EX_TITLES = { safety: 'Sikkerhedsrapport', timer: 'Eksportér timer', plan: 'Print planlægning', planrapport: 'Bygherre-ugerapport', ks: 'Eksportér kvalitetssikring', materiale: 'Eksportér materialer', shifts: 'Eksportér vagtplan', extra: 'Ekstraarbejde-rapport' };
 function csvSafe(v) {
     let s = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').replace(/;/g, ',');
     if (/^[=+\-@\t]/.test(s)) s = "'" + s;
@@ -6281,10 +6500,11 @@ function lastMailTo() { try { return JSON.parse(localStorage.getItem('unisjak_ma
 function rememberMailTo(a) { try { const l = [a].concat(lastMailTo().filter(x => x !== a)).slice(0, 8); localStorage.setItem('unisjak_mail_to', JSON.stringify(l)); } catch (e) { /* ignore */ } }
 
 function openExport(kind) {
-    if ((kind === 'ks' || kind === 'materiale' || kind === 'extra') && !S.currentProject) return toast(isManager() ? 'Opret først en ' + placeW() + '.' : 'Du er ikke tildelt nogen ' + placeW(true) + ' endnu.');
+    if ((kind === 'ks' || kind === 'materiale' || kind === 'extra' || kind === 'safety') && !S.currentProject) return toast(isManager() ? 'Opret først en ' + placeW() + '.' : 'Du er ikke tildelt nogen ' + placeW(true) + ' endnu.');
     EX.kind = kind; EX.fmt = 'pdf';
     show('ex-w-extra', kind === 'timer'); if ($('ex-extra')) $('ex-extra').checked = false;
-    if (kind === 'ks' || kind === 'materiale' || kind === 'extra') {
+    if (kind === 'ks' || kind === 'materiale' || kind === 'extra' || kind === 'safety') {
+        if (kind === 'safety') { $('ex-from').value = ''; $('ex-to').value = ''; $('ex-open').checked = false; }
         const all = exPickList(); EX.sel = new Set(all.map(p => p.id));
         const cats = [...new Set(all.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'da'));
         $('ex-pick-q').value = '';
@@ -6294,7 +6514,7 @@ function openExport(kind) {
     } else { EX.sel = null; show('ex-w-pick', false); }
     $('ex-title').textContent = EX_TITLES[kind] || 'Eksportér';
     const wk = kind === 'timer' || kind === 'shifts' || kind === 'plan' || kind === 'planrapport';
-    show('ex-w-week', wk); show('ex-w-scope', kind === 'timer'); show('ex-w-lang', kind === 'plan'); if (kind === 'plan') $('ex-lang').value = myLang(); show('ex-w-photos', kind === 'ks' || kind === 'extra'); show('ex-w-done', kind === 'extra'); if ($('ex-done')) $('ex-done').checked = false;
+    show('ex-w-week', wk); show('ex-w-scope', kind === 'timer'); show('ex-w-lang', kind === 'plan'); if (kind === 'plan') $('ex-lang').value = myLang(); show('ex-w-photos', kind === 'ks' || kind === 'extra' || kind === 'safety'); show('ex-w-done', kind === 'extra'); show('ex-w-range', kind === 'safety'); show('ex-w-open', kind === 'safety'); if ($('ex-done')) $('ex-done').checked = false;
     if (wk) {
         const base = kind === 'timer' ? activeMonday() : (kind === 'plan' || kind === 'planrapport') ? ugMonday() : shiftMonday(), cur = mondayOf(new Date());
         let h = '';
@@ -6306,8 +6526,8 @@ function openExport(kind) {
     }
     const p = curProj();
     $('ex-scope').innerHTML = `<option value="project">Kun denne sag${p ? ': ' + esc(projLabel(p)) : ''}</option><option value="all">Alle sager</option>`;
-    $('ex-project-line').textContent = (kind === 'ks' || kind === 'materiale' || kind === 'extra') && p ? placeCap() + ': ' + projLabel(p) : '';
-    show('ex-project-line', (kind === 'ks' || kind === 'materiale' || kind === 'extra') && !!p);
+    $('ex-project-line').textContent = (kind === 'ks' || kind === 'materiale' || kind === 'extra' || kind === 'safety') && p ? placeCap() + ': ' + projLabel(p) : '';
+    show('ex-project-line', (kind === 'ks' || kind === 'materiale' || kind === 'extra' || kind === 'safety') && !!p);
     show('ex-w-mail', isManager());
     const rec = lastMailTo();
     $('ex-email').value = rec[0] || '';
@@ -6317,13 +6537,13 @@ function openExport(kind) {
     renderVoiceBoxes();
     show('modal-export', true);
 }
-function exPickList() { return EX.kind === 'extra' ? extraPoints().slice().sort((a, b) => (a.extra_no || 0) - (b.extra_no || 0)) : photosOf(EX.kind === 'materiale' ? 'materiale' : 'ks').slice().reverse(); }
+function exPickList() { if (EX.kind === 'safety') { const f = exSafetyRange(); return safetyPoints().filter(f).sort((a, b) => (a.safety_no || 0) - (b.safety_no || 0)); } return EX.kind === 'extra' ? extraPoints().slice().sort((a, b) => (a.extra_no || 0) - (b.extra_no || 0)) : photosOf(EX.kind === 'materiale' ? 'materiale' : 'ks').slice().reverse(); }
 function exPickCount() {
     const list = exPickList(), n = list.filter(p => EX.sel && EX.sel.has(p.id)).length;
     const el = $('ex-pick-count'); if (el) el.textContent = n + ' af ' + list.length + ' valgt';
 }
 function exPickRender() {
-    const on = (EX.kind === 'ks' || EX.kind === 'materiale' || EX.kind === 'extra');
+    const on = (EX.kind === 'ks' || EX.kind === 'materiale' || EX.kind === 'extra' || EX.kind === 'safety');
     show('ex-w-pick', on); if (!on) return;
     const list = exPickList(), nums = numbering(), q = ($('ex-pick-q').value || '').trim().toLowerCase(), cat = $('ex-pick-cat').value;
     const vis = list.filter(p => (!cat || (p.category || '') === cat) && (!q || ('#' + nums[p.id] + ' ' + (p.title || '') + ' ' + (p.note || '') + ' ' + (p.category || '') + ' ' + userName(p.user_id)).toLowerCase().includes(q)));
@@ -6331,7 +6551,7 @@ function exPickRender() {
     $('ex-pick-list').innerHTML = vis.length ? vis.map(p => {
         const on1 = EX.sel.has(p.id), n = photoPaths(p).length;
         return `<label class="flex items-center gap-3 bg-gray-900 border ${on1 ? 'border-orange-500/60' : 'border-gray-800'} rounded-xl p-2.5 cursor-pointer"><input type="checkbox" data-chg="ex-pick" data-id="${p.id}" ${on1 ? 'checked' : ''} class="w-6 h-6 accent-orange-500 shrink-0">` +
-            `<span class="min-w-0 flex-1 text-xs"><span class="font-black text-white">${EX.kind === 'ks' ? '#' + nums[p.id] : EX.kind === 'extra' ? exNo(p) : ''}</span> <span class="text-gray-200">${esc(photoHead(p, EX.kind === 'ks' ? 'Ingen beskrivelse' : 'Materiale').slice(0, 80))}</span>` +
+            `<span class="min-w-0 flex-1 text-xs"><span class="font-black text-white">${EX.kind === 'ks' ? '#' + nums[p.id] : EX.kind === 'extra' ? exNo(p) : EX.kind === 'safety' ? sfNo(p) + ' · ' + SAFE[p.safety_level].n : ''}</span> <span class="text-gray-200">${esc(photoHead(p, EX.kind === 'ks' ? 'Ingen beskrivelse' : 'Materiale').slice(0, 80))}</span>` +
             `<span class="block text-[10px] text-gray-500">${esc(p.category || '')}${p.category ? ' · ' : ''}${dkWhen(p.created_at)}${n > 1 ? ' · ' + n + ' billeder' : n === 1 ? ' · 1 billede' : ' · uden billede'}</span></span></label>`;
     }).join('') : '<p class="text-xs text-gray-500 text-center py-3">Ingen punkter matcher søgningen.</p>';
     exPickCount();
@@ -6341,7 +6561,7 @@ function exSetFmt(f) {
     EX.fmt = f;
     $('ex-fmt-pdf').className = 'rounded-xl p-4 border text-left transition ' + (f === 'pdf' ? 'bg-orange-950/40 border-orange-500 text-orange-300' : 'bg-gray-900 border-gray-700 text-gray-300');
     $('ex-fmt-csv').className = 'rounded-xl p-4 border text-left transition ' + (f === 'csv' ? 'bg-emerald-950/40 border-emerald-500 text-emerald-300' : 'bg-gray-900 border-gray-700 text-gray-300');
-    show('ex-w-photos', (EX.kind === 'ks' || EX.kind === 'extra') && f === 'pdf');
+    show('ex-w-photos', (EX.kind === 'ks' || EX.kind === 'extra' || EX.kind === 'safety') && f === 'pdf');
 }
 
 /* ---- billeder til PDF: hent signeret URL, skaler ned, returnér JPEG-bytes ---- */
@@ -6383,6 +6603,7 @@ async function buildExport(kind, fmt, opt) {
     const enc = s => new TextEncoder().encode(s);
     const comp = reportCompany();
     if (kind === 'extra') return buildExtraReport(fmt, opt);
+    if (kind === 'safety') return buildSafetyReport(fmt, opt);
     if (kind === 'timer') {
         const mon = parseDate($('ex-week').value), wk = fmtDate(mon), sun = fmtDate(addDays(mon, 6)), week = isoWeek(mon).week;
         await ensureRange('time', mon, addDays(mon, 6));
@@ -6599,7 +6820,7 @@ async function exportSend() {
         let r = await buildExport(EX.kind, EX.fmt, opt);
         if (r.empty) return toast(r.empty, 'info');
         const LIMIT = 4.2 * 1024 * 1024;
-        if (r.bytes.length > LIMIT && (EX.kind === 'ks' || EX.kind === 'extra') && opt.photos) { setExBusy(true, 'Komprimerer…'); r = await buildExport(EX.kind, 'pdf', { photos: true, max: 480, q: 0.45 }); }
+        if (r.bytes.length > LIMIT && (EX.kind === 'ks' || EX.kind === 'extra' || EX.kind === 'safety') && opt.photos) { setExBusy(true, 'Komprimerer…'); r = await buildExport(EX.kind, 'pdf', { photos: true, max: 480, q: 0.45 }); }
         if (r.bytes.length > LIMIT) {
             toast('Rapporten er for stor til at sende (' + (r.bytes.length / 1048576).toFixed(1) + ' MB). Fjern fotos eller hent filen og send den selv.');
             return;
@@ -6909,7 +7130,16 @@ async function handleAct(act, el) {
         case 'ug-photo': return ugPhoto(d.id);
         case 'ug-open-plan': return ugOpenPlan();
         case 'open-photo': return openPhoto(d.id);
-        case 'ks-extra-filter': S.ksExtraOnly = !S.ksExtraOnly; return scheduleRender();
+        case 'ks-extra-filter': S.ksExtraOnly = !S.ksExtraOnly; if (S.ksExtraOnly) S.safeFilter = ''; return scheduleRender();
+        case 'safe-filter': S.safeFilter = S.safeFilter === d.f ? '' : d.f; if (S.safeFilter) S.ksExtraOnly = false; return scheduleRender();
+        case 'safe-report': return openExport('safety');
+        case 'safe-lv': S.safeLv = d.lv; return safeFormRender();
+        case 'safe-assign': toggleAssign(S.safeAssign, d.user); return safeFormRender();
+        case 'edit-safe-lv': return safeSetLevel(d.lv);
+        case 'safe-mktask': return safeCreateTask();
+        case 'safe-close': return safeClose(true);
+        case 'safe-reopen': return safeClose(false);
+        case 'extra-goto': return extraGotoTask();
         case 'extra-report': return openExport('extra');
         case 'extra-assign': toggleAssign(S.extraAssign, d.user); return extraFormRender();
         case 'extra-pt-assign': { const p = S.photos.find(x => x.id === S.editPhotoId), t = extraTaskOf(p); if (!t) return; const set = new Set(taskAssignees(t)); toggleAssign(set, d.user); return extraSetAssignees(set); }
@@ -6952,7 +7182,7 @@ async function handleAct(act, el) {
         case 'add-item': { const inp = document.querySelector('[data-sub-input="' + d.id + '"]'); return inp && addItem(d.id, inp); }
         case 'del-item': return delItem(d.id);
         case 'task-assign': { const set = S.taskAssign[d.src]; if (!set) return; toggleAssign(set, d.user); return renderTasks(); }
-        case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', '', extraOfTask(S.tasks.find(x => x.id === S.editTask.id)) ? 'Ikke valgt endnu' : undefined); return; }
+        case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', '', pointOfTask(S.tasks.find(x => x.id === S.editTask.id)) ? 'Ikke valgt endnu' : undefined); return; }
         case 'edit-shift': return isManager() ? openShiftModal(d.user, d.date) : undefined;
         case 'copy-shifts': return copyLastWeek();
         case 'toggle-member': return toggleMember(d.project, d.user);
@@ -7008,6 +7238,7 @@ async function handleChg(act, el) {
         case 'set-eno': return setEmpNo(el.dataset.user, el.value);
         case 'ex-pick': return exPickToggle(el.dataset.id, el.checked);
         case 'pf-extra': return extraFormRender();
+        case 'pf-safe-task': S.safeTask = el.checked; return safeFormRender();
         case 'panel-project': S.panelProject = el.value; el.blur(); setTimeout(renderTeam, 0); return;
     }
 }
@@ -7133,6 +7364,7 @@ function lpDemoStart(mode) {
     lpPrice(5);
     $('timer-date-input').value = fmtDate(new Date());
     ['pf-cat', 'ef-cat'].forEach(id => { $(id).innerHTML = '<option value="">Vælg kategori…</option>' + KS_CATS.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join(''); });
+    $('pf-cat').addEventListener('change', safeFormRender); $('ef-cat').addEventListener('change', () => { S.editSafeLv = S.editSafeLv || ''; editSafeRender(); });
     renderVoiceBoxes();
     sb.auth.onAuthStateChange((event, session) => { setTimeout(() => onAuthEvent(event, session), 0); });
     // Sikkerhedsnet, hvis første auth-hændelse udebliver
