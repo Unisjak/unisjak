@@ -5858,13 +5858,20 @@ function ugActual(zoneId, ds) {
     return { hrs, ph, people: new Set(te.map(e => e.user_id)).size };
 }
 /* ---- rendering: tavle (PC/tablet), uge-liste (mobil), "I dag"-kort (hjem) ---- */
+function ugWhoHtml(c, big) {
+    const tk = taskOfCell(c), as = tk ? taskAssignees(tk) : []; if (!as.length) return '';
+    const names = as.map(u => firstName(userName(u)));
+    const full = names.join(', ');
+    return big ? `<span class="truncate text-gray-300 text-xs font-semibold" title="${esc(full)}">${esc(names.slice(0, 3).join(', ') + (names.length > 3 ? ' +' + (names.length - 3) : ''))}</span>`
+        : `<span class="shrink-0 text-[10px] text-gray-300 font-semibold" title="${esc(full)}">${esc(names.slice(0, 3).map(n => (n || '?')[0].toUpperCase()).join('') + (names.length > 3 ? '+' : ''))}</span>`;
+}
 function ugBadge(c, conf, lang, editable, big) {
     const t = tradeOf(c.trade_id), col = safeColor(t && t.color), cr = c.crew_id ? crewOf(c.crew_id) : null;
     const cf = conf.get(c.id), stop = c.status === 'stoppet';
     const n = c.headcount != null ? c.headcount : (cr && cr.headcount);
     const cls = 'ugb w-full flex items-center gap-1 rounded-lg px-1.5 text-left font-bold leading-tight ' + (big ? 'py-3 text-sm gap-2 px-3 ' : 'py-1 text-[11px] ') + (stop ? 'opacity-60 line-through' : '');
     const inner = `<span class="shrink-0">${esc((t && t.icon) || '🔨')}</span><span class="truncate">${esc(tradeName(t, lang))}</span>` +
-        (n ? `<span class="shrink-0 text-gray-300 font-black">×${esc(n)}</span>` : '') + cellProgHtml(c) +
+        (n ? `<span class="shrink-0 text-gray-300 font-black">×${esc(n)}</span>` : '') + ugWhoHtml(c, big) + cellProgHtml(c) +
         (c.status === 'flyttet' ? '<span class="shrink-0" title="Flyttet">↪</span>' : '') + (stop ? '<span class="shrink-0" title="Stoppet">⛔</span>' : '') +
         (cf ? `<span class="shrink-0 text-amber-300" title="${esc(cf.join(' · '))}">⚠</span>` : '');
     const style = `background:${col}33;border:1px solid ${col}99;color:#fafaf9`;
@@ -6346,6 +6353,7 @@ function openUgCell(id, zone, date) {
 }
 function ugSync() {
     const b = $('uc-body'); if (!b || !U.edit) return;
+    ukSync();
     const f = k => b.querySelector('[data-uf="' + k + '"]');
     if (f('crew')) U.edit.crew = f('crew').value;
     if (f('hc')) U.edit.hc = f('hc').value;
@@ -6364,6 +6372,7 @@ function renderUgCell() {
         `<div><label class="lbl">Mand</label><input data-uf="hc" type="number" min="0" max="200" inputmode="numeric" class="inp" value="${esc(e.hc)}" placeholder="–"></div></div>`;
     if (U.res.length) h += `<div><label class="lbl">Maskiner</label><div class="flex flex-wrap gap-1.5">` + U.res.filter(r => r.active !== false).map(r => `<button type="button" data-act="ug-pick-res" data-id="${r.id}" class="chip ${e.res.indexOf(r.id) >= 0 ? 'chip-on' : ''}">${esc(r.name)}</button>`).join('') + `</div></div>`;
     h += `<div><label class="lbl">Note (højst 140 tegn)</label><input data-uf="note" maxlength="140" class="inp" value="${esc(e.note)}"></div>`;
+    h += ukHtml(e);
     h += `<button type="button" data-act="ug-save" class="w-full brand-orange text-white py-4 rounded-xl font-black text-base">${e.id ? 'Gem' : 'Læg på planen'}</button>`;
     if (e.id) {
         h += `<div class="grid grid-cols-2 gap-2">` +
@@ -6376,6 +6385,81 @@ function renderUgCell() {
     if (e.id) h = `<button type="button" data-act="fld-back" class="text-xs font-bold text-orange-400 py-1">‹ ${esc(tr('list', lang))}</button>` + h;
     $('uc-body').innerHTML = h;
 }
+/* ---- opgave + medarbejdere direkte fra planlægningsvinduet ---- */
+function ukState(e) {
+    if (!e.tk) {
+        const c = e.id ? U.cells.find(x => x.id === e.id) : null, tk = c && taskOfCell(c);
+        e.tk = { open: !!tk, b: {} };
+        if (tk) e.tk.b[c.trade_id] = { mode: 'existing', taskId: tk.id, title: '', set: new Set(taskAssignees(tk)), dirty: false };
+    }
+    const z = zoneOf(e.zone);
+    e.trades.forEach(tid => {
+        if (!e.tk.b[tid]) { const t = tradeOf(tid); e.tk.b[tid] = { mode: 'new', taskId: '', title: ((t ? tradeName(t, 'da') : 'Arbejde') + (z ? ' – ' + z.name : '')).slice(0, 200), set: new Set(), dirty: false }; }
+    });
+    return e.tk;
+}
+function ukHtml(e) {
+    const K = ukState(e), z = zoneOf(e.zone);
+    if (!z) return '';
+    let h = `<div class="border-t border-gray-800 pt-3 space-y-3"><button type="button" data-act="uk-toggle" class="w-full flex items-center justify-between text-sm font-black text-sky-200 py-1"><span><i class="fa-solid fa-list-check mr-2"></i>${K.open ? 'Opgave med medarbejdere' : '+ Opgave med medarbejdere'}</span><i class="fa-solid fa-chevron-${K.open ? 'up' : 'down'} text-xs text-gray-500"></i></button>`;
+    if (K.open) {
+        const open = S.tasks.filter(t => t.project_id === z.project_id && !t.done).sort((a, b) => a.text.localeCompare(b.text, 'da'));
+        e.trades.forEach(tid => {
+            const b = K.b[tid], t = tradeOf(tid); if (!b) return;
+            const list = open.slice(); if (b.taskId && !list.some(x => x.id === b.taskId)) { const cur = S.tasks.find(x => x.id === b.taskId); if (cur) list.unshift(cur); }
+            h += `<div class="bg-gray-900/70 border border-gray-800 rounded-xl p-3 space-y-2.5">` +
+                (e.trades.length > 1 ? `<div class="text-xs font-black text-white">${esc((t && t.icon) || '')} ${esc(t ? tradeName(t, 'da') : '')}</div>` : '') +
+                `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="uk-mode" data-t="${tid}" data-m="new" class="py-2.5 rounded-xl text-xs font-black border ${b.mode === 'new' ? 'bg-sky-950/70 border-sky-500 text-sky-100' : 'bg-gray-800 border-gray-700 text-gray-300'}">Ny opgave</button>` +
+                `<button type="button" data-act="uk-mode" data-t="${tid}" data-m="existing" class="py-2.5 rounded-xl text-xs font-black border ${b.mode === 'existing' ? 'bg-sky-950/70 border-sky-500 text-sky-100' : 'bg-gray-800 border-gray-700 text-gray-300'}">Eksisterende</button></div>` +
+                (b.mode === 'new'
+                    ? `<input data-ukt="${tid}" maxlength="200" class="inp" value="${esc(b.title)}" placeholder="Opgavens navn">`
+                    : `<select data-chg="uk-task" data-t="${tid}" class="inp"><option value="">Vælg opgave…</option>${list.map(x => `<option value="${x.id}" ${b.taskId === x.id ? 'selected' : ''}>${esc(x.text)}</option>`).join('')}</select>`) +
+                `<div class="flex flex-wrap gap-2">${assignChipsHtml(b.set, 'uk-assign', 'data-t="' + tid + '"')}</div></div>`;
+        });
+    }
+    return h + '</div>';
+}
+function ukSync() {
+    const b = $('uc-body'), e = U.edit; if (!b || !e || !e.tk) return;
+    b.querySelectorAll('[data-ukt]').forEach(i => { const x = e.tk.b[i.dataset.ukt]; if (x) x.title = i.value; });
+}
+async function ukApply(cells, projectId) {
+    const e = U.edit; if (!e || !e.tk || !e.tk.open) return;
+    for (const c of cells) {
+        const b = e.tk.b[c.trade_id]; if (!b) continue;
+        try {
+            let task = null;
+            if (b.mode === 'new') {
+                const text = (b.title || '').trim();
+                if (!text) continue;
+                const as = [...b.set];
+                const row = { company_id: S.profile.company_id, project_id: projectId, text: text.slice(0, 500), assigned_to: as[0] || null, created_by: myId(), zone_id: e.zone };
+                if (!S.noAssignees) row.assignees = as;
+                let res = await sb.from('tasks').insert(row).select().single();
+                if (res.error && missingCol(res.error)) { S.noAssignees = true; delete row.assignees; res = await sb.from('tasks').insert(row).select().single(); }
+                if (res.error) throw res.error;
+                task = res.data; mergeRow(S.tasks, task);
+            } else if (b.taskId) {
+                task = S.tasks.find(x => x.id === b.taskId);
+                if (task && b.dirty) {
+                    const as = [...b.set], payload = { assigned_to: as[0] || null };
+                    if (!S.noAssignees) payload.assignees = as;
+                    const res = await sb.from('tasks').update(payload).eq('id', task.id).select().single();
+                    if (res.error) throw res.error;
+                    mergeRow(S.tasks, res.data); task = res.data;
+                }
+            }
+            if (task) {
+                const cur = U.cells.find(x => x.id === c.id);
+                if (!cur || cur.task_id !== task.id) {
+                    const r = await sb.from('plan_cells').update({ task_id: task.id }).eq('id', c.id).select().single();
+                    if (r.error) throw r.error; mergeRow(U.cells, r.data);
+                }
+            }
+        } catch (er) { fail(er); }
+    }
+    renderTasks(); renderKpis();
+}
 async function ugSave() {
     ugSync(); const e = U.edit; if (!e || !ugAdminOnly()) return;
     if (!e.trades.length) return toast('Vælg mindst ét fag.');
@@ -6386,6 +6470,7 @@ async function ugSave() {
             const r = await sb.from('plan_cells').update(Object.assign({ trade_id: e.trades[0] }, fields)).eq('id', e.id).select().single();
             if (r.error) throw r.error; mergeRow(U.cells, r.data);
             await ugSetRes(e.id, e.res);
+            await ukApply([{ id: e.id, trade_id: e.trades[0] }], z.project_id);
         } else {
             const rows = e.trades.filter(t => !U.cells.some(c => c.zone_id === e.zone && c.work_date === e.date && c.trade_id === t))
                 .map(t => Object.assign({ company_id: S.profile.company_id, project_id: z.project_id, zone_id: e.zone, work_date: e.date, trade_id: t, created_by: myId() }, fields));
@@ -6394,6 +6479,7 @@ async function ugSave() {
             if (r.error) throw r.error;
             r.data.forEach(c => mergeRow(U.cells, c));
             for (const c of r.data) await ugSetRes(c.id, e.res);
+            await ukApply(r.data.map(c => ({ id: c.id, trade_id: c.trade_id })), z.project_id);
         }
         closeModal('modal-ucell'); U.edit = null; scheduleRender();
     } catch (er) { fail(er); }
@@ -7272,6 +7358,9 @@ async function handleAct(act, el) {
         case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = tkAssignHtml(); return tkSave(); }
         case 'tk-finish': case 'tk-reopen': case 'tk-delete': return taskModalAct(act);
         case 'task-new': return openNewTask();
+        case 'uk-toggle': { if (!U.edit) return; ugSync(); const K = ukState(U.edit); K.open = !K.open; return renderUgCell(); }
+        case 'uk-mode': { if (!U.edit) return; ugSync(); const b = ukState(U.edit).b[d.t]; if (b) b.mode = d.m; return renderUgCell(); }
+        case 'uk-assign': { if (!U.edit) return; ugSync(); const b = ukState(U.edit).b[d.t]; if (!b) return; toggleAssign(b.set, d.user); b.dirty = true; return renderUgCell(); }
         case 'task-filter': S.taskFilter = (S.taskFilter === d.f && d.f !== 'all') ? 'all' : d.f; return renderTasks();
         case 'pc-goto': switchPcView(d.view); if (d.view === 'tasks') { S.taskFilter = d.filter || 'all'; renderTasks(); } return;
         case 'edit-shift': return isManager() ? openShiftModal(d.user, d.date) : undefined;
@@ -7318,6 +7407,7 @@ async function handleAct(act, el) {
 }
 async function handleChg(act, el) {
     switch (act) {
+        case 'uk-task': { if (!U.edit) return; ugSync(); const b = ukState(U.edit).b[el.dataset.t]; if (!b) return; b.taskId = el.value; const t = S.tasks.find(x => x.id === el.value); b.set = new Set(t ? taskAssignees(t) : []); b.dirty = false; return renderUgCell(); }
         case 'toggle-task': return toggleTask(el.dataset.id, el.checked);
         case 'toggle-item': return toggleItem(el.dataset.id, el.checked);
         case 'set-role': return setRole(el.dataset.user, el.value);
