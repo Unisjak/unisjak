@@ -3008,6 +3008,7 @@ function triggerCamera(kind) {
     U.photoZone = U.pendingZone || null; U.pendingZone = null;
     clearShots();
     acquireGps();
+    if (kind === 'ks' && !isTouchDevice()) { openPhotoModal('ks'); return; }   // PC: åbn selve oprettelsen – billeder tilføjes i vinduet, hvis man vil
     pickPhotos(isTouchDevice() ? 'camera' : 'gallery');
 }
 function pickPhotos(src) { $(src === 'gallery' ? 'gallery-input' : (activeKind === 'ks' ? 'camera-input-ks' : 'camera-input-mat')).click(); }
