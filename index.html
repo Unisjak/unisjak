@@ -232,6 +232,7 @@
     <input type="file" id="camera-input-ks" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoTaken(event, 'ks')">
     <input type="file" id="camera-input-mat" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoTaken(event, 'materiale')">
     <input type="file" id="gallery-input" accept="image/*" multiple class="hidden" onchange="handlePhotoTaken(event)">
+    <input type="file" id="tk-upd-file" accept="image/*" multiple class="hidden" onchange="tkUpdSend(this.files)">
 
     <div id="app-root" class="hidden">
 
@@ -464,7 +465,6 @@
 
             <!-- HJEM -->
             <div id="tab-home" class="h-full flex flex-col justify-between space-y-2.5">
-                <div id="quick-home" class="hidden bg-card border border-card rounded-2xl p-3"><div data-voicebox="quick"></div></div>
                 <div id="m-clock-home" class="hidden"></div>
                 <div id="m-extra-home" class="hidden bg-violet-950/30 border border-violet-700/50 rounded-2xl p-3"></div>
                 <div id="ug-today" class="hidden bg-card border border-card rounded-2xl p-3"></div>
@@ -663,6 +663,7 @@
             </div>
             <p id="pf-ref-note" class="hidden text-[11px] text-violet-200 bg-violet-950/30 border border-violet-800/50 rounded-xl p-2.5"></p>
             <div id="pf-w-safety" class="hidden space-y-2"><div id="pf-safe-body" class="space-y-2"></div></div>
+            <div id="pf-w-dev" class="hidden space-y-2"><div id="pf-dev-body" class="space-y-2"></div></div>
             <div id="pf-w-extra" class="hidden space-y-2">
                 <label class="flex items-center justify-between gap-3 bg-violet-950/30 border border-violet-800/50 rounded-xl p-3 cursor-pointer"><span class="min-w-0"><span class="font-black text-sm text-white block"><i class="fa-solid fa-plus-circle text-violet-400 mr-1.5"></i>Ekstraarbejde</span><span class="text-[11px] text-gray-400">Opretter automatisk en opgave til udførelse og dokumentation</span></span><input type="checkbox" id="pf-extra" data-chg="pf-extra" class="w-8 h-8 accent-violet-500 shrink-0"></label>
                 <div id="pf-extra-box" class="hidden space-y-2"><span class="lbl">Hvem skal udføre det?</span><div id="pf-extra-assignees" class="flex flex-wrap gap-2"></div><p class="text-[11px] text-violet-300">Du kan vælge modtager senere – opgaven oprettes uanset. Skriv en kort beskrivelse ovenfor.</p></div>
@@ -901,6 +902,40 @@
         </div>
     </div>
 
+    <div id="modal-sa" class="hidden fixed inset-0 bg-stone-900/90 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-card w-full max-w-2xl rounded-t-2xl sm:rounded-2xl border border-card p-5 space-y-3 max-h-[94vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-crown text-violet-400 mr-2"></i><span id="sa-title">Superadmin</span></h3>
+                <button onclick="closeModal('modal-sa')" class="text-gray-400 hover:text-white p-1" aria-label="Luk"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div id="sa-body" class="space-y-3"></div>
+        </div>
+    </div>
+    <div id="modal-emp-new" class="hidden fixed inset-0 bg-stone-900/85 backdrop-blur-sm z-[56] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-card p-5 space-y-3 max-h-[94vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-user-plus text-orange-500 mr-2"></i>Opret medarbejder</h3>
+                <button onclick="closeModal('modal-emp-new')" class="text-gray-400 hover:text-white p-1" aria-label="Luk"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div><label class="lbl">Navn</label><input id="emp-n-name" class="inp" maxlength="120" placeholder="F.eks. Jan Kowalski" autocomplete="off"></div>
+            <div><span class="lbl">Rolle</span><div id="emp-n-roles" class="grid grid-cols-3 gap-2"></div></div>
+            <p id="emp-n-guesthint" class="hidden text-xs text-violet-300 bg-violet-950/30 border border-violet-800/50 rounded-xl p-3">Gæstebrugere er til eksterne samarbejdspartnere. De ser kun opgaver, de er tildelt, og kan dokumentere arbejdet med billeder, kommentar og status.</p>
+            <div><label class="lbl">E-mail (valgfri – invitationen sendes med det samme)</label><input id="emp-n-email" type="email" class="inp" autocomplete="off" placeholder="navn@firma.dk"></div>
+            <div><label class="lbl">Sprog</label><select id="emp-n-lang" class="inp"></select></div>
+            <p id="emp-n-limit" class="text-xs font-bold text-amber-300"></p>
+            <button type="button" id="emp-n-save" data-act="emp-create" class="w-full brand-orange text-white py-4 rounded-xl font-black text-base">Opret</button>
+        </div>
+    </div>
+    <div id="modal-emp" class="hidden fixed inset-0 bg-stone-900/85 backdrop-blur-sm z-[56] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-card p-5 space-y-3 max-h-[94vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 class="font-bold text-base text-white flex items-center min-w-0"><i class="fa-solid fa-user-gear text-orange-500 mr-2 shrink-0"></i><span id="emp-title" class="truncate">Indstillinger</span></h3>
+                <button onclick="closeModal('modal-emp')" class="text-gray-400 hover:text-white p-1" aria-label="Luk"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div id="emp-body" class="space-y-3"></div>
+        </div>
+    </div>
+
     <div id="modal-task" class="hidden fixed inset-0 bg-stone-900/85 backdrop-blur-sm z-[56] flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-card p-5 space-y-4 max-h-[94vh] overflow-y-auto">
             <div class="flex justify-between items-center">
@@ -1063,7 +1098,14 @@ const isAdmin = () => !!S.profile && S.profile.role === 'admin';
 /* ---- branche: 'haandvaerk' (Kvalitetssikring) eller 'butik' (Vagtplan) ---- */
 const normIndustry = v => (v === 'butik' ? 'butik' : 'haandvaerk');
 const industry = () => normIndustry(S.company && S.company.industry);
-const hasKs = () => industry() === 'haandvaerk';
+/* ---- adgang: gæst, planlægnings-ret, moduler og egne navne (labels) pr. virksomhed ---- */
+const isGuest = () => !!S.profile && S.profile.role === 'gaest';
+const modOn = k => !(S.company && S.company.modules && typeof S.company.modules === 'object' && S.company.modules[k] === false);
+const canPlan = () => !!S.profile && !isGuest() && (isAdmin() || S.profile.perm_plan === true || !('perm_plan' in S.profile));
+const LBL = () => (S.company && S.company.labels && typeof S.company.labels === 'object') ? S.company.labels : {};
+const lbl = (k, d) => { const v = LBL()[k]; return typeof v === 'string' && v.trim() ? v.trim().slice(0, 40) : d; };
+const hasKs = () => industry() === 'haandvaerk' && modOn('ks') && !isGuest();
+const hasMat = () => hasKs() && modOn('materials');
 const hasShifts = () => industry() === 'butik';
 async function setCompanyIndustry(cid, val) {
     // Første og eneste gang: sæt branchen og lås den (databasen afviser senere ændringer)
@@ -1071,22 +1113,40 @@ async function setCompanyIndustry(cid, val) {
     if (r.error && /industry_locked|column|schema cache/i.test(r.error.message || '')) r = await sb.from('companies').update({ industry: normIndustry(val) }).eq('id', cid);
     if (r.error) console.error(r.error);
 }
-const placeW = pl => hasShifts() ? (pl ? 'afdelinger' : 'afdeling') : (pl ? 'sager' : 'sag');
+const placeW = pl => {
+    const sg = lbl('sag', ''), d = hasShifts() ? (pl ? 'afdelinger' : 'afdeling') : (pl ? 'sager' : 'sag');
+    const w = pl ? lbl('sager', sg ? sg + (/e$/i.test(sg) ? 'r' : 'er') : d) : lbl('sag', d);
+    return w.charAt(0).toLowerCase() + w.slice(1);
+};
 const placeCap = pl => { const w = placeW(pl); return w.charAt(0).toUpperCase() + w.slice(1); };
 function applyIndustry() {
     const ks = hasKs(), sh = hasShifts();
     const set = (el, on) => { if (el) el.style.display = on ? '' : 'none'; };
-    ['pc-nav-ks', 'pc-view-ks', 'nav-ks', 'tab-ks', 'pc-nav-materials', 'pc-view-materials', 'nav-materials', 'tab-materials'].forEach(id => set($(id), ks));
-    set(document.querySelector('#tab-home button[onclick*="triggerCamera(\'materiale\')"]'), ks);
-    set(document.querySelector('#pc-shell header button[onclick*="triggerCamera(\'materiale\')"]'), ks);
+    const g = isGuest(), mat = hasMat(), tm = modOn('time') && !g, tk = modOn('tasks'), shOn = sh && modOn('shifts') && !g, plOn = !sh && hasPlan();
+    ['pc-nav-ks', 'pc-view-ks', 'nav-ks', 'tab-ks'].forEach(id => set($(id), ks));
+    ['pc-nav-materials', 'pc-view-materials', 'nav-materials', 'tab-materials'].forEach(id => set($(id), mat));
+    ['pc-nav-timers', 'pc-view-timers', 'nav-timer', 'tab-timer'].forEach(id => set($(id), tm));
+    ['pc-nav-tasks', 'pc-view-tasks', 'nav-tasks', 'tab-tasks'].forEach(id => set($(id), tk));
+    ['nav-home', 'pc-nav-overview', 'pc-nav-admin'].forEach(id => set($(id), !g));
+    set(document.querySelector('#tab-home button[onclick*="openTimerModal"]'), tm);
+    set(document.querySelector('#tab-home button[onclick*="triggerCamera(\'materiale\')"]'), mat);
+    set(document.querySelector('#pc-shell header button[onclick*="triggerCamera(\'materiale\')"]'), mat);
     [['lbl-active-place', 'Aktiv ' + placeCap()], ['btn-new-place', '+ Opret ' + placeW()], ['title-new-place', 'Opret ny ' + placeW()], ['btn-save-place', 'Opret & vælg ' + placeW()], ['lbl-shift-place', placeCap()]].forEach(([id, t]) => { const el = $(id); if (el) el.textContent = t; });
-    ['pc-nav-shifts', 'pc-view-shifts', 'nav-shifts', 'tab-shifts'].forEach(id => set($(id), sh));
-    ['pc-nav-plan', 'pc-view-plan', 'nav-plan', 'tab-plan'].forEach(id => set($(id), !sh));
-    if (sh && (S.pcView === 'plan')) switchPcView('overview');
-    if (sh && S.mobTab === 'plan') switchTab('home');
+    ['pc-nav-shifts', 'pc-view-shifts', 'nav-shifts', 'tab-shifts'].forEach(id => set($(id), shOn));
+    ['pc-nav-plan', 'pc-view-plan', 'nav-plan', 'tab-plan'].forEach(id => set($(id), plOn));
+    if (!plOn && (S.pcView === 'plan')) switchPcView('overview');
+    if (!plOn && S.mobTab === 'plan') switchTab('home');
+    if (!shOn && S.pcView === 'shifts') switchPcView('overview');
+    if (!tm && S.pcView === 'timers') switchPcView('overview');
+    if (!tk && S.pcView === 'tasks') switchPcView('overview');
+    if (!tm && S.mobTab === 'timer') switchTab('home');
+    if (!tk && S.mobTab === 'tasks') switchTab('home');
+    if (g) { document.body.classList.add('force-mobile'); const bb = $('btn-back-to-pc'); if (bb) bb.classList.add('hidden'); if (S.mobTab !== 'tasks' && S.mobTab !== 'admin') switchTab('tasks'); }
+    const nl = (id, t) => { const el = $(id); const sp = el && (el.tagName === 'SPAN' ? el : el.lastElementChild); if (sp && sp.tagName === 'SPAN' && !sp.children.length && t) sp.textContent = t; };
+    nl('nav-ks', lbl('ks', 'KS')); nl('pc-nav-ks', lbl('ks', 'Kvalitetssikring')); nl('nav-tasks', lbl('opgaver', 'Opgaver')); nl('pc-nav-tasks', lbl('opgaver', 'Opgaver'));
     set(document.querySelector('#pc-shell header button[onclick*="triggerCamera(\'ks\')"]'), ks);
     set(document.querySelector('#tab-home button[onclick*="triggerCamera(\'ks\')"]'), ks);
-    set(document.querySelector('#tab-home button[onclick*="switchTab(\'shifts\')"]'), sh);
+    set(document.querySelector('#tab-home button[onclick*="switchTab(\'shifts\')"]'), shOn);
     const kpiCard = $('pc-kpi-ks').parentElement;
     set(kpiCard, ks);
     kpiCard.parentElement.classList.toggle('grid-cols-4', ks);
@@ -1094,10 +1154,11 @@ function applyIndustry() {
     set($('pc-leaflet-map').parentElement, ks);
     const tableCard = $('pc-week-table-body').closest('div[class*="col-span-"]');
     if (tableCard) { tableCard.classList.toggle('col-span-7', ks); tableCard.classList.toggle('col-span-12', !ks); }
-    if (!ks && (S.pcView === 'ks' || S.pcView === 'materials')) switchPcView('overview');
-    if (!sh && S.pcView === 'shifts') switchPcView('overview');
-    if (!ks && (S.mobTab === 'ks' || S.mobTab === 'materials')) switchTab('home');
-    if (!sh && S.mobTab === 'shifts') switchTab('home');
+    if (!ks && S.pcView === 'ks') switchPcView('overview');
+    if (!mat && S.pcView === 'materials') switchPcView('overview');
+    if (!ks && (S.mobTab === 'ks')) switchTab('home');
+    if (!mat && S.mobTab === 'materials') switchTab('home');
+    if (!shOn && S.mobTab === 'shifts') switchTab('home');
     if (ks && S.pcView === 'overview') setTimeout(initPcMap, 150);
 }
 const DAYS = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
@@ -1118,7 +1179,7 @@ function hFmt(n) { let s = (Math.round(Number(n) * 100) / 100).toFixed(2); if (s
 function hhmm(t) { return t ? String(t).slice(0, 5) : ''; }
 function dkDate(d) { return d.toLocaleDateString('da-DK', { day: '2-digit', month: '2-digit' }); }
 function whenLabel(iso) { const d = new Date(iso); return d.toLocaleDateString('da-DK', { day: 'numeric', month: 'short' }) + ' kl. ' + d.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' }); }
-function roleLabel(r) { return r === 'admin' || r === 'formand' ? 'Admin' : 'Medarbejder'; }
+function roleLabel(r) { return r === 'admin' || r === 'formand' ? 'Admin' : r === 'gaest' ? 'Gæst' : 'Medarbejder'; }
 function newUuid() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
 
 const proj = id => S.projects.find(p => p.id === id);
@@ -1244,7 +1305,7 @@ function resetApp() {
     if (S.chPlan) { try { sb.removeChannel(S.chPlan); } catch (e) {} S.chPlan = null; }
     Object.assign(S, {
         session: null, profile: null, company: null, started: false,
-        projects: [], members: [], profiles: [], time: [], approvals: [], photos: [], tasks: [], shifts: [], invitations: [],
+        projects: [], members: [], profiles: [], time: [], approvals: [], photos: [], tasks: [], shifts: [], invitations: [], taskUpdates: [], updReady: false,
         urls: {}, range: { time: null, shifts: null }, weekOffset: 0, shiftOffset: 0, live: 'wait'
     });
     if (typeof resetUg === 'function') resetUg();
@@ -1374,6 +1435,8 @@ async function loadCore() {
     await loadPhotoCols();
     await loadExtraCols();
     await loadSafetyCols();
+    await loadDevCols();
+    await loadTaskUpdates();
 }
 
 function keyOf(row) {
@@ -1493,7 +1556,10 @@ function subscribeCompany() {
     const ch = sb.channel('unisjak-company');
     ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'companies' }, p => {
         if (S.started && p.new && S.profile && p.new.id === S.profile.company_id) {
+            const sig = c => JSON.stringify([c && c.modules, c && c.labels]);
+            const changed = sig(S.company) !== sig(Object.assign({}, S.company, p.new));
             S.company = Object.assign({}, S.company, p.new);
+            if (changed) { refreshAll(); return; }
             scheduleRender();
         }
     });
@@ -1532,7 +1598,7 @@ function onChange(table, p) {
     }
     if (table === 'profiles') {
         if (row && row.id === me) {
-            const roleChanged = S.profile.role !== row.role;
+            const roleChanged = S.profile.role !== row.role || (('perm_plan' in row) && S.profile.perm_plan !== row.perm_plan);
             S.profile = Object.assign({}, S.profile, row);
             if (!row.active) { toast('Din adgang er deaktiveret.'); sb.auth.signOut(); return; }
             if (roleChanged) refreshAll();
@@ -2454,36 +2520,7 @@ function teamHtml() {
         }
         if (admin) h += `<div class="${box}"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-file-invoice-dollar text-orange-500 mr-2"></i>Løn &amp; fravær</h3>` +
             (S.payReady ? `<p class="text-xs text-gray-400">Registrér syg, ferie m.m. og hent godkendte timer som data til lønsystemet. Medarbejdernummer skrives på hver medarbejder nedenfor.</p><div class="grid grid-cols-1 gap-2"><button data-act="open-absence" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3.5 rounded-xl font-bold text-sm"><i class="fa-solid fa-umbrella-beach mr-1.5 text-orange-400"></i>Registrér fravær</button><button data-act="open-payexp" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-file-arrow-down mr-1.5"></i>Løn-eksport</button></div>` : '<p class="text-xs text-amber-300 font-bold">Kør den nyeste unisjak_pro.sql i Supabase for at aktivere løn og fravær.</p>') + `</div>`;
-        const people = [...S.profiles].sort((a, b) => (Number(b.active) - Number(a.active)) || a.full_name.localeCompare(b.full_name, 'da'));
-        h += `<div class="${box}"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-users text-orange-500 mr-2"></i>Medarbejdere</h3><div class="space-y-2">` +
-            people.map(p => {
-                const self = p.id === me.id;
-                return `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-3 ${p.active ? '' : 'opacity-50'}"><div class="flex justify-between items-center"><span class="font-bold text-white text-sm min-w-0 truncate"><i class="fa-solid fa-user text-orange-500 mr-2"></i>${esc(p.full_name)}${self ? ' (dig)' : ''}</span>` +
-                    `<span class="text-[11px] text-gray-400 shrink-0 ml-2">${staffBadge(p)}${roleLabel(p.role)}${p.active ? '' : ' · deaktiveret'}</span></div>` +
-                    (admin && !self ? `<div class="flex gap-2 mt-2"><select data-chg="set-role" data-user="${p.id}" class="inp flex-1">${['svend', 'admin'].map(r => `<option value="${r}" ${p.role === r ? 'selected' : ''}>${roleLabel(r)}</option>`).join('')}</select>` +
-                        `<button data-act="toggle-active" data-user="${p.id}" data-val="${p.active ? '0' : '1'}" class="px-4 rounded-xl text-sm font-bold border ${p.active ? 'border-red-700/50 text-red-400 bg-red-950/40' : 'border-emerald-600/50 text-emerald-400 bg-emerald-950/40'}">${p.active ? 'Deaktivér' : 'Aktivér'}</button></div>` : '') +
-                    (admin && 'lang' in p ? `<div class="mt-2"><select data-chg="staff-lang" data-user="${p.id}" class="inp" aria-label="Sprog">${Object.keys(UG_LANGS).map(l => `<option value="${l}" ${(p.lang || 'da') === l ? 'selected' : ''}>Sprog: ${UG_LANGS[l]}</option>`).join('')}</select></div>` : '') +
-                    (admin && 'employee_no' in p ? `<div class="mt-2"><input data-chg="set-eno" data-user="${p.id}" class="inp" maxlength="30" value="${esc(p.employee_no || '')}" placeholder="Medarbejdernr. (til løn)" aria-label="Medarbejdernummer"></div>` : '') +
-                    (admin && p.is_draft ? draftControls(p) : '') +
-                    (hasShifts() ? `<button data-act="open-person" data-user="${p.id}" class="mt-2 w-full bg-gray-800 border border-gray-700 text-sky-300 py-2.5 rounded-xl text-xs font-bold"><i class="fa-solid fa-calendar-xmark mr-1.5"></i>Roller & friønsker</button>` : '') + `</div>`;
-            }).join('') + `</div></div>`;
-
-        h += `<div class="${box}"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-user-plus text-orange-500 mr-2"></i>Opret medarbejder uden e-mail</h3>` +
-            `<p class="text-xs text-gray-400">Opret navnet nu, og brug personen med det samme i sjak, planlægning, vagtplan og opgaver. Send invitation, når du kender e-mailen – så kobles kontoen til samme medarbejder.</p>` +
-            (draftsReady() ? '' : `<p class="text-xs text-amber-300 font-bold">Kør den nyeste unisjak_pro.sql i Supabase for at aktivere dette.</p>`) +
-            `<input data-f="dr-name" class="inp" placeholder="Navn (f.eks. Jan Kowalski)"><div class="grid grid-cols-2 gap-2"><select data-f="dr-role" class="inp"><option value="svend">Medarbejder</option><option value="admin">Admin</option></select>` +
-            `<select data-f="dr-lang" class="inp">${Object.keys(UG_LANGS).map(l => `<option value="${l}">${UG_LANGS[l]}</option>`).join('')}</select></div>` +
-            `<input data-f="dr-email" type="email" class="inp" placeholder="E-mail (valgfri – kan tilføjes senere)">` +
-            `<button data-act="draft-create" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm">Opret medarbejder</button></div>`;
-        h += `<div class="${box}"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-envelope text-orange-500 mr-2"></i>Inviter medarbejder</h3>` +
-            `<p class="text-xs text-gray-400">Opret en invitation, og bed personen oprette en konto på unisjak.dk med samme e-mail. Så kommer vedkommende automatisk ind i virksomheden.</p>` +
-            `<input data-f="inv-name" class="inp" placeholder="Navn (f.eks. Jeppe)"><input data-f="inv-email" type="email" class="inp" placeholder="E-mail">` +
-            `<div class="grid grid-cols-2 gap-2"><select data-f="inv-role" class="inp"><option value="svend">Medarbejder</option>${admin ? '<option value="admin">Admin</option>' : ''}</select>` +
-            `<select data-f="inv-lang" class="inp" aria-label="Sprog i mailen">${Object.keys(UG_LANGS).map(l => `<option value="${l}">Mail: ${UG_LANGS[l]}</option>`).join('')}</select></div>` +
-            `<div class="grid grid-cols-2 gap-2"><button data-act="invite" class="brand-orange text-white py-3.5 rounded-xl font-black">Inviter</button><button data-act="test-mail" class="bg-gray-800 border border-gray-700 text-gray-100 py-3.5 rounded-xl font-bold text-sm">Send testmail til mig</button></div>` +
-            (S.invitations.length ? `<div class="space-y-2 pt-1"><p class="text-[10px] uppercase font-bold text-gray-400">Åbne invitationer</p>` + S.invitations.map(i =>
-                `<div class="flex justify-between items-center bg-gray-900/80 border border-gray-800 rounded-xl p-3 text-xs"><div class="min-w-0"><p class="font-bold text-white truncate">${esc(i.full_name)} <span class="text-gray-500">(${roleLabel(i.role)})</span></p><p class="text-gray-400 truncate">${esc(i.email)}</p></div>` +
-                `<div class="flex shrink-0"><button data-act="resend-inv" data-id="${i.id}" class="text-sky-300 p-2" aria-label="Send invitationsmail igen"><i class="fa-solid fa-paper-plane"></i></button><button data-act="revoke-inv" data-id="${i.id}" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button></div></div>`).join('') + `</div>` : '') + `</div>`;
+        h += empBoxHtml(box);
 
         const projs = S.projects;
         const pid = (S.panelProject && proj(S.panelProject)) ? S.panelProject : (S.currentProject || (projs[0] && projs[0].id) || '');
@@ -2493,7 +2530,7 @@ function teamHtml() {
             h += '<p class="text-xs text-gray-500">Ingen sager endnu. Opret den første med "+ Ny sag".</p>';
         } else {
             h += `<select data-chg="panel-project" class="inp">${projs.map(p => `<option value="${esc(p.id)}" ${p.id === pid ? 'selected' : ''}>${esc(projLabel(p))}${p.status === 'aktiv' ? '' : ' (afsluttet)'}</option>`).join('')}</select>`;
-            const svende = S.profiles.filter(p => p.active && p.role !== 'admin' && p.role !== 'formand').sort((a, b) => a.full_name.localeCompare(b.full_name, 'da'));
+            const svende = S.profiles.filter(p => p.active && p.role !== 'admin' && p.role !== 'formand' && p.role !== 'gaest').sort((a, b) => a.full_name.localeCompare(b.full_name, 'da'));
             h += svende.length
                 ? `<p class="text-xs text-gray-400">Tryk for at tildele eller fjerne. Admin ser alle sager.</p><div class="space-y-2">` + svende.map(p => {
                     const on = S.members.some(m => m.project_id === pid && m.user_id === p.id);
@@ -2509,9 +2546,201 @@ function teamHtml() {
         `<div><label class="lbl">Ny adgangskode (mindst 8 tegn)</label><div class="flex gap-2"><input data-f="my-pass" type="password" autocomplete="new-password" class="inp flex-1"><button data-act="save-pass" class="bg-gray-700 text-white px-5 rounded-xl font-bold">Skift</button></div></div>` +
         `<div><label class="lbl">${esc(tr('lang'))} / Language</label><select data-chg="set-lang" class="inp">${Object.keys(UG_LANGS).map(l => `<option value="${l}" ${myLang() === l ? 'selected' : ''}>${UG_LANGS[l]}</option>`).join('')}</select></div>` +
         `<p class="text-[11px] text-gray-500">Din rolle: <b class="text-orange-400">${roleLabel(me.role)}</b></p>` +
+        (me.is_superadmin === true ? `<button data-act="sa-open" class="w-full bg-violet-950/50 border border-violet-700/60 text-violet-200 py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-crown mr-1.5"></i>Superadmin</button>` : '') +
         (hasShifts() ? `<button data-act="open-person" data-user="me" class="w-full bg-gray-800 border border-gray-700 text-sky-300 py-3.5 rounded-xl font-bold text-sm"><i class="fa-solid fa-calendar-xmark mr-1.5"></i>Mine friønsker</button>` : '') +
         `<button data-act="logout" class="w-full bg-red-950/60 border border-red-800 text-red-400 py-3.5 rounded-xl font-bold text-sm">Log ud</button></div>`;
     return h;
+}
+/* ---- medarbejderoversigt: én knap, søg, ren liste, indstillinger ved klik ---- */
+const ROLE_BADGE = {
+    admin: 'bg-orange-950/70 text-orange-300 border-orange-700/50',
+    svend: 'bg-gray-800 text-gray-300 border-gray-700',
+    gaest: 'bg-violet-950/60 text-violet-300 border-violet-700/50'
+};
+const roleBadge = r => { const k = r === 'formand' ? 'admin' : r; return `<span class="inline-block text-[10px] font-black border rounded-full px-2 py-0.5 ${ROLE_BADGE[k] || ROLE_BADGE.svend}">${roleLabel(r)}</span>`; };
+function userCounts() {
+    const act = S.profiles.filter(p => p.active);
+    return { n: act.filter(p => p.role !== 'gaest').length, g: act.filter(p => p.role === 'gaest').length };
+}
+function limitMsg(role) {
+    const c = S.company; if (!c || !('max_interne_brugere' in c)) return '';
+    const u = userCounts();
+    if (role === 'gaest') return u.g >= c.max_gaestebrugere ? 'Grænsen på ' + c.max_gaestebrugere + ' gæstebrugere er nået. Kontakt UniSjak for at opgradere.' : '';
+    return u.n >= c.max_interne_brugere ? 'Grænsen på ' + c.max_interne_brugere + ' brugere er nået. Kontakt UniSjak for at opgradere.' : '';
+}
+function empBoxHtml(box) {
+    const admin = isAdmin(), me = S.profile, c = S.company;
+    const people = [...S.profiles].sort((a, b) => (Number(b.active) - Number(a.active)) || a.full_name.localeCompare(b.full_name, 'da'));
+    const u = userCounts();
+    const lim = c && 'max_interne_brugere' in c ? `<p class="text-[11px] text-gray-500">${u.n} af ${c.max_interne_brugere} brugere · ${u.g} af ${c.max_gaestebrugere} gæster</p>` : '';
+    let h = `<div class="${box} md:col-span-2"><div class="flex items-center justify-between gap-2"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-users text-orange-500 mr-2"></i>Medarbejdere</h3>` +
+        (admin ? `<button type="button" data-act="emp-new" class="brand-orange text-white px-4 py-2.5 rounded-xl text-sm font-black"><i class="fa-solid fa-user-plus mr-1.5"></i>Opret medarbejder</button>` : '') + `</div>` + lim +
+        `<input data-f="emp-search" type="search" autocomplete="off" oninput="empFilter(this)" placeholder="Søg medarbejder…" aria-label="Søg medarbejder" class="inp"><div class="space-y-1.5" data-emp-list>` +
+        people.map(p => `<button type="button" data-act="emp-open" data-user="${p.id}" data-name="${esc(p.full_name.toLowerCase())}" class="emp-row w-full flex items-center justify-between gap-2 bg-gray-900/80 border border-gray-800 rounded-xl px-3.5 py-3 text-left active:scale-[.99] transition ${p.active ? '' : 'opacity-50'}"><span class="font-bold text-white text-sm min-w-0 truncate">${esc(p.full_name)}${p.id === me.id ? ' <span class="text-gray-500 font-semibold">(dig)</span>' : ''}</span><span class="shrink-0 flex items-center gap-1.5">${staffBadge(p)}${p.active ? '' : '<span class="text-[10px] text-gray-500">inaktiv</span>'}${roleBadge(p.role)}<i class="fa-solid fa-chevron-right text-gray-600 text-[10px]"></i></span></button>`).join('') +
+        `</div><p data-emp-none class="hidden text-xs text-gray-500 text-center py-2">Ingen medarbejdere matcher.</p>`;
+    const loose = S.invitations.filter(i => !i.profile_id && !i.accepted_at);
+    if (loose.length) h += `<div class="space-y-2 pt-1"><p class="text-[10px] uppercase font-bold text-gray-400">Åbne invitationer</p>` + loose.map(i =>
+        `<div class="flex justify-between items-center bg-gray-900/80 border border-gray-800 rounded-xl p-3 text-xs"><div class="min-w-0"><p class="font-bold text-white truncate">${esc(i.full_name)} ${roleBadge(i.role)}</p><p class="text-gray-400 truncate">${esc(i.email)}</p></div>` +
+        `<div class="flex shrink-0"><button data-act="resend-inv" data-id="${i.id}" class="text-sky-300 p-2" aria-label="Send invitationsmail igen"><i class="fa-solid fa-paper-plane"></i></button><button data-act="revoke-inv" data-id="${i.id}" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button></div></div>`).join('') + `</div>`;
+    if (admin) h += `<button type="button" data-act="test-mail" class="w-full text-[11px] text-gray-500 hover:text-gray-300 py-1.5">Send testmail til mig</button>`;
+    return h + `</div>`;
+}
+function empFilter(el, root) {
+    root = root || el.closest('[data-teamroot]'); if (!root) return;
+    const q = String(el ? el.value : '').trim().toLowerCase();
+    let n = 0;
+    root.querySelectorAll('.emp-row').forEach(b => { const on = !q || b.dataset.name.includes(q); b.classList.toggle('hidden', !on); if (on) n++; });
+    const none = root.querySelector('[data-emp-none]'); if (none) none.classList.toggle('hidden', n > 0);
+}
+S.empNewRole = 'svend'; S.empOpen = null;
+function empRoleBtns() {
+    const opts = [['svend', 'Medarbejder', 'Alt til hverdagen'], ['admin', 'Admin', 'Styrer hele virksomheden'], ['gaest', 'Gæstebruger', 'Ser kun egne opgaver']];
+    return opts.map(([r, t, sub]) => `<button type="button" data-act="emp-n-role" data-r="${r}" class="rounded-xl border-2 px-2 py-3 text-center transition ${S.empNewRole === r ? 'border-orange-500 bg-orange-950/40 text-white' : 'border-gray-700 bg-gray-900 text-gray-300'}"><span class="block text-sm font-black">${t}</span><span class="block text-[10px] ${S.empNewRole === r ? 'text-orange-200' : 'text-gray-500'} mt-0.5 leading-tight">${sub}</span></button>`).join('');
+}
+function openEmpNew() {
+    if (!isAdmin()) return toast('Kun admin kan oprette medarbejdere.');
+    S.empNewRole = 'svend';
+    $('emp-n-name').value = ''; $('emp-n-email').value = ''; $('emp-n-lang').value = 'da';
+    $('emp-n-lang').innerHTML = Object.keys(UG_LANGS).map(l => `<option value="${l}">${UG_LANGS[l]}</option>`).join('');
+    $('emp-n-roles').innerHTML = empRoleBtns(); $('emp-n-limit').textContent = ''; show('emp-n-guesthint', false);
+    show('modal-emp-new', true);
+    setTimeout(() => $('emp-n-name').focus(), 60);
+}
+function empNewRole(r) {
+    S.empNewRole = r; $('emp-n-roles').innerHTML = empRoleBtns();
+    const m = limitMsg(r); $('emp-n-limit').textContent = m;
+    show('emp-n-guesthint', r === 'gaest');
+}
+async function empCreate() {
+    const name = $('emp-n-name').value.trim(), email = $('emp-n-email').value.trim().toLowerCase(), role = S.empNewRole, lang = $('emp-n-lang').value || 'da';
+    if (name.length < 2) return toast('Skriv et navn (mindst 2 tegn).');
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Skriv en gyldig e-mailadresse – eller lad feltet stå tomt.');
+    const lm = limitMsg(role); if (lm) { $('emp-n-limit').textContent = lm; return toast(lm); }
+    if (!draftsReady()) return toast('Kør den nyeste unisjak_pro.sql i Supabase først.');
+    const btn = $('emp-n-save'); btn.disabled = true;
+    try {
+        const r = await sb.rpc('create_draft_employee', { p_name: name, p_role: role, p_lang: lang });
+        if (r.error) return fail(r.error);
+        const prof = await sb.from('profiles').select('*').eq('id', r.data).maybeSingle();
+        if (!prof.error && prof.data) mergeRow(S.profiles, prof.data);
+        closeModal('modal-emp-new');
+        if (email) await draftInvite(r.data, email);
+        else toast(name + ' er oprettet' + (role === 'gaest' ? '. Tilføj en e-mail under indstillinger, når gæsten skal have adgang.' : ' og kan bruges med det samme.'), 'ok');
+        renderTeam(); scheduleRender();
+    } finally { btn.disabled = false; }
+}
+/* ---- superadmin: kunder, lofter, moduler, labels (kun synlig for profiler med is_superadmin) ---- */
+const SA_MODULES = [['ks', 'KS / kvalitetssikring'], ['safety', 'Sikkerhed (grøn/gul/rød)'], ['extra', 'Ekstraarbejde'], ['materials', 'Materialer'], ['time', 'Timer & stempling'], ['tasks', 'Opgaver'], ['plan', 'Planlægning'], ['shifts', 'Vagtplan (butik)']];
+const SA_LABELS = [['sag', 'Sag (ental)'], ['sager', 'Sager (flertal)'], ['ks', 'KS'], ['opgaver', 'Opgaver']];
+S.sa = { list: [], sel: null, view: 'list' };
+async function saOpen() {
+    if (!S.profile || S.profile.is_superadmin !== true) return;
+    S.sa.view = 'list'; S.sa.sel = null; $('sa-body').innerHTML = '<p class="text-xs text-gray-500">Henter kunder…</p>'; show('modal-sa', true);
+    await saReload();
+}
+async function saReload() {
+    const r = await sb.rpc('sa_list_companies');
+    if (r.error) { $('sa-body').innerHTML = `<p class="text-xs text-red-300">${esc(r.error.message || 'Fejl')}</p>`; return; }
+    S.sa.list = r.data || []; saRender();
+}
+function saRender() {
+    const B = $('sa-body'), v = S.sa.view;
+    $('sa-title').textContent = v === 'new' ? 'Ny kunde' : v === 'edit' ? ((S.sa.list.find(c => c.id === S.sa.sel) || {}).name || 'Kunde') : 'Superadmin – kunder';
+    const mods = m => SA_MODULES.map(([k, t]) => `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 cursor-pointer"><span class="text-sm font-bold text-white">${t}</span><input type="checkbox" data-sa-mod="${k}" ${(m || {})[k] === false ? '' : 'checked'} class="w-6 h-6 accent-orange-500"></label>`).join('');
+    const labs = l => SA_LABELS.map(([k, t]) => `<div><label class="lbl">${t}</label><input data-sa-lbl="${k}" maxlength="40" class="inp" value="${esc((l || {})[k] || '')}" placeholder="Standard"></div>`).join('');
+    if (v === 'list') {
+        B.innerHTML = `<button type="button" data-act="sa-new" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Ny kunde</button>` +
+            `<div class="space-y-2">` + (S.sa.list.map(c => `<button type="button" data-act="sa-edit" data-id="${c.id}" class="w-full text-left bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 active:scale-[.99]"><div class="flex justify-between gap-2"><span class="font-black text-white text-sm truncate">${esc(c.name)}</span><span class="text-[10px] text-gray-400 shrink-0">${c.industry === 'butik' ? 'Butik' : 'Håndværk'}</span></div><p class="text-[11px] text-gray-400 mt-0.5">${c.n_interne}/${c.max_interne} brugere · ${c.n_gaest}/${c.max_gaest} gæster · ${(c.admins || []).map(a => esc(a.name)).join(', ') || 'ingen admin'}</p></button>`).join('') || '<p class="text-xs text-gray-500">Ingen kunder.</p>') + `</div>`;
+    } else if (v === 'new') {
+        B.innerHTML = `<button type="button" data-act="sa-back" class="text-xs text-sky-300 font-bold"><i class="fa-solid fa-chevron-left mr-1"></i>Tilbage</button>` +
+            `<div><label class="lbl">Virksomhed / organisation</label><input data-sa-f="name" class="inp" maxlength="120" placeholder="F.eks. Vejdirektoratet"></div>` +
+            `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Branche</label><select data-sa-f="industry" class="inp"><option value="haandvaerk">Håndværk &amp; Byggeri</option><option value="butik">Butik &amp; Restaurant</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="lbl">Brugere</label><input data-sa-f="max_int" type="number" min="1" class="inp" value="25"></div><div><label class="lbl">Gæster</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="10"></div></div></div>` +
+            `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Første admin – navn</label><input data-sa-f="admin_name" class="inp" maxlength="120"></div><div><label class="lbl">Første admin – e-mail</label><input data-sa-f="admin_email" type="email" class="inp"></div></div>` +
+            `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${mods({})}</div><span class="lbl">Egne navne (valgfrit)</span><div class="grid grid-cols-2 gap-2">${labs({})}</div>` +
+            `<button type="button" data-act="sa-create" class="w-full brand-orange text-white py-4 rounded-xl font-black">Opret kunde og send invitation</button>`;
+    } else {
+        const c = S.sa.list.find(x => x.id === S.sa.sel); if (!c) { S.sa.view = 'list'; return saRender(); }
+        B.innerHTML = `<button type="button" data-act="sa-back" class="text-xs text-sky-300 font-bold"><i class="fa-solid fa-chevron-left mr-1"></i>Alle kunder</button>` +
+            `<div><label class="lbl">Navn</label><input data-sa-f="name" class="inp" maxlength="120" value="${esc(c.name)}"></div>` +
+            `<div class="grid grid-cols-3 gap-2"><div><label class="lbl">Brugere (nu ${c.n_interne})</label><input data-sa-f="max_int" type="number" min="0" class="inp" value="${c.max_interne}"></div><div><label class="lbl">Gæster (nu ${c.n_gaest})</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="${c.max_gaest}"></div><div><label class="lbl">Prøve til</label><input data-sa-f="trial" type="date" class="inp" value="${esc(String(c.trial_ends_at || '').slice(0, 10))}"></div></div>` +
+            `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${mods(c.modules)}</div><span class="lbl">Egne navne (tomt = standard)</span><div class="grid grid-cols-2 gap-2">${labs(c.labels)}</div>` +
+            `<button type="button" data-act="sa-save" class="w-full brand-orange text-white py-4 rounded-xl font-black">Gem</button>` +
+            `<div class="border-t border-gray-800 pt-3 space-y-2"><span class="lbl">Admins</span>` + ((c.admins || []).map(a => `<p class="text-xs text-gray-300">${esc(a.name)} <span class="text-gray-500">${esc(a.email || '')}${a.draft ? ' · afventer' : ''}</span></p>`).join('') || '<p class="text-xs text-gray-500">Ingen endnu.</p>') +
+            `<div class="grid grid-cols-2 gap-2"><input data-sa-f="inv_name" class="inp" maxlength="120" placeholder="Navn"><input data-sa-f="inv_email" type="email" class="inp" placeholder="E-mail"></div><button type="button" data-act="sa-invite" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-sm font-bold">Inviter admin</button></div>`;
+    }
+}
+function saVals() {
+    const B = $('sa-body'), f = n => { const e = B.querySelector('[data-sa-f="' + n + '"]'); return e ? e.value.trim() : ''; };
+    const modules = {}; B.querySelectorAll('[data-sa-mod]').forEach(e => { if (!e.checked) modules[e.dataset.saMod] = false; });
+    const labels = {}; B.querySelectorAll('[data-sa-lbl]').forEach(e => { const v = e.value.trim(); if (v) labels[e.dataset.saLbl] = v.slice(0, 40); });
+    return { f, modules, labels };
+}
+async function saCreate() {
+    const { f, modules, labels } = saVals(), email = f('admin_email').toLowerCase();
+    if (f('name').length < 2 || f('admin_name').length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Udfyld navn, første admin og en gyldig e-mail.');
+    const r = await sb.rpc('sa_create_company', { p_name: f('name'), p_industry: f('industry'), p_admin_name: f('admin_name'), p_admin_email: email, p_max_int: parseInt(f('max_int'), 10) || 25, p_max_guest: parseInt(f('max_guest'), 10) || 0, p_modules: modules, p_labels: labels });
+    if (r.error) return fail(r.error);
+    await sendInviteMail(email, 'da');
+    S.sa.view = 'list'; await saReload();
+}
+async function saSave() {
+    const c = S.sa.list.find(x => x.id === S.sa.sel); if (!c) return;
+    const { f, modules, labels } = saVals();
+    const r = await sb.rpc('sa_update_company', { p_id: c.id, p_name: f('name') || null, p_max_int: parseInt(f('max_int'), 10), p_max_guest: parseInt(f('max_guest'), 10), p_modules: modules, p_labels: labels, p_trial_ends: f('trial') ? new Date(f('trial') + 'T23:59:00').toISOString() : null });
+    if (r.error) return fail(r.error);
+    toast('Gemt.', 'ok'); S.sa.view = 'list'; await saReload();
+}
+async function saInvite() {
+    const c = S.sa.list.find(x => x.id === S.sa.sel); if (!c) return;
+    const { f } = saVals(), email = f('inv_email').toLowerCase();
+    if (f('inv_name').length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Skriv navn og en gyldig e-mail.');
+    const r = await sb.rpc('sa_invite_admin', { p_company: c.id, p_name: f('inv_name'), p_email: email });
+    if (r.error) return fail(r.error);
+    await sendInviteMail(email, 'da'); await saReload(); S.sa.view = 'edit'; saRender();
+}
+function empModalHtml(id) {
+    const p = S.profiles.find(x => x.id === id); if (!p) return '';
+    const admin = isAdmin(), self = p.id === S.profile.id, g = p.role === 'gaest', mgrRole = p.role === 'admin' || p.role === 'formand';
+    const row = (lab, inner) => `<div><span class="lbl">${lab}</span>${inner}</div>`;
+    let h = `<div class="flex items-center gap-2 flex-wrap">${roleBadge(p.role)}${staffBadge(p)}${p.active ? '' : '<span class="text-[11px] font-bold text-gray-400">inaktiv</span>'}</div>`;
+    if (admin) h += row('Navn', `<div class="flex gap-2"><input data-f="emp-name" class="inp flex-1" maxlength="120" value="${esc(p.full_name)}"><button type="button" data-act="emp-name-save" data-user="${p.id}" class="brand-orange text-white px-5 rounded-xl font-black">Gem</button></div>`);
+    if (admin && !self && !g) h += row('Rolle', `<select data-chg="set-role" data-user="${p.id}" class="inp">${['svend', 'admin'].map(r => `<option value="${r}" ${(p.role === r || (r === 'admin' && p.role === 'formand')) ? 'selected' : ''}>${roleLabel(r)}</option>`).join('')}</select>`);
+    if (g) h += `<p class="text-xs text-violet-300 bg-violet-950/30 border border-violet-800/50 rounded-xl p-3">Gæstebruger: ser kun de opgaver, vedkommende er tildelt, og kan dokumentere arbejdet med billeder, kommentar og status. Ingen adgang til resten af systemet.</p>`;
+    if (admin && !g && industry() === 'haandvaerk' && modOn('plan')) {
+        h += mgrRole ? `<p class="text-xs text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-chart-gantt text-orange-500 mr-1.5"></i>Admin har altid adgang til Planlægning.</p>`
+            : (('perm_plan' in p) ? `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl p-3.5 cursor-pointer"><span class="min-w-0"><span class="block font-black text-sm text-white"><i class="fa-solid fa-chart-gantt text-orange-500 mr-1.5"></i>Må se Planlægning</span><span class="block text-[11px] text-gray-400">Som standard kun for admin</span></span><input type="checkbox" data-chg="emp-perm-plan" data-user="${p.id}" ${p.perm_plan ? 'checked' : ''} class="w-7 h-7 accent-orange-500 shrink-0"></label>` : `<p class="text-xs text-amber-300 font-bold">Kør den nyeste unisjak_pro.sql for at styre adgang til Planlægning.</p>`);
+    }
+    if (admin && 'lang' in p) h += row('Sprog', `<select data-chg="staff-lang" data-user="${p.id}" class="inp" aria-label="Sprog">${Object.keys(UG_LANGS).map(l => `<option value="${l}" ${(p.lang || 'da') === l ? 'selected' : ''}>${UG_LANGS[l]}</option>`).join('')}</select>`);
+    if (admin && !g && 'employee_no' in p) h += row('Medarbejdernummer (til løn)', `<input data-chg="set-eno" data-user="${p.id}" class="inp" maxlength="30" value="${esc(p.employee_no || '')}" placeholder="Valgfrit">`);
+    if (admin && p.is_draft) h += `<div>${draftControls(p)}</div>`;
+    if (hasShifts() && !g) h += `<button type="button" data-act="open-person" data-user="${p.id}" class="w-full bg-gray-800 border border-gray-700 text-sky-300 py-3 rounded-xl text-sm font-bold"><i class="fa-solid fa-calendar-xmark mr-1.5"></i>Roller & friønsker</button>`;
+    if (admin && !self) h += `<button type="button" data-act="toggle-active" data-user="${p.id}" data-val="${p.active ? '0' : '1'}" class="w-full py-3 rounded-xl text-sm font-black border ${p.active ? 'border-red-700/50 text-red-400 bg-red-950/40' : 'border-emerald-600/50 text-emerald-400 bg-emerald-950/40'}">${p.active ? 'Deaktivér' : 'Aktivér'}</button>`;
+    return h;
+}
+function openEmp(id) {
+    const p = S.profiles.find(x => x.id === id); if (!p) return;
+    S.empOpen = id; renderEmpModal(true); show('modal-emp', true);
+}
+function renderEmpModal(force) {
+    if (!S.empOpen || $('modal-emp').classList.contains('hidden') && !force) return;
+    const p = S.profiles.find(x => x.id === S.empOpen); if (!p) { closeModal('modal-emp'); S.empOpen = null; return; }
+    const ae = document.activeElement;
+    if (!force && ae && $('modal-emp').contains(ae) && /INPUT|SELECT|TEXTAREA/.test(ae.tagName) && ae.type !== 'checkbox') return;
+    $('emp-title').textContent = p.full_name;
+    $('emp-body').innerHTML = empModalHtml(p.id);
+}
+async function empNameSave(id) {
+    const v = ($('emp-body').querySelector('[data-f="emp-name"]') || {}).value;
+    const name = String(v || '').trim();
+    if (name.length < 2) return toast('Skriv et navn (mindst 2 tegn).');
+    const r = await sb.from('profiles').update({ full_name: name.slice(0, 120) }).eq('id', id).select().single();
+    if (r.error) return fail(r.error);
+    mergeRow(S.profiles, r.data); toast('Gemt.', 'ok'); renderTeam(); renderEmpModal(true); scheduleRender();
+}
+async function setPermPlan(id, on) {
+    const r = await sb.from('profiles').update({ perm_plan: !!on }).eq('id', id).select().single();
+    if (r.error) { fail(r.error); return renderEmpModal(true); }
+    mergeRow(S.profiles, r.data); toast(on ? 'Giver adgang til Planlægning.' : 'Fjerner adgang til Planlægning.', 'ok'); renderEmpModal(true);
 }
 function renderTeam() {
     ['pc-admin-root', 'mobile-admin-root'].forEach(id => {
@@ -2523,8 +2752,10 @@ function renderTeam() {
         root.querySelectorAll('[data-f]').forEach(i => { saved[i.dataset.f] = i.value; });
         root.innerHTML = teamHtml();
         root.querySelectorAll('[data-f]').forEach(i => { if (saved[i.dataset.f] !== undefined) i.value = saved[i.dataset.f]; });
+        const q = root.querySelector('[data-f="emp-search"]'); if (q && q.value) empFilter(q, root);
         delete root.dataset.dirty;
     });
+    try { renderEmpModal(false); } catch (e) { console.error(e); }
 }
 document.addEventListener('focusout', e => {
     const root = e.target.closest && e.target.closest('[data-teamroot]');
@@ -3089,6 +3320,7 @@ async function savePhotoEntry(btn) {
     const wantSafety = activeKind === 'ks' && S.safetyReady && base.category === 'Sikkerhed';
     if (wantSafety && !S.safeLv) return toast('Vælg Grøn, Gul eller Rød for Sikkerhed.');
     const wantExtra = !wantSafety && activeKind === 'ks' && S.extraReady && isManager() && $('pf-extra').checked;
+    const wantDev = activeKind === 'ks' && S.devReady && base.category === 'Afvigelse';
     if (wantExtra && !base.note) return toast('Skriv eller indtal en kort beskrivelse af ekstraarbejdet.', 'info');
     if (S.gpsState === 'denied' || S.gpsState === 'fail') toast('Gemmer uden GPS-position.', 'info');
     btn.disabled = true;
@@ -3112,6 +3344,7 @@ async function savePhotoEntry(btn) {
         if (S.multiPhoto) row.image_paths = paths;
         if (wantSafety) { row.safety_level = S.safeLv; if (S.safeTask) { row.safety_make_task = true; row.safety_assignees = [...S.safeAssign]; } }
         if (wantExtra) { row.is_extra = true; row.extra_assignees = [...S.extraAssign]; }
+        if (wantDev && S.devTask) { row.dev_make_task = true; row.dev_assignees = [...S.devAssign]; }
         if (activeKind === 'materiale' && S.matRef && S.extraReady) row.extra_ref = S.matRef;
         if (U.ready && U.photoZone && activeKind === 'ks') row.zone_id = U.photoZone;
         const { data, error } = await photoWrite(row, pl => sb.from('photo_entries').insert(pl).select().single());
@@ -3121,6 +3354,7 @@ async function savePhotoEntry(btn) {
         clearShots();
         closeModal('modal-photo-note');
         if (data.is_extra) { await pullExtraTask(data); toast('Ekstraarbejde ' + exNo(data) + ' er oprettet – opgaven ligger under Opgaver' + (S.extraAssign.size ? '.' : ' (modtager kan vælges senere).'), 'ok'); }
+        if (wantDev && data.task_id) { await pullExtraTask(data); toast('Afvigelsen er gemt – opgaven ligger under Opgaver' + (S.devAssign.size ? '.' : ' (modtager kan vælges senere).'), 'ok'); }
         if (data.safety_level) { if (data.task_id) await pullExtraTask(data); toast(sfNo(data) + ' (' + SAFE[data.safety_level].n + ') er gemt' + (data.task_id ? ' – opgaven ligger under Opgaver.' : '.'), 'ok'); }
         const keepRef = S.matRef; S.matRef = null;
         fillAddress(data);
@@ -3245,7 +3479,7 @@ async function saveEditedPhoto(btn) {
 /* ------------------------------ EKSTRAARBEJDE (KS-punkt + automatisk opgave) ------------------------------ */
 S.extraReady = false; S.extraAssign = new Set(); S.ksExtraOnly = false; S.timerRef = null; S.matRef = null; S.extraTime = {}; S.extraSeen = new Set();
 async function loadExtraCols() {
-    try { const r = await sb.from('photo_entries').select('is_extra,task_id,done_paths').limit(1); S.extraReady = !r.error; } catch (e) { S.extraReady = false; }
+    try { const r = await sb.from('photo_entries').select('is_extra,task_id,done_paths').limit(1); S.extraReady = !r.error && modOn('extra'); } catch (e) { S.extraReady = false; }
 }
 const exNo = p => 'EX-' + String(p && p.extra_no || 0).padStart(3, '0');
 const extraPoints = () => S.photos.filter(p => p.project_id === S.currentProject && p.kind === 'ks' && p.is_extra);
@@ -3524,8 +3758,29 @@ async function buildExtraReport(fmt, opt) {
 
 /* ------------------------------ SIKKERHED (farve + valgfri opgave + luk) ------------------------------ */
 S.safetyReady = false; S.safeLv = ''; S.safeTask = false; S.safeAssign = new Set(); S.safeFilter = ''; S.editSafeLv = '';
+S.devReady = false; S.devTask = false; S.devAssign = new Set();
+async function loadDevCols() {
+    try { const r = await sb.from('photo_entries').select('dev_make_task,dev_assignees').limit(1); S.devReady = !r.error; } catch (e) { S.devReady = false; }
+}
+const devOfTask = t => t ? (S.photos.find(p => p.category === 'Afvigelse' && !p.safety_level && !p.is_extra && p.task_id === t.id) || null) : null;
+function devFormRender() {
+    const on = S.devReady && activeKind === 'ks' && $('pf-cat') && $('pf-cat').value === 'Afvigelse';
+    show('pf-w-dev', on);
+    if (!on) return;
+    $('pf-dev-body').innerHTML =
+        `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl p-3 cursor-pointer"><span class="min-w-0"><span class="font-black text-sm text-white block"><i class="fa-solid fa-list-check text-sky-400 mr-1.5"></i>Opret opgave</span><span class="text-[11px] text-gray-400">Valgfrit – til opfølgning og udbedring</span></span><input type="checkbox" data-chg="pf-dev-task" ${S.devTask ? 'checked' : ''} class="w-8 h-8 accent-sky-500 shrink-0"></label>` +
+        (S.devTask ? `<div class="space-y-2"><span class="lbl">Hvem skal løse den?</span><div class="flex flex-wrap gap-2">${assignChipsHtml(S.devAssign, 'dev-assign', '', 'Vælges senere')}</div></div>` : '');
+}
+async function devCreateTask() {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
+    if (p.category !== 'Afvigelse') return toast('Tryk først "Gem ændringer", så kategorien Afvigelse er gemt.', 'info');
+    const res = await sb.rpc('deviation_create_task', { p_id: p.id });
+    if (res.error) return fail(res.error);
+    mergeRow(S.photos, res.data); await pullExtraTask(res.data); renderEditSafety(res.data); renderAll();
+    toast('Opgaven er oprettet – du kan vælge modtager her eller under Opgaver.', 'ok');
+}
 async function loadSafetyCols() {
-    try { const r = await sb.from('photo_entries').select('safety_level,safety_no,safety_closed_at').limit(1); S.safetyReady = !r.error; } catch (e) { S.safetyReady = false; }
+    try { const r = await sb.from('photo_entries').select('safety_level,safety_no,safety_closed_at').limit(1); S.safetyReady = !r.error && modOn('safety'); } catch (e) { S.safetyReady = false; }
 }
 const SAFE = {
     groen: { n: 'Grøn', cls: 'bg-emerald-600 text-white', rgb: [22, 163, 74] },
@@ -3536,7 +3791,7 @@ const SAFE_ORDER = ['roed', 'gul', 'groen'];
 const sfNo = p => 'SIK-' + String(p && p.safety_no || 0).padStart(3, '0');
 const safetyPoints = () => S.photos.filter(p => p.project_id === S.currentProject && p.kind === 'ks' && p.safety_level);
 const safetyOfTask = t => t ? (S.photos.find(p => p.safety_level && p.task_id === t.id) || null) : null;
-const pointOfTask = t => extraOfTask(t) || safetyOfTask(t);
+const pointOfTask = t => extraOfTask(t) || safetyOfTask(t) || devOfTask(t);
 const pointNo = p => p.is_extra ? exNo(p) : sfNo(p);
 const isClosed = p => !!p.safety_closed_at;
 function ageDays(p) { const end = p.safety_closed_at ? new Date(p.safety_closed_at) : new Date(); return Math.max(0, Math.floor((end - new Date(p.created_at)) / 86400000)); }
@@ -3558,6 +3813,7 @@ async function refreshPhotoRow(id) {
 /* ---- oprettelse: farvevælger + valgfri opgave (alle medarbejdere) ---- */
 const extraCan = () => activeKind === 'ks' && S.extraReady && isManager() && !S.matRef;
 function safeFormRender() {
+    devFormRender();
     const on = S.safetyReady && activeKind === 'ks' && $('pf-cat').value === 'Sikkerhed';
     show('pf-w-safety', on);
     if (on && $('pf-extra').checked) { $('pf-extra').checked = false; extraFormRender(); }
@@ -3568,7 +3824,7 @@ function safeFormRender() {
         `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl p-3 cursor-pointer"><span class="min-w-0"><span class="font-black text-sm text-white block"><i class="fa-solid fa-list-check text-sky-400 mr-1.5"></i>Opret opgave</span><span class="text-[11px] text-gray-400">Valgfrit – til opfølgning og udbedring</span></span><input type="checkbox" data-chg="pf-safe-task" ${S.safeTask ? 'checked' : ''} class="w-8 h-8 accent-sky-500 shrink-0"></label>` +
         (S.safeTask ? `<div class="space-y-2"><span class="lbl">Hvem skal løse den?</span><div class="flex flex-wrap gap-2">${assignChipsHtml(S.safeAssign, 'safe-assign', '', 'Vælges senere')}</div></div>` : '');
 }
-function safeFormReset() { S.safeLv = ''; S.safeTask = false; S.safeAssign = new Set(); safeFormRender(); }
+function safeFormReset() { S.safeLv = ''; S.safeTask = false; S.safeAssign = new Set(); S.devTask = false; S.devAssign = new Set(); safeFormRender(); }
 
 /* ---- panel i punktet: farve, opgave, efter-billeder, luk ---- */
 function editSafeRender() { renderEditSafety(S.photos.find(x => x.id === S.editPhotoId)); }
@@ -3577,8 +3833,19 @@ function safeLevelBtns(cur, act) {
 }
 function renderEditSafety(p) {
     const box = $('edit-safety'); if (!box) return;
-    if (!p || p.kind !== 'ks' || !S.safetyReady) { show('edit-safety', false); return; }
-    const catNow = $('ef-cat') ? $('ef-cat').value : p.category;
+    const catNow = p ? (($('ef-cat') && $('ef-cat').value) || p.category) : '';
+    if (!p || p.kind !== 'ks' || (!S.safetyReady && !(S.devReady && catNow === 'Afvigelse'))) { show('edit-safety', false); return; }
+    if (!p.safety_level && S.devReady && catNow === 'Afvigelse' && !p.is_extra) {
+        show('edit-safety', true);
+        const t = extraTaskOf(p), ids = t ? taskAssignees(t) : [], me = myId();
+        const canWork = isManager() || p.user_id === me || ids.includes(me) || !ids.length;
+        let h = `<div class="rounded-2xl border border-gray-700 bg-gray-900/60 p-3 space-y-2"><span class="text-xs font-black text-white"><i class="fa-solid fa-triangle-exclamation mr-1.5 text-amber-400"></i>Afvigelse</span><span class="lbl">Opgave</span>`;
+        if (t) h += `<div class="flex flex-wrap gap-2">${assignChipsHtml(new Set(ids), 'extra-pt-assign', '', 'Ikke valgt endnu')}</div><button type="button" data-act="extra-goto" class="text-[11px] text-sky-300 underline mt-1">Gå til opgaven</button>`;
+        else h += canWork ? `<button type="button" data-act="dev-mktask" class="w-full bg-sky-950/50 border border-sky-700/60 text-sky-100 py-3 rounded-xl text-xs font-black"><i class="fa-solid fa-list-check mr-1.5"></i>Opret opgave til afvigelsen</button>` : `<p class="text-[11px] text-gray-500">Ingen opgave oprettet.</p>`;
+        box.innerHTML = h + `</div>`;
+        return;
+    }
+    if (!S.safetyReady) { show('edit-safety', false); return; }
     if (!p.safety_level) {
         const pend = catNow === 'Sikkerhed' && !p.is_extra;
         show('edit-safety', pend);
@@ -3785,7 +4052,7 @@ function renderTasks() {
         [...S.taskAssign[src]].forEach(u => { if (!active.has(u)) S.taskAssign[src].delete(u); });
         const box = $(src + '-task-assignees'); if (box) box.innerHTML = assignChipsHtml(S.taskAssign[src], 'task-assign', 'data-src="' + src + '"');
     });
-    const all = S.tasks.filter(t => t.project_id === S.currentProject)
+    const all = S.tasks.filter(t => isGuest() || t.project_id === S.currentProject)
         .sort((a, b) => (Number(a.done) - Number(b.done)) || (a.created_at < b.created_at ? 1 : -1));
     const me = myId(), isMine = t => taskAssignees(t).includes(me);
     const F = S.taskFilter || 'all';
@@ -3804,7 +4071,7 @@ function renderTasks() {
         const items = taskItemsOf(t.id), nD = items.filter(i => i.done).length;
         const ids = taskAssignees(t);
         const who = ids.length ? (ids.length > 2 ? firstName(userName(ids[0])) + ' +' + (ids.length - 1) : ids.map(u => firstName(userName(u))).join(', ')) : (pointOfTask(t) ? 'Ingen modtager endnu' : 'Alle');
-        const meta = `<span class="${isUnassignedExtra(t) ? 'text-amber-400' : 'text-gray-400'}"><i class="fa-solid fa-user-group mr-1 text-[9px]"></i>${esc(who)}</span>` + (items.length ? `<span class="text-gray-400"><i class="fa-solid fa-list-check mr-1 text-[9px]"></i>${nD}/${items.length}</span>` : '');
+        const meta = (isGuest() ? `<span class="text-orange-300"><i class="fa-solid fa-folder mr-1 text-[9px]"></i>${esc(projShort(proj(t.project_id)))}</span>` : `<span class="${isUnassignedExtra(t) ? 'text-amber-400' : 'text-gray-400'}"><i class="fa-solid fa-user-group mr-1 text-[9px]"></i>${esc(who)}</span>`) + (items.length ? `<span class="text-gray-400"><i class="fa-solid fa-list-check mr-1 text-[9px]"></i>${nD}/${items.length}</span>` : '');
         return `<div data-act="edit-task" data-id="${t.id}" role="button" tabindex="0" class="border rounded-xl px-3 py-3 flex items-center gap-3 cursor-pointer transition active:scale-[.99] ${t.done ? 'bg-gray-950/60 border-gray-800/60 opacity-60' : (pc ? 'bg-gray-900/90 border-gray-800 hover:border-gray-600' : 'bg-card border-card')}">` +
             `<input type="checkbox" ${t.done ? 'checked' : ''} data-chg="toggle-task" data-id="${t.id}" class="w-6 h-6 rounded accent-emerald-500 shrink-0 cursor-pointer" aria-label="Afkryds opgave">` +
             `<div class="min-w-0 flex-1">${extraTagBlock(t)}<span class="text-sm font-bold block truncate ${t.done ? 'line-through text-gray-500' : 'text-white'}">${esc(t.text)}</span><span class="flex flex-wrap items-center gap-x-3 text-[11px] font-semibold mt-0.5">${meta}</span></div>` +
@@ -3934,17 +4201,81 @@ function taskModalDyn() {
     if (ae && $('modal-task').contains(ae) && (ae.tagName === 'INPUT' && ae.type === 'text' || ae.tagName === 'TEXTAREA')) return;   // skriver – bevar feltet
     show('tk-items-wrap', S.itemsReady);
     const st = $('tk-status'); st.textContent = t.done ? 'Færdig' : 'Åben'; st.className = 'text-[11px] font-black px-2 py-1 rounded-lg border ' + (t.done ? 'bg-emerald-950 text-emerald-300 border-emerald-700/60' : 'bg-orange-950 text-orange-300 border-orange-800/60');
-    $('tk-list').innerHTML = taskItemsOf(t.id).map(i => `<div class="flex items-center gap-2"><input type="checkbox" ${i.done ? 'checked' : ''} data-chg="toggle-item" data-id="${i.id}" class="w-6 h-6 rounded accent-emerald-500 shrink-0" aria-label="Afkryds punkt"><input type="text" maxlength="300" value="${esc(E.texts[i.id] != null ? E.texts[i.id] : i.text)}" oninput="S.editTask.texts['${i.id}']=this.value" onchange="tkSaveItem('${i.id}', this.value)" class="flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"><button type="button" data-act="del-item" data-id="${i.id}" class="text-gray-500 hover:text-red-400 p-2 shrink-0" aria-label="Slet punkt"><i class="fa-solid fa-xmark"></i></button></div>`).join('');
+    $('tk-list').innerHTML = taskItemsOf(t.id).map(i => `<div class="flex items-center gap-2"><input type="checkbox" ${i.done ? 'checked' : ''} data-chg="toggle-item" data-id="${i.id}" class="w-6 h-6 rounded accent-emerald-500 shrink-0" aria-label="Afkryds punkt">${isGuest() ? `<span class="flex-1 min-w-0 text-sm ${i.done ? 'line-through text-gray-500' : 'text-white'} py-2.5">${esc(i.text)}</span></div>` : `<input type="text" maxlength="300" value="${esc(E.texts[i.id] != null ? E.texts[i.id] : i.text)}" oninput="S.editTask.texts['${i.id}']=this.value" onchange="tkSaveItem('${i.id}', this.value)" class="flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"><button type="button" data-act="del-item" data-id="${i.id}" class="text-gray-500 hover:text-red-400 p-2 shrink-0" aria-label="Slet punkt"><i class="fa-solid fa-xmark"></i></button></div>`}`).join('');
     const plan = taskPlanChipHtml(t), cs = (typeof U !== 'undefined' && U.ready) ? taskCellsOf(t.id) : [];
     const cell = cs.find(c => c.id === E.cell) || cs[0];
     let h = (plan || cell ? `<div class="flex items-center justify-between gap-2 bg-sky-950/30 border border-sky-900/60 rounded-xl px-3 py-2"><div class="min-w-0">${plan.replace('ml-2', '')}</div>${cell && isAdmin() ? `<button type="button" data-act="tk-plan" data-id="${cell.id}" class="shrink-0 bg-sky-950/70 border border-sky-700 text-sky-100 px-3 py-2 rounded-lg text-xs font-black"><i class="fa-solid fa-calendar-days mr-1.5"></i>Ret plan</button>` : ''}</div>` : '') + taskExtraHtml(t).replace(/pl-9/g, '');
-    if (S.itemsReady) h += `<div data-voicebox="subtask:${t.id}"></div>`;
-    h += `<div class="grid grid-cols-2 gap-2">` +
+    if (S.itemsReady && !isGuest()) h += `<div data-voicebox="subtask:${t.id}"></div>`;
+    h += taskDocHtml(t);
+    h += `<div class="grid ${isGuest() ? 'grid-cols-1' : 'grid-cols-2'} gap-2">` +
         (t.done ? `<button type="button" data-act="tk-reopen" class="bg-gray-800 border border-gray-600 text-gray-100 py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-rotate-left mr-1.5"></i>Genåbn opgave</button>`
-            : `<button type="button" data-act="tk-finish" class="bg-emerald-950/60 border-2 border-emerald-500 text-emerald-300 py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-check mr-1.5"></i>Afslut opgave</button>`) +
-        `<button type="button" data-act="tk-delete" class="${E.delArm ? 'bg-red-600 text-white' : 'bg-gray-900 border border-red-900/70 text-red-400'} py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-trash mr-1.5"></i>${E.delArm ? 'Tryk igen for at slette' : 'Slet opgave'}</button></div>`;
+            : `<button type="button" data-act="tk-finish" class="bg-emerald-950/60 border-2 border-emerald-500 text-emerald-300 py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-check mr-1.5"></i>${isGuest() ? 'Markér som udført' : 'Afslut opgave'}</button>`) +
+        (isGuest() ? '' : `<button type="button" data-act="tk-delete" class="${E.delArm ? 'bg-red-600 text-white' : 'bg-gray-900 border border-red-900/70 text-red-400'} py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-trash mr-1.5"></i>${E.delArm ? 'Tryk igen for at slette' : 'Slet opgave'}</button>`) + `</div>`;
     $('tk-foot').innerHTML = h;
     renderVoiceBoxes();
+}
+/* ---- dokumentation i opgaven: kommentar/indtale, billeder, status (gæst og medarbejdere) ---- */
+S.taskUpdates = []; S.updReady = false; S.updDraft = '';
+async function loadTaskUpdates() {
+    try {
+        const r = await sb.from('task_updates').select('*').order('created_at', { ascending: true }).limit(2000);
+        if (r.error) throw r.error;
+        S.taskUpdates = r.data || []; S.updReady = true;
+    } catch (e) { S.taskUpdates = []; S.updReady = false; }
+}
+const updAuthor = u => u.user_id === myId() ? 'Dig' : (isGuest() ? 'Kontoret' : userName(u.user_id));
+async function resolveUpdUrls(taskId) {
+    const need = S.taskUpdates.filter(u => u.task_id === taskId).flatMap(u => u.image_paths || []).filter(pt => pt && (!S.urls[pt] || S.urls[pt].exp < Date.now() + 60000));
+    if (!need.length) return;
+    try {
+        const { data, error } = await sb.storage.from(BUCKET).createSignedUrls(need, 3600);
+        if (error) return;
+        (data || []).forEach(d => { if (d.signedUrl) S.urls[d.path] = { url: d.signedUrl, exp: Date.now() + 3600000 }; });
+        if (S.editTask) taskModalDyn();
+    } catch (e) { /* ignore */ }
+}
+function taskDocHtml(t) {
+    if (!S.updReady) return '';
+    const ups = S.taskUpdates.filter(u => u.task_id === t.id);
+    const list = ups.map(u => {
+        const imgs = (u.image_paths || []).map(pt => { const x = S.urls[pt]; return x ? `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(x.url)}" loading="lazy" alt="" class="w-full aspect-square object-cover rounded-lg border border-gray-800"></a>` : `<div class="w-full aspect-square rounded-lg bg-gray-800 animate-pulse"></div>`; }).join('');
+        return `<div class="bg-gray-900/70 border border-gray-800 rounded-xl p-3 space-y-1.5" data-upd="${u.id}"><div class="flex justify-between gap-2 text-[11px]"><span class="font-bold ${u.user_id === myId() ? 'text-orange-300' : 'text-gray-200'}">${esc(updAuthor(u))}${u.kind === 'status' ? ' <span class="text-emerald-400">· status</span>' : ''}</span><span class="text-gray-500 shrink-0">${esc(whenLabel(u.created_at))}</span></div>` +
+            (u.text ? `<p class="text-sm ${u.kind === 'status' ? 'font-black text-emerald-300' : 'text-gray-100'} whitespace-pre-wrap break-words">${esc(u.text)}</p>` : '') +
+            (imgs ? `<div class="grid grid-cols-3 gap-1.5">${imgs}</div>` : '') + `</div>`;
+    }).join('');
+    return `<div class="space-y-2" id="tk-docs"><span class="lbl">Dokumentation</span>${list || '<p class="text-xs text-gray-500">Intet dokumenteret endnu.</p>'}` +
+        `<textarea id="tk-upd-text" rows="2" maxlength="2000" oninput="S.updDraft=this.value;autoGrow(this)" placeholder="Skriv kommentar…" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">${esc(S.updDraft || '')}</textarea>` +
+        `<div class="flex items-stretch gap-2"><div data-voicebox="tupd"></div><button type="button" data-act="tk-upd-photo" class="flex-1 bg-sky-950/60 border border-sky-800 text-sky-200 py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-camera mr-1.5"></i>Billeder</button>` +
+        `<button type="button" data-act="tk-upd-send" class="flex-1 brand-orange text-white py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send</button></div></div>`;
+}
+async function tkUpdSend(files) {
+    const E = S.editTask; if (!E || !S.updReady) return;
+    const t = S.tasks.find(x => x.id === E.id); if (!t) return;
+    const ta = $('tk-upd-text'), text = ((ta ? ta.value : S.updDraft) || '').trim().slice(0, 2000);
+    files = [...(files || [])].slice(0, 10);
+    if (!text && !files.length) return toast('Skriv en kommentar eller tilføj et billede.', 'info');
+    const paths = [];
+    try {
+        for (const f of files) {
+            const blob = await compressImage(f), path = t.company_id + '/' + t.project_id + '/' + newUuid() + '.jpg';
+            const up = await sb.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+            if (up.error) throw up.error;
+            paths.push(path);
+        }
+        const r = await sb.from('task_updates').insert({ company_id: t.company_id, task_id: t.id, user_id: myId(), kind: paths.length ? 'foto' : 'kommentar', text: text || null, image_paths: paths }).select().single();
+        if (r.error) { if (paths.length) { try { await sb.storage.from(BUCKET).remove(paths); } catch (x) { /* ignore */ } } throw r.error; }
+        mergeRow(S.taskUpdates, r.data); S.updDraft = ''; if (ta) ta.value = '';
+        await resolveUpdUrls(t.id); taskModalDyn();
+        toast(paths.length ? 'Sendt med ' + paths.length + (paths.length === 1 ? ' billede.' : ' billeder.') : 'Kommentar gemt.', 'ok');
+    } catch (e) { fail(e); }
+}
+async function tkLogStatus(taskId, done) {
+    if (!S.updReady) return;
+    const t = S.tasks.find(x => x.id === taskId); if (!t) return;
+    try {
+        const r = await sb.from('task_updates').insert({ company_id: t.company_id, task_id: taskId, user_id: myId(), kind: 'status', text: done ? 'Markeret som udført' : 'Genåbnet' }).select().single();
+        if (!r.error) mergeRow(S.taskUpdates, r.data);
+    } catch (e) { /* ignore */ }
 }
 function openTaskEdit(id, cellId) {
     const t = S.tasks.find(x => x.id === id); if (!t) return;
@@ -3953,7 +4284,14 @@ function openTaskEdit(id, cellId) {
     show('tk-desc-wrap', dOk); $('tk-desc').value = t.description || ''; if (dOk) autoGrow($('tk-desc'));
     $('tk-text').value = t.text; $('tk-items').value = '';
     $('tk-assignees').innerHTML = tkAssignHtml();
+    const gst = isGuest();
+    $('tk-text').readOnly = gst; $('tk-desc').readOnly = gst;
+    $('tk-assignees').parentElement.classList.toggle('hidden', gst);
+    $('tk-items').parentElement.classList.toggle('hidden', gst);
+    const vb = document.querySelector('#modal-task [data-voicebox="task-edit"]'); if (vb) vb.classList.toggle('hidden', gst);
+    S.updDraft = '';
     show('modal-task', true);
+    if (S.updReady) resolveUpdUrls(id);
     taskModalDyn();
 }
 async function tkSave() {
@@ -4002,8 +4340,8 @@ async function tkAddItem() {
 }
 async function taskModalAct(act) {
     const E = S.editTask; if (!E) return;
-    if (act === 'tk-finish') { await toggleTask(E.id, true); closeModal('modal-task'); S.editTask = null; return; }
-    if (act === 'tk-reopen') { await toggleTask(E.id, false); return taskModalDyn(); }
+    if (act === 'tk-finish') { const tid = E.id; await toggleTask(tid, true); await tkLogStatus(tid, true); closeModal('modal-task'); S.editTask = null; return; }
+    if (act === 'tk-reopen') { await toggleTask(E.id, false); await tkLogStatus(E.id, false); return taskModalDyn(); }
     if (act === 'tk-delete') {
         if (!E.delArm) { E.delArm = true; taskModalDyn(); setTimeout(() => { if (S.editTask === E && E.delArm) { E.delArm = false; taskModalDyn(); } }, 4000); return; }
         const id = E.id; closeModal('modal-task'); S.editTask = null; return deleteTask(id);
@@ -4367,6 +4705,7 @@ function parseLocal(kind, text, ctx) {
         case 'materiale': return parseMaterial(text);
         case 'task': return parseTask(text, ctx.people);
         case 'subtask': return parseSubtasks(text);
+        case 'tupd': return { text: String(text || '').trim() };
         case 'shift': return parseShift(text, ctx.projects, ctx.roles);
         case 'case': return parseCase(text);
         case 'plan': return parsePlan(text, ctx.people, ctx.today);
@@ -4945,6 +5284,7 @@ const VOICE_CFG = {
     'task-pc':    { label: 'Indtal opgaver', hint: '', nohelp: true },
     'task-edit':  { label: 'Indtal opgave', hint: '', nohelp: true },
     subtask:      { label: '', compact: true, hint: '' },
+    tupd:         { label: '', compact: true, hint: '' },
     shift:        { label: 'Indtal vagt', hint: 'Sig fx: "fra 7 til 15 på sag 1001, medbring stige"' },
     case:         { label: 'Indtal sag', hint: 'Sig fx: "sag 1001 Hovedgade 12 Randers"' },
     role:         { label: 'Indtal rolle', hint: 'Sig fx: "Bar fra 16 til 23, to personer"' },
@@ -5063,7 +5403,7 @@ async function processVoice(box, kind, text) {
     try {
         const ctx = voiceCtx();
         const local = parseLocal(kind, text, ctx);
-        const localOnly = kind === 'task' || kind === 'subtask' || kind === 'sick' || kind === 'multi';   // struktur (hovedopgave/underpunkter/personer) tolkes lokalt
+        const localOnly = kind === 'task' || kind === 'subtask' || kind === 'tupd' || kind === 'sick' || kind === 'multi';   // struktur (hovedopgave/underpunkter/personer) tolkes lokalt
         const ai = localOnly ? null : await aiParse(kind, text);
         let data = localOnly ? local : mergeVoice(local, ai);
         if (kind === 'shift' && ai && ai.project_number && !local.project_id) {
@@ -5130,6 +5470,11 @@ async function applyVoice(box, kind, d, text, usedAi) {
         if (!got.length) { put(noteId, vCap(text)); }
         toast(how + ' – tjek felterne og tryk Gem.', 'ok'); flash(got);
         return;
+    }
+    if (kind === 'tupd') {
+        const add = vCap(d.text || text), ta = $('tk-upd-text');
+        S.updDraft = ((S.updDraft || '') + ' ' + add).trim(); if (ta) { ta.value = S.updDraft; autoGrow(ta); }
+        return toast('Indtalt – tryk Send.', 'ok');
     }
     if (kind === 'subtask') {
         const taskId = box.slice(8), items = (d.items && d.items.length ? d.items : [vCap(text)]).filter(Boolean);
@@ -5214,11 +5559,7 @@ async function applyVoice(box, kind, d, text, usedAi) {
 
 
 /* ------------------------------ STEMMEKOMMANDOER MED ÉT-KLIKS BEKRÆFTELSE ------------------------------ */
-function renderQuick() {
-    const on = !!S.started && (hasShifts() ? isManager() && S.planReady : true);
-    show('quick-home', on);
-    if (S._quickInd !== industry()) { S._quickInd = industry(); renderVoiceBoxes(); }
-}
+function renderQuick() { /* stemmekommando-knappen er fjernet fra hjemmeskærmen; rutinen bevares, så resten af kaldene er uændrede */ }
 const reEsc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /* "Jeppe er syg i morgen" -> { user_id, date } */
@@ -5458,17 +5799,18 @@ async function loadPlan() {
 function subscribePlan() {
     if (S.chPlan) { try { sb.removeChannel(S.chPlan); } catch (e) { /* ignore */ } }
     const ch = sb.channel('unisjak-plan');
-    ['shift_roles', 'employee_roles', 'availability', 'task_items', 'time_clock'].concat(S.swapsReady ? ['shift_swaps'] : []).concat(S.payReady ? ['absences', 'payroll_exports', 'payroll_corrections'] : []).concat(S.tplReady ? ['task_templates'] : []).forEach(t => ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, p => { try { onPlanChange(t, p); } catch (e) { console.error(e); } }));
+    ['shift_roles', 'employee_roles', 'availability', 'task_items', 'time_clock'].concat(S.swapsReady ? ['shift_swaps'] : []).concat(S.payReady ? ['absences', 'payroll_exports', 'payroll_corrections'] : []).concat(S.tplReady ? ['task_templates'] : []).concat(S.updReady ? ['task_updates'] : []).forEach(t => ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, p => { try { onPlanChange(t, p); } catch (e) { console.error(e); } }));
     ch.subscribe(() => {});
     S.chPlan = ch;
 }
 function onPlanChange(t, p) {
     if (!S.started) return;
-    const key = { shift_roles: 'roles', employee_roles: 'empRoles', availability: 'avail', task_items: 'taskItems', time_clock: 'clock', shift_swaps: 'swaps', task_templates: 'templates', absences: 'absences', payroll_exports: 'payExports', payroll_corrections: 'payCorr' }[t];
+    const key = { shift_roles: 'roles', employee_roles: 'empRoles', availability: 'avail', task_items: 'taskItems', time_clock: 'clock', shift_swaps: 'swaps', task_templates: 'templates', task_updates: 'taskUpdates', absences: 'absences', payroll_exports: 'payExports', payroll_corrections: 'payCorr' }[t];
     const row = p.new && Object.keys(p.new).length ? p.new : null;
     const old = p.old && Object.keys(p.old).length ? p.old : null;
     if (row && row.company_id && row.company_id !== S.profile.company_id) return;
     if (p.eventType === 'DELETE') { if (old) dropRow(S[key], old); } else if (row) mergeRow(S[key], row);
+    if (t === 'task_updates' && row && S.editTask && row.task_id === S.editTask.id) { resolveUpdUrls(row.task_id); if (row.user_id !== myId()) toast(updAuthor(row) + ' har skrevet i opgaven.', 'info'); }
     if (t === 'payroll_corrections') S.payCorr = S.payCorr.filter(x => !x.resolved_batch);
     if (t === 'absences' && !$('modal-absence').classList.contains('hidden')) renderAbList();
     if (t === 'shift_swaps' && row && row.status === 'approved') { refreshShifts().then(scheduleRender).catch(() => {}); }
@@ -5780,7 +6122,7 @@ function resetUg() {
     Object.assign(U, { ready: false, zones: [], trades: [], crews: [], crewMembers: [], res: [], cells: [], cellRes: [], range: null, week: 0, fTrade: '', onlyConf: false, edit: null, rain: null, field: null, place: null, tpl: null, noFinish: new Set() });
     if (U.ch) { try { sb.removeChannel(U.ch); } catch (e) { /* ignore */ } U.ch = null; }
 }
-const hasPlan = () => industry() === 'haandvaerk';
+const hasPlan = () => industry() === 'haandvaerk' && modOn('plan') && canPlan();
 const ugMonday = () => addDays(mondayOf(new Date()), U.week * 7);
 const safeColor = c => /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : '#a8a29e';
 const tradeOf = id => U.trades.find(x => x.id === id);
@@ -7267,7 +7609,19 @@ async function handleAct(act, el) {
     if (['open-photo', 'extra-time', 'extra-mat', 'place-task'].includes(act) && el.closest('#modal-task')) { closeModal('modal-task'); S.editTask = null; }
     switch (act) {
         case 'draft-create': return draftCreate(el);
-        case 'draft-invite': { const root = el.closest('[data-teamroot]'); const inp = root.querySelector('[data-f="dr-email-' + d.user + '"]'); return draftInvite(d.user, inp ? inp.value : ''); }
+        case 'emp-new': return openEmpNew();
+        case 'sa-open': return saOpen();
+        case 'sa-new': S.sa.view = 'new'; return saRender();
+        case 'sa-back': S.sa.view = 'list'; return saRender();
+        case 'sa-edit': S.sa.sel = d.id; S.sa.view = 'edit'; return saRender();
+        case 'sa-create': return saCreate();
+        case 'sa-save': return saSave();
+        case 'sa-invite': return saInvite();
+        case 'emp-n-role': return empNewRole(d.r);
+        case 'emp-create': return empCreate();
+        case 'emp-open': return openEmp(d.user);
+        case 'emp-name-save': return empNameSave(d.user);
+        case 'draft-invite': { const root = el.closest('[data-teamroot], #modal-emp'); const inp = root.querySelector('[data-f="dr-email-' + d.user + '"]'); return draftInvite(d.user, inp ? inp.value : ''); }
         case 'draft-delete': return draftDelete(d.user);
         case 'ug-wk': return ugWeek(Number(d.dir));
         case 'ug-day': U.day = d.date; return scheduleRender();
@@ -7323,6 +7677,8 @@ async function handleAct(act, el) {
         case 'safe-report': return openExport('safety');
         case 'safe-lv': S.safeLv = d.lv; return safeFormRender();
         case 'safe-assign': toggleAssign(S.safeAssign, d.user); return safeFormRender();
+        case 'dev-assign': toggleAssign(S.devAssign, d.user); return devFormRender();
+        case 'dev-mktask': return devCreateTask();
         case 'edit-safe-lv': return safeSetLevel(d.lv);
         case 'safe-mktask': return safeCreateTask();
         case 'safe-close': return safeClose(true);
@@ -7374,6 +7730,8 @@ async function handleAct(act, el) {
         case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = tkAssignHtml(); return tkSave(); }
         case 'tk-finish': case 'tk-reopen': case 'tk-delete': return taskModalAct(act);
         case 'task-new': return openNewTask();
+        case 'tk-upd-photo': { const f = $('tk-upd-file'); if (f) { f.value = ''; f.click(); } return; }
+        case 'tk-upd-send': return tkUpdSend([]);
         case 'tk-plan': { closeModal('modal-task'); S.editTask = null; return openUgCell(d.id); }
         case 'uk-toggle': { if (!U.edit) return; ugSync(); const K = ukState(U.edit); K.open = !K.open; return renderUgCell(); }
         case 'uk-mode': { if (!U.edit) return; ugSync(); const b = ukState(U.edit).b[d.t]; if (b) b.mode = d.m; return renderUgCell(); }
@@ -7433,10 +7791,12 @@ async function handleChg(act, el) {
         case 'set-lang': return ugSetLang(el.value);
         case 'pl-crew': if (U.place) U.place.crew = el.value; return;
         case 'staff-lang': return setStaffLang(el.dataset.user, el.value);
+        case 'emp-perm-plan': return setPermPlan(el.dataset.user, el.checked);
         case 'set-eno': return setEmpNo(el.dataset.user, el.value);
         case 'ex-pick': return exPickToggle(el.dataset.id, el.checked);
         case 'pf-extra': return extraFormRender();
         case 'pf-safe-task': S.safeTask = el.checked; return safeFormRender();
+        case 'pf-dev-task': S.devTask = el.checked; return devFormRender();
         case 'panel-project': S.panelProject = el.value; el.blur(); setTimeout(renderTeam, 0); return;
     }
 }

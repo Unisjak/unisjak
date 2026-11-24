@@ -4,7 +4,7 @@
 //   RESEND_API_KEY, RESEND_FROM_EMAIL   (f.eks.  UniSjak <noreply@unisjak.dk>)
 //   SUPABASE_URL, SUPABASE_ANON_KEY     (samme værdier som i appen – bruges til at kontrollere, hvem der kalder)
 //   SITE_URL                            (valgfri, standard https://unisjak.dk)
-// Kun indloggede, aktive admins/formænd kan sende. Invitationer kan kun sendes til en e-mail, der har en åben invitation i firmaet.
+// Kun indloggede, aktive admins/formænd (og superadmin til nye kunders første admin) kan sende. Invitationer kan kun sendes til en e-mail, der har en åben invitation i firmaet.
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const EMAIL = /^[^@\s<>",;]+@[^@\s<>",;]+\.[^@\s<>",;]+$/;
@@ -53,8 +53,9 @@ export default async (req) => {
   if (!user?.id || !user.email) return json({ error: 'unauthorized' }, 401);
 
   const rest = async (path) => { const r = await fetch(base + '/rest/v1/' + path, { headers: H }); if (!r.ok) return null; return r.json(); };
-  const prof = (await rest(`profiles?id=eq.${encodeURIComponent(user.id)}&select=role,active,company_id,full_name`))?.[0];
-  if (!prof || !prof.active || !['admin', 'formand'].includes(prof.role)) return json({ error: 'forbidden' }, 403);
+  const prof = (await rest(`profiles?id=eq.${encodeURIComponent(user.id)}&select=role,active,company_id,full_name,is_superadmin`))?.[0];
+  const isSuper = !!(prof && prof.active && prof.is_superadmin === true);
+  if (!prof || !prof.active || (!isSuper && !['admin', 'formand'].includes(prof.role))) return json({ error: 'forbidden' }, 403);
   if (limited(user.id)) return json({ error: 'limit' }, 429);
 
   let b; try { b = await req.json(); } catch { return json({ error: 'json' }, 400); }
@@ -71,10 +72,21 @@ export default async (req) => {
     if (b.action === 'invite') {
       const email = clean(b.email, 120).toLowerCase();
       if (!EMAIL.test(email)) return json({ error: 'to' }, 400);
-      const inv = (await rest(`invitations?email=eq.${encodeURIComponent(email)}&accepted_at=is.null&company_id=eq.${encodeURIComponent(prof.company_id)}&select=full_name,role,expires_at`))?.[0];
+      let inv = (await rest(`invitations?email=eq.${encodeURIComponent(email)}&accepted_at=is.null&company_id=eq.${encodeURIComponent(prof.company_id)}&select=full_name,role,expires_at`))?.[0];
+      let company = '';
+      if (inv) {
+        const co = (await rest(`companies?id=eq.${encodeURIComponent(prof.company_id)}&select=name`))?.[0];
+        company = clean(co?.name, 80);
+      } else if (isSuper) {
+        // superadmin: invitation til en andens virksomhed hentes via en funktion, som databasen kun giver til superadmin
+        try {
+          const r = await fetch(base + '/rest/v1/rpc/sa_invitation', { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_email: email }) });
+          const rows = r.ok ? await r.json() : [];
+          if (rows?.[0]) { inv = rows[0]; company = clean(rows[0].company_name, 80); }
+        } catch { /* ignore */ }
+      }
       if (!inv || new Date(inv.expires_at) < new Date()) return json({ error: 'no invitation' }, 404);
-      const co = (await rest(`companies?id=eq.${encodeURIComponent(prof.company_id)}&select=name`))?.[0];
-      const company = clean(co?.name, 80) || 'UniSjak';
+      company = company || 'UniSjak';
       const name = clean(inv.full_name, 80);
       const text = `${t.hi(name)}\n\n${t.body(who, company)}\n\n${t.how(email)}\n${siteUrl}\n\n${t.foot}`;
       const html = shell(`<p style="font-size:16px;font-weight:700">${esc(t.hi(name))}</p><p style="font-size:15px;line-height:1.5">${esc(t.body(who, company))}</p><p style="font-size:15px;line-height:1.5">${esc(t.how(email))}</p>${btnHtml(siteUrl, t.btn)}<p style="font-size:12px;color:#78716c">${esc(t.foot)}</p>`, siteUrl);
