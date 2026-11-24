@@ -303,22 +303,22 @@
                 <div id="pc-empty-banner" class="hidden bg-amber-950/50 border border-amber-500/40 text-amber-200 rounded-2xl p-4 text-sm font-bold"></div>
 
                 <div class="grid grid-cols-4 gap-4">
-                    <div class="bg-card border border-card rounded-2xl p-4">
+                    <div role="button" tabindex="0" data-act="pc-goto" data-view="timers" data-filter="" class="bg-card border border-card rounded-2xl p-4 cursor-pointer hover:border-orange-500/60 hover:bg-gray-800/40 transition">
                         <div class="flex justify-between items-start"><span class="text-xs font-bold text-gray-400">Timer denne uge</span><div class="w-8 h-8 rounded-lg bg-blue-950/70 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-clock"></i></div></div>
                         <p class="text-2xl font-black text-white mt-2" id="pc-kpi-hours">0,0 t</p>
                         <span class="text-[11px] font-bold text-amber-400 mt-1 block" id="pc-kpi-week-status">–</span>
                     </div>
-                    <div class="bg-card border border-card rounded-2xl p-4">
+                    <div role="button" tabindex="0" data-act="pc-goto" data-view="ks" data-filter="" class="bg-card border border-card rounded-2xl p-4 cursor-pointer hover:border-orange-500/60 hover:bg-gray-800/40 transition">
                         <div class="flex justify-between items-start"><span class="text-xs font-bold text-gray-400">KS Dokumentation</span><div class="w-8 h-8 rounded-lg bg-orange-950/70 text-orange-400 flex items-center justify-center"><i class="fa-solid fa-camera"></i></div></div>
                         <p class="text-2xl font-black text-white mt-2" id="pc-kpi-ks">0 punkter</p>
                         <span class="text-[11px] text-gray-400 mt-1 block">På den valgte sag</span>
                     </div>
-                    <div class="bg-card border border-card rounded-2xl p-4">
+                    <div role="button" tabindex="0" data-act="pc-goto" data-view="materials" data-filter="" class="bg-card border border-card rounded-2xl p-4 cursor-pointer hover:border-orange-500/60 hover:bg-gray-800/40 transition">
                         <div class="flex justify-between items-start"><span class="text-xs font-bold text-gray-400">Modtagne Materialer</span><div class="w-8 h-8 rounded-lg bg-purple-950/70 text-purple-400 flex items-center justify-center"><i class="fa-solid fa-truck-ramp-box"></i></div></div>
                         <p class="text-2xl font-black text-white mt-2" id="pc-kpi-mat">0 leverancer</p>
                         <span class="text-[11px] text-gray-400 mt-1 block">Følgesedler &amp; oplag</span>
                     </div>
-                    <div class="bg-card border border-card rounded-2xl p-4">
+                    <div role="button" tabindex="0" data-act="pc-goto" data-view="tasks" data-filter="open" class="bg-card border border-card rounded-2xl p-4 cursor-pointer hover:border-orange-500/60 hover:bg-gray-800/40 transition">
                         <div class="flex justify-between items-start"><span class="text-xs font-bold text-gray-400">Åbne Punkter</span><div class="w-8 h-8 rounded-lg bg-emerald-950/70 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-list-check"></i></div></div>
                         <p class="text-2xl font-black text-white mt-2" id="pc-kpi-tasks">0 åbne</p>
                         <span class="text-[11px] text-emerald-400 mt-1 block">Opgaver &amp; pakkeliste</span>
@@ -416,18 +416,15 @@
                 </div>
 
                 <!-- OPGAVER -->
-                <div id="pc-view-tasks" class="hidden bg-card border border-card rounded-2xl p-6 space-y-5">
-                    <div class="flex justify-between items-center border-b border-gray-800 pb-4">
-                        <div><h3 class="font-black text-base text-white">Opgaver</h3></div>
-                        <button onclick="clearCompletedTasks()" class="bg-gray-800 hover:bg-red-950/60 border border-gray-700 hover:border-red-700/50 text-gray-300 hover:text-red-400 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5"><i class="fa-solid fa-broom"></i><span>Ryd afkrydsede</span></button>
+                <div id="pc-view-tasks" class="hidden bg-card border border-card rounded-2xl p-6 space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-4 gap-3">
+                        <h3 class="font-black text-base text-white">Opgaver</h3>
+                        <div class="flex items-center gap-2">
+                            <button onclick="clearCompletedTasks()" class="bg-gray-800 hover:bg-red-950/60 border border-gray-700 hover:border-red-700/50 text-gray-300 hover:text-red-400 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5"><i class="fa-solid fa-broom"></i><span>Ryd afkrydsede</span></button>
+                            <button type="button" data-act="task-new" class="bg-emerald-500 hover:bg-emerald-400 text-gray-950 px-5 py-2.5 rounded-xl text-sm font-black shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Opret opgave</span></button>
+                        </div>
                     </div>
-                    <div data-voicebox="task-pc" class="max-w-md"></div>
-                    <div class="bg-gray-900/90 p-4 rounded-xl border border-gray-800 space-y-3">
-                        <input type="text" id="pc-quick-task-input" maxlength="500" onkeydown="if(event.key==='Enter') addTask('pc')" placeholder="Opgave" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
-                        <textarea id="pc-task-items" rows="2" oninput="autoGrow(this)" placeholder="Under punkter - ét pr linje" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"></textarea>
-                        <div id="pc-task-assignees" class="flex flex-wrap gap-1.5"></div>
-                        <button onclick="addTask('pc')" class="bg-emerald-500 hover:bg-emerald-400 text-gray-950 px-5 py-2.5 rounded-xl text-xs font-black shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Tilføj opgave</span></button>
-                    </div>
+                    <div id="pc-tasks-summary"></div>
                     <div id="pc-tasks-list" class="space-y-2"></div>
                 </div>
 
@@ -602,17 +599,12 @@
 
             <!-- OPGAVER -->
             <div id="tab-tasks" class="hidden space-y-3">
-                <div class="flex justify-between items-center">
-                    <div><h3 class="font-bold text-base text-white">Opgaver</h3><span class="text-[11px] text-gray-400" id="mobile-task-counter">0 mangler</span></div>
-                    <button onclick="clearCompletedTasks()" class="bg-gray-800 hover:bg-red-950/60 border border-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center space-x-1"><i class="fa-solid fa-broom text-red-400"></i><span>Ryd tjekkede</span></button>
+                <div class="flex justify-between items-center gap-2">
+                    <h3 class="font-bold text-base text-white">Opgaver</h3>
+                    <button onclick="clearCompletedTasks()" class="bg-gray-800 border border-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center space-x-1" aria-label="Ryd afkrydsede"><i class="fa-solid fa-broom text-red-400"></i><span>Ryd afkrydsede</span></button>
                 </div>
-                <div class="bg-card border border-card rounded-2xl p-3 space-y-2 shadow-md">
-                    <div data-voicebox="task-mobile"></div>
-                    <input type="text" id="mobile-quick-task-input" maxlength="500" onkeydown="if(event.key==='Enter') addTask('mobile')" placeholder="Opgave" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-emerald-500">
-                    <textarea id="mobile-task-items" rows="2" oninput="autoGrow(this)" placeholder="Under punkter - ét pr linje" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"></textarea>
-                    <div id="mobile-task-assignees" class="flex flex-wrap gap-2"></div>
-                    <button onclick="addTask('mobile')" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 py-3.5 rounded-xl text-sm font-black shadow flex items-center justify-center space-x-1.5 active:scale-95 transition"><i class="fa-solid fa-plus"></i><span>Tilføj opgave</span></button>
-                </div>
+                <div id="tasks-summary"></div>
+                <button type="button" data-act="task-new" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 py-4 rounded-2xl text-base font-black shadow-lg flex items-center justify-center space-x-2 active:scale-95 transition"><i class="fa-solid fa-plus"></i><span>Opret opgave</span></button>
                 <div id="tasks-list" class="space-y-2 pb-4"></div>
             </div>
 
@@ -880,7 +872,7 @@
                 <div id="ex-pick-list" class="max-h-60 overflow-y-auto space-y-1.5 pr-0.5"></div>
             </div>
             <label id="ex-w-photos" class="hidden flex items-center space-x-3 bg-gray-900 border border-gray-800 rounded-xl p-3"><input type="checkbox" id="ex-photos" checked class="w-6 h-6 accent-orange-500"><span class="text-sm font-bold text-white">Medtag fotos i rapporten</span></label>
-            <div id="ex-w-mail" class="space-y-2 border-t border-gray-800 pt-3">
+            <div id="ex-w-mail" class="hidden space-y-2 border-t border-gray-800 pt-3" style="display:none" aria-hidden="true">
                 <label class="lbl">Send til (e-mailadresse)</label>
                 <div class="flex gap-2 items-center">
                     <input id="ex-email" type="email" inputmode="email" autocomplete="email" list="ex-recent" maxlength="120" placeholder="modtager@firma.dk" class="inp flex-1">
@@ -895,17 +887,34 @@
         </div>
     </div>
 
+    <div id="modal-newtask" class="hidden fixed inset-0 bg-stone-900/85 backdrop-blur-sm z-[56] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-card p-5 space-y-3 max-h-[94vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-plus text-emerald-400 mr-2"></i>Opret opgave</h3>
+                <button onclick="closeModal('modal-newtask')" class="text-gray-400 hover:text-white p-1" aria-label="Luk"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div data-voicebox="task-mobile"></div>
+            <input type="text" id="mobile-quick-task-input" maxlength="500" onkeydown="if(event.key==='Enter') addTask('mobile')" placeholder="Opgave" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-emerald-500">
+            <textarea id="mobile-task-items" rows="2" oninput="autoGrow(this)" placeholder="Punkter - ét pr linje (valgfrit)" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"></textarea>
+            <span class="lbl">Medarbejdere</span>
+            <div id="mobile-task-assignees" class="flex flex-wrap gap-2"></div>
+            <button onclick="addTask('mobile')" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 py-4 rounded-xl text-sm font-black shadow flex items-center justify-center space-x-1.5 active:scale-95 transition"><i class="fa-solid fa-plus"></i><span>Opret opgave</span></button>
+        </div>
+    </div>
+
     <div id="modal-task" class="hidden fixed inset-0 bg-stone-900/85 backdrop-blur-sm z-[56] flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-card p-5 space-y-4 max-h-[94vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-gray-800 pb-3">
-                <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-pen text-orange-500 mr-2"></i>Rediger opgave</h3>
-                <button onclick="closeModal('modal-task')" class="text-gray-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-pen text-orange-500 mr-2"></i>Opgave</h3>
+                <button onclick="closeModal('modal-task')" class="text-gray-400 hover:text-white p-1" aria-label="Luk"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div data-voicebox="task-edit"></div>
-            <input type="text" id="tk-text" maxlength="500" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-emerald-500">
-            <div id="tk-assignees" class="flex flex-wrap gap-2"></div>
-            <textarea id="tk-items" rows="2" oninput="autoGrow(this)" placeholder="Under punkter - ét pr linje" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"></textarea>
-            <button onclick="saveTaskEdit(this)" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 py-3.5 rounded-xl text-sm font-black">Gem</button>
+            <input type="text" id="tk-text" maxlength="500" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500">
+            <div><span class="lbl">Medarbejdere</span><div id="tk-assignees" class="flex flex-wrap gap-2"></div></div>
+            <div id="tk-items-wrap" class="space-y-2"><span class="lbl">Punkter</span><div id="tk-list" class="space-y-2"></div>
+                <textarea id="tk-items" rows="1" oninput="autoGrow(this)" placeholder="+ Nyt punkt (ét pr linje)" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"></textarea></div>
+            <button onclick="saveTaskEdit(this)" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 py-3.5 rounded-xl text-sm font-black">Gem ændringer</button>
+            <div id="tk-foot" class="space-y-3"></div>
         </div>
     </div>
 
@@ -3732,10 +3741,16 @@ function assigneeLabel(t) {
 }
 function assignChipsHtml(set, act, extra, allLabel) {
     const people = S.profiles.filter(p => p.active).sort((a, b) => a.full_name.localeCompare(b.full_name, 'da'));
-    return `<button type="button" data-act="${act}" ${extra} data-user="all" class="chip ${set.size === 0 ? 'chip-on' : ''}">${esc(allLabel || 'Alle / Sjak')}</button>` +
+    const allOn = people.length > 0 && people.every(p => set.has(p.id));
+    return `<button type="button" data-act="${act}" ${extra} data-user="all" class="chip ${set.size === 0 ? 'chip-on' : ''}">${esc(allLabel || 'Alle')}</button>` +
+        (allLabel ? `<button type="button" data-act="${act}" ${extra} data-user="__all" class="chip ${allOn ? 'chip-on' : ''}">Alle</button>` : '') +
         people.map(p => `<button type="button" data-act="${act}" ${extra} data-user="${esc(p.id)}" class="chip ${set.has(p.id) ? 'chip-on' : ''}">${esc(firstName(p.full_name))}</button>`).join('');
 }
-function toggleAssign(set, uid) { if (uid === 'all') set.clear(); else if (set.has(uid)) set.delete(uid); else set.add(uid); }
+function toggleAssign(set, uid) {
+    if (uid === 'all') return set.clear();
+    if (uid === '__all') { const ids = S.profiles.filter(p => p.active).map(p => p.id); if (ids.length && ids.every(i => set.has(i))) set.clear(); else ids.forEach(i => set.add(i)); return; }
+    if (set.has(uid)) set.delete(uid); else set.add(uid);
+}
 let tasksDirty = false;
 function taskPlanChipHtml(t) {
     if (typeof U === 'undefined' || !U.ready) return '';
@@ -3746,7 +3761,6 @@ function taskPlanChipHtml(t) {
 function taskPointHtml(t) {
     const sp = safetyOfTask(t);
     if (sp) return `<div class="pl-9 space-y-2"><div class="flex items-center gap-2.5 min-w-0">${photoPaths(sp).length ? photoImg(sp, 'w-14 h-14 object-cover rounded-lg shrink-0') : ''}<div class="min-w-0 text-[11px] text-gray-400"><span class="block truncate">Fra ${esc(firstName(userName(sp.user_id)))} · ${esc(dkWhen(sp.created_at))}</span><span class="block">${photoPaths(sp).length} før · ${(sp.done_paths || []).length} efter</span></div></div><div class="flex flex-wrap gap-2"><button type="button" data-act="open-photo" data-id="${sp.id}" class="bg-sky-950/50 border border-sky-700/60 text-sky-100 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-images mr-1.5"></i>Åbn punkt</button>` +
-        (!sp.safety_closed_at ? `<button type="button" data-act="safe-quick-close" data-id="${sp.id}" class="bg-emerald-500 text-gray-950 px-4 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-check mr-1.5"></i>Luk</button>` : '') +
         (isUnassignedExtra(t) ? `<button type="button" data-act="edit-task" data-id="${t.id}" class="bg-amber-950/50 border border-amber-700/60 text-amber-200 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-user-plus mr-1.5"></i>Vælg modtager</button>` : '') + `</div></div>`;
     const p = extraOfTask(t); if (!p) return '';
     const after = (p.done_paths || []).length;
@@ -3771,28 +3785,36 @@ function renderTasks() {
         [...S.taskAssign[src]].forEach(u => { if (!active.has(u)) S.taskAssign[src].delete(u); });
         const box = $(src + '-task-assignees'); if (box) box.innerHTML = assignChipsHtml(S.taskAssign[src], 'task-assign', 'data-src="' + src + '"');
     });
-    const list = S.tasks.filter(t => t.project_id === S.currentProject)
+    const all = S.tasks.filter(t => t.project_id === S.currentProject)
         .sort((a, b) => (Number(a.done) - Number(b.done)) || (a.created_at < b.created_at ? 1 : -1));
-    $('mobile-task-counter').textContent = list.filter(t => !t.done).length + ' mangler • ' + list.length + ' i alt';
+    const me = myId(), isMine = t => taskAssignees(t).includes(me);
+    const F = S.taskFilter || 'all';
+    const list = all.filter(t => F === 'open' ? !t.done : F === 'done' ? t.done : F === 'mine' ? (!t.done && isMine(t)) : true);
+    const nOpen = all.filter(t => !t.done).length, nDone = all.length - nOpen, nMine = all.filter(t => !t.done && isMine(t)).length;
+    const tile = (f, n, label, col) => `<button type="button" data-act="task-filter" data-f="${f}" class="rounded-xl py-2 px-1 text-center border transition ${F === f ? 'bg-gray-700 border-gray-500' : 'bg-gray-900/70 border-gray-800'}"><span class="block text-xl font-black ${col}">${n}</span><span class="block text-[10px] font-bold text-gray-400">${label}</span></button>`;
+    const pct = all.length ? Math.round(nDone / all.length * 100) : 0;
+    const summary = `<div class="bg-card border border-card rounded-2xl p-3 space-y-2.5"><div class="flex items-center gap-2.5"><div class="flex-1 h-2.5 rounded-full overflow-hidden bg-gray-800 flex" role="img" aria-label="${nDone} af ${all.length} opgaver er færdige"><div class="h-full bg-emerald-500" style="width:${pct}%"></div><div class="h-full bg-orange-500" style="width:${all.length ? 100 - pct : 0}%"></div></div><span class="text-[11px] font-black text-gray-300 shrink-0">${pct}% færdig</span></div>` +
+        `<div class="grid grid-cols-4 gap-1.5">${tile('all', all.length, 'Alle', 'text-white')}${tile('open', nOpen, 'Åbne', 'text-orange-400')}${tile('mine', nMine, 'Mine', 'text-sky-300')}${tile('done', nDone, 'Færdige', 'text-emerald-400')}</div></div>`;
+    ['tasks-summary', 'pc-tasks-summary'].forEach(id => { const b = $(id); if (b) b.innerHTML = summary; });
     if (typeof ugFieldRefresh === 'function') ugFieldRefresh();
     const ae = document.activeElement;
     if (ae && ae.dataset && ae.dataset.subInput !== undefined) { tasksDirty = true; return; }   // skriver et underpunkt – bevar feltet
     tasksDirty = false;
     const card = (t, pc) => {
-        const items = taskItemsOf(t.id), nDone = items.filter(i => i.done).length;
-        const prog = items.length ? `<div class="flex items-center space-x-2 mt-1"><div class="h-1.5 flex-1 bg-gray-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${Math.round(nDone / items.length * 100)}%"></div></div><span class="text-[10px] text-gray-400 font-bold shrink-0">${nDone}/${items.length}</span></div>` : '';
-        return `<div class="border rounded-xl p-3 space-y-2 transition ${t.done ? 'bg-gray-950/60 border-gray-800/60 opacity-60' : (pc ? 'bg-gray-900/90 border-gray-800' : 'bg-card border-card')}">` +
-            `<div class="flex justify-between items-start"><label class="flex items-start space-x-3 flex-1 cursor-pointer pr-2 min-w-0"><input type="checkbox" ${t.done ? 'checked' : ''} data-chg="toggle-task" data-id="${t.id}" class="w-6 h-6 rounded accent-emerald-500 shrink-0 cursor-pointer mt-0.5">` +
-            `<div class="min-w-0 flex-1">${extraTagBlock(t)}<span class="text-sm font-bold block ${t.done ? 'line-through text-gray-500' : 'text-white'}">${esc(t.text)}</span>` +
-            `<span class="text-[11px] ${isUnassignedExtra(t) ? 'text-amber-400' : 'text-emerald-400'} font-semibold"><i class="fa-solid fa-user-group mr-1 text-[9px]"></i>${esc(assigneeLabel(t))}</span>${taskPlanChipHtml(t)}${prog}</div></label>` +
-            `<div class="flex shrink-0"><button data-act="edit-task" data-id="${t.id}" class="text-gray-500 hover:text-orange-400 text-sm p-2" aria-label="Rediger"><i class="fa-solid fa-pen"></i></button>` +
-            `<button data-act="delete-task" data-id="${t.id}" class="text-gray-500 hover:text-red-400 text-sm p-2" aria-label="Slet"><i class="fa-solid fa-trash"></i></button></div></div>` +
-            (items.length ? `<div class="space-y-1 pl-9">` + items.map(i => `<div class="flex items-center justify-between"><label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0 py-1"><input type="checkbox" ${i.done ? 'checked' : ''} data-chg="toggle-item" data-id="${i.id}" class="w-5 h-5 rounded accent-emerald-500 shrink-0"><span class="text-[13px] ${i.done ? 'line-through text-gray-500' : 'text-gray-200'} min-w-0">${esc(i.text)}</span></label><button data-act="del-item" data-id="${i.id}" class="text-gray-600 hover:text-red-400 p-1.5 text-xs shrink-0"><i class="fa-solid fa-xmark"></i></button></div>`).join('') + `</div>` : '') +
-            (S.itemsReady ? `<div class="flex items-center gap-2 pl-9"><input data-sub-input="${t.id}" maxlength="300" placeholder="+ Underpunkt" onkeydown="if(event.key==='Enter') addItem('${t.id}', this)" class="flex-1 min-w-0 bg-gray-950/70 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"><button data-act="add-item" data-id="${t.id}" class="bg-gray-700 hover:bg-gray-600 text-white w-9 h-9 rounded-lg shrink-0"><i class="fa-solid fa-plus text-xs"></i></button><div data-voicebox="subtask:${t.id}"></div></div>` : '') + taskExtraHtml(t) + `</div>`;
+        const items = taskItemsOf(t.id), nD = items.filter(i => i.done).length;
+        const ids = taskAssignees(t);
+        const who = ids.length ? (ids.length > 2 ? firstName(userName(ids[0])) + ' +' + (ids.length - 1) : ids.map(u => firstName(userName(u))).join(', ')) : (pointOfTask(t) ? 'Ingen modtager endnu' : 'Alle');
+        const meta = `<span class="${isUnassignedExtra(t) ? 'text-amber-400' : 'text-gray-400'}"><i class="fa-solid fa-user-group mr-1 text-[9px]"></i>${esc(who)}</span>` + (items.length ? `<span class="text-gray-400"><i class="fa-solid fa-list-check mr-1 text-[9px]"></i>${nD}/${items.length}</span>` : '');
+        return `<div data-act="edit-task" data-id="${t.id}" role="button" tabindex="0" class="border rounded-xl px-3 py-3 flex items-center gap-3 cursor-pointer transition active:scale-[.99] ${t.done ? 'bg-gray-950/60 border-gray-800/60 opacity-60' : (pc ? 'bg-gray-900/90 border-gray-800 hover:border-gray-600' : 'bg-card border-card')}">` +
+            `<input type="checkbox" ${t.done ? 'checked' : ''} data-chg="toggle-task" data-id="${t.id}" class="w-6 h-6 rounded accent-emerald-500 shrink-0 cursor-pointer" aria-label="Afkryds opgave">` +
+            `<div class="min-w-0 flex-1">${extraTagBlock(t)}<span class="text-sm font-bold block truncate ${t.done ? 'line-through text-gray-500' : 'text-white'}">${esc(t.text)}</span><span class="flex flex-wrap items-center gap-x-3 text-[11px] font-semibold mt-0.5">${meta}</span></div>` +
+            `<i class="fa-solid fa-chevron-right text-gray-600 text-xs shrink-0"></i></div>`;
     };
-    const empty = '<p class="text-xs text-gray-500 py-6 text-center">Ingen opgaver på listen endnu.</p>';
+    const emptyTxt = all.length ? 'Ingen opgaver i dette filter.' : 'Ingen opgaver på listen endnu.';
+    const empty = `<p class="text-xs text-gray-500 py-6 text-center">${emptyTxt}</p>`;
     $('tasks-list').innerHTML = list.length ? list.map(t => card(t, false)).join('') : empty;
     $('pc-tasks-list').innerHTML = list.length ? list.map(t => card(t, true)).join('') : empty;
+    if (S.editTask && !$('modal-task').classList.contains('hidden')) taskModalDyn();
     updateExtraBadge();
     renderVoiceBoxes();
 }
@@ -3829,7 +3851,7 @@ async function addTask(src) {
     const subs = linesOf(area.value), ids = [...S.taskAssign[src]];
     input.value = ''; area.value = ''; area.style.height = ''; input.focus();
     if (!(await insertTask(text, ids, subs))) { input.value = text; area.value = subs.join('\n'); return; }
-    S.taskAssign[src].clear(); renderTasks();
+    S.taskAssign[src].clear(); renderTasks(); closeModal('modal-newtask');
 }
 async function addItems(taskId, subs) {
     subs = subs.map(s => String(s).trim()).filter(Boolean);
@@ -3901,13 +3923,34 @@ async function clearCompletedTasks() {
     renderTasks(); renderKpis(); scheduleRender();
 }
 /* ---- rediger opgave: overskrift + medarbejdere ---- */
+function tkAssignHtml() {
+    const E = S.editTask, t = E && S.tasks.find(x => x.id === E.id);
+    return assignChipsHtml(E.set, 'edit-assign', '', t && pointOfTask(t) ? 'Ikke valgt endnu' : undefined);
+}
+function taskModalDyn() {
+    const E = S.editTask; if (!E) return;
+    const t = S.tasks.find(x => x.id === E.id); if (!t) { closeModal('modal-task'); return; }
+    const ae = document.activeElement;
+    if (ae && $('modal-task').contains(ae) && (ae.tagName === 'INPUT' && ae.type === 'text' || ae.tagName === 'TEXTAREA')) return;   // skriver – bevar feltet
+    show('tk-items-wrap', S.itemsReady);
+    $('tk-list').innerHTML = taskItemsOf(t.id).map(i => `<div class="flex items-center gap-2"><input type="checkbox" ${i.done ? 'checked' : ''} data-chg="toggle-item" data-id="${i.id}" class="w-6 h-6 rounded accent-emerald-500 shrink-0" aria-label="Afkryds punkt"><input type="text" maxlength="300" value="${esc(E.texts[i.id] != null ? E.texts[i.id] : i.text)}" oninput="S.editTask.texts['${i.id}']=this.value" class="flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"><button type="button" data-act="del-item" data-id="${i.id}" class="text-gray-500 hover:text-red-400 p-2 shrink-0" aria-label="Slet punkt"><i class="fa-solid fa-xmark"></i></button></div>`).join('');
+    const plan = taskPlanChipHtml(t);
+    let h = (plan ? `<div>${plan}</div>` : '') + taskExtraHtml(t).replace(/pl-9/g, '');
+    if (S.itemsReady) h += `<div data-voicebox="subtask:${t.id}"></div>`;
+    h += `<div class="grid grid-cols-2 gap-2">` +
+        (t.done ? `<button type="button" data-act="tk-reopen" class="bg-gray-800 border border-gray-600 text-gray-100 py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-rotate-left mr-1.5"></i>Genåbn opgave</button>`
+            : `<button type="button" data-act="tk-finish" class="bg-emerald-950/60 border-2 border-emerald-500 text-emerald-300 py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-check mr-1.5"></i>Afslut opgave</button>`) +
+        `<button type="button" data-act="tk-delete" class="${E.delArm ? 'bg-red-600 text-white' : 'bg-gray-900 border border-red-900/70 text-red-400'} py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-trash mr-1.5"></i>${E.delArm ? 'Tryk igen for at slette' : 'Slet opgave'}</button></div>`;
+    $('tk-foot').innerHTML = h;
+    renderVoiceBoxes();
+}
 function openTaskEdit(id) {
     const t = S.tasks.find(x => x.id === id); if (!t) return;
-    S.editTask = { id, set: new Set(taskAssignees(t)) };
+    S.editTask = { id, set: new Set(taskAssignees(t)), texts: {}, delArm: false };
     $('tk-text').value = t.text; $('tk-items').value = ''; $('tk-items').style.height = '';
-    $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', '', pointOfTask(t) ? 'Ikke valgt endnu' : undefined);
-    renderVoiceBoxes();
+    $('tk-assignees').innerHTML = tkAssignHtml();
     show('modal-task', true);
+    taskModalDyn();
 }
 async function saveTaskEdit(btn) {
     const E = S.editTask; if (!E) return;
@@ -3921,14 +3964,36 @@ async function saveTaskEdit(btn) {
         if (res.error && missingCol(res.error)) { S.noAssignees = true; delete payload.assignees; res = await sb.from('tasks').update(payload).eq('id', E.id).select().single(); }
         if (res.error) throw res.error;
         mergeRow(S.tasks, res.data);
+        for (const it of taskItemsOf(E.id)) {
+            const v = (E.texts[it.id] != null ? String(E.texts[it.id]) : it.text).trim().slice(0, 300);
+            if (v && v !== it.text) {
+                const r = await sb.from('task_items').update({ text: v }).eq('id', it.id).select().single();
+                if (r.error) throw r.error;
+                mergeRow(S.taskItems, r.data);
+            }
+        }
         const more = S.itemsReady ? linesOf($('tk-items').value) : [];
         if (more.length) await addItems(E.id, more);
-        closeModal('modal-task'); renderTasks();
+        closeModal('modal-task'); S.editTask = null; renderTasks();
     } catch (e) { fail(e); }
     btn.disabled = false;
 }
+async function taskModalAct(act) {
+    const E = S.editTask; if (!E) return;
+    if (act === 'tk-finish') { await toggleTask(E.id, true); closeModal('modal-task'); S.editTask = null; return; }
+    if (act === 'tk-reopen') { await toggleTask(E.id, false); return taskModalDyn(); }
+    if (act === 'tk-delete') {
+        if (!E.delArm) { E.delArm = true; taskModalDyn(); setTimeout(() => { if (S.editTask === E && E.delArm) { E.delArm = false; taskModalDyn(); } }, 4000); return; }
+        const id = E.id; closeModal('modal-task'); S.editTask = null; return deleteTask(id);
+    }
+}
+function openNewTask() {
+    if (!S.currentProject) return toast('Vælg først en ' + placeW() + '.');
+    renderTasks(); show('modal-newtask', true); renderVoiceBoxes();
+    setTimeout(() => { const i = $('mobile-quick-task-input'); if (i) i.focus(); }, 60);
+}
 
-/* ------------------------------ KORT ------------------------------ */
+
 let mobileMap = null, pcMap = null, mobileMarkers = [], pcMarkers = [], lastMapSig = '';
 function mapCenter() { const p = curProj(); return p && p.lat != null ? { lat: p.lat, lng: p.lng } : DEFAULT_CENTER; }
 function makeMap(elId, opts) {
@@ -5053,7 +5118,7 @@ async function applyVoice(box, kind, d, text, usedAi) {
         const E = S.editTask; if (!E) return;
         const main = d.main || (d.items && d.items[0]) || vCap(text);
         $('tk-text').value = main;
-        if (d.assignees && d.assignees.length) { E.set = new Set(d.assignees); $('tk-assignees').innerHTML = assignChipsHtml(E.set, 'edit-assign', ''); }
+        if (d.assignees && d.assignees.length) { E.set = new Set(d.assignees); $('tk-assignees').innerHTML = tkAssignHtml(); }
         toast(how + ' – tjek og tryk Gem.', 'ok');
         return;
     }
@@ -6540,7 +6605,7 @@ function openExport(kind) {
     $('ex-scope').innerHTML = `<option value="project">Kun denne sag${p ? ': ' + esc(projLabel(p)) : ''}</option><option value="all">Alle sager</option>`;
     $('ex-project-line').textContent = (kind === 'ks' || kind === 'materiale' || kind === 'extra' || kind === 'safety') && p ? placeCap() + ': ' + projLabel(p) : '';
     show('ex-project-line', (kind === 'ks' || kind === 'materiale' || kind === 'extra' || kind === 'safety') && !!p);
-    show('ex-w-mail', isManager());
+    show('ex-w-mail', false);
     const rec = lastMailTo();
     $('ex-email').value = rec[0] || '';
     $('ex-recent').innerHTML = rec.map(a => `<option value="${esc(a)}"></option>`).join('');
@@ -6822,6 +6887,7 @@ async function exportDownload() {
 }
 function toB64(u8) { let s = ''; const ch = 0x8000; for (let i = 0; i < u8.length; i += ch) s += String.fromCharCode.apply(null, u8.subarray(i, i + ch)); return btoa(s); }
 async function exportSend() {
+    return;   // e-mail-afsendelse er fjernet fra eksport – kun download
     if (EX.busy) return;
     if (!isManager()) return toast('Kun admin kan sende rapporter på mail.');
     const to = $('ex-email').value.trim().toLowerCase();
@@ -7089,6 +7155,7 @@ async function payAgain(id) {
 /* ------------------------------ EVENTS ------------------------------ */
 async function handleAct(act, el) {
     const d = el.dataset;
+    if (['open-photo', 'extra-time', 'extra-mat', 'place-task'].includes(act) && el.closest('#modal-task')) { closeModal('modal-task'); S.editTask = null; }
     switch (act) {
         case 'draft-create': return draftCreate(el);
         case 'draft-invite': { const root = el.closest('[data-teamroot]'); const inp = root.querySelector('[data-f="dr-email-' + d.user + '"]'); return draftInvite(d.user, inp ? inp.value : ''); }
@@ -7195,7 +7262,11 @@ async function handleAct(act, el) {
         case 'add-item': { const inp = document.querySelector('[data-sub-input="' + d.id + '"]'); return inp && addItem(d.id, inp); }
         case 'del-item': return delItem(d.id);
         case 'task-assign': { const set = S.taskAssign[d.src]; if (!set) return; toggleAssign(set, d.user); return renderTasks(); }
-        case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = assignChipsHtml(S.editTask.set, 'edit-assign', '', pointOfTask(S.tasks.find(x => x.id === S.editTask.id)) ? 'Ikke valgt endnu' : undefined); return; }
+        case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = tkAssignHtml(); return; }
+        case 'tk-finish': case 'tk-reopen': case 'tk-delete': return taskModalAct(act);
+        case 'task-new': return openNewTask();
+        case 'task-filter': S.taskFilter = (S.taskFilter === d.f && d.f !== 'all') ? 'all' : d.f; return renderTasks();
+        case 'pc-goto': switchPcView(d.view); if (d.view === 'tasks') { S.taskFilter = d.filter || 'all'; renderTasks(); } return;
         case 'edit-shift': return isManager() ? openShiftModal(d.user, d.date) : undefined;
         case 'copy-shifts': return copyLastWeek();
         case 'toggle-member': return toggleMember(d.project, d.user);
@@ -7257,6 +7328,8 @@ async function handleChg(act, el) {
 }
 document.addEventListener('click', e => {
     const el = e.target.closest('[data-act]');
+    const cb = e.target.closest('input[type=checkbox]');
+    if (el && cb && cb !== el) return;   // afkrydsningsfelt på et kort: kun fluebenet, ikke selve kortet
     if (el) handleAct(el.dataset.act, el).catch(fail);
 });
 document.addEventListener('change', e => {
