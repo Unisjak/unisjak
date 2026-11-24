@@ -904,16 +904,15 @@
 
     <div id="modal-task" class="hidden fixed inset-0 bg-stone-900/85 backdrop-blur-sm z-[56] flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-card p-5 space-y-4 max-h-[94vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
-                <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-pen text-orange-500 mr-2"></i>Opgave</h3>
+            <div class="flex justify-between items-center">
+                <span id="tk-status" class="text-[11px] font-black px-2 py-1 rounded-lg bg-orange-950 text-orange-300 border border-orange-800/60">Åben</span>
                 <button onclick="closeModal('modal-task')" class="text-gray-400 hover:text-white p-1" aria-label="Luk"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div data-voicebox="task-edit"></div>
-            <input type="text" id="tk-text" maxlength="500" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500">
+            <input type="text" id="tk-text" maxlength="500" onchange="tkSave()" aria-label="Opgavens titel" class="w-full bg-transparent border-0 border-b border-gray-700 px-0 py-2 text-xl font-black text-white focus:outline-none focus:border-emerald-500">
             <div><span class="lbl">Medarbejdere</span><div id="tk-assignees" class="flex flex-wrap gap-2"></div></div>
             <div id="tk-items-wrap" class="space-y-2"><span class="lbl">Punkter</span><div id="tk-list" class="space-y-2"></div>
-                <textarea id="tk-items" rows="1" oninput="autoGrow(this)" placeholder="+ Nyt punkt (ét pr linje)" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"></textarea></div>
-            <button onclick="saveTaskEdit(this)" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 py-3.5 rounded-xl text-sm font-black">Gem ændringer</button>
+                <div class="flex items-center gap-2"><input type="text" id="tk-items" maxlength="300" onkeydown="if(event.key==='Enter'){event.preventDefault();tkAddItem();}" placeholder="+ Tilføj punkt" class="flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"><button type="button" onclick="tkAddItem()" class="bg-gray-700 hover:bg-gray-600 text-white w-10 h-10 rounded-lg shrink-0" aria-label="Tilføj punkt"><i class="fa-solid fa-plus text-xs"></i></button></div></div>
             <div id="tk-foot" class="space-y-3"></div>
         </div>
     </div>
@@ -3933,7 +3932,8 @@ function taskModalDyn() {
     const ae = document.activeElement;
     if (ae && $('modal-task').contains(ae) && (ae.tagName === 'INPUT' && ae.type === 'text' || ae.tagName === 'TEXTAREA')) return;   // skriver – bevar feltet
     show('tk-items-wrap', S.itemsReady);
-    $('tk-list').innerHTML = taskItemsOf(t.id).map(i => `<div class="flex items-center gap-2"><input type="checkbox" ${i.done ? 'checked' : ''} data-chg="toggle-item" data-id="${i.id}" class="w-6 h-6 rounded accent-emerald-500 shrink-0" aria-label="Afkryds punkt"><input type="text" maxlength="300" value="${esc(E.texts[i.id] != null ? E.texts[i.id] : i.text)}" oninput="S.editTask.texts['${i.id}']=this.value" class="flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"><button type="button" data-act="del-item" data-id="${i.id}" class="text-gray-500 hover:text-red-400 p-2 shrink-0" aria-label="Slet punkt"><i class="fa-solid fa-xmark"></i></button></div>`).join('');
+    const st = $('tk-status'); st.textContent = t.done ? 'Færdig' : 'Åben'; st.className = 'text-[11px] font-black px-2 py-1 rounded-lg border ' + (t.done ? 'bg-emerald-950 text-emerald-300 border-emerald-700/60' : 'bg-orange-950 text-orange-300 border-orange-800/60');
+    $('tk-list').innerHTML = taskItemsOf(t.id).map(i => `<div class="flex items-center gap-2"><input type="checkbox" ${i.done ? 'checked' : ''} data-chg="toggle-item" data-id="${i.id}" class="w-6 h-6 rounded accent-emerald-500 shrink-0" aria-label="Afkryds punkt"><input type="text" maxlength="300" value="${esc(E.texts[i.id] != null ? E.texts[i.id] : i.text)}" oninput="S.editTask.texts['${i.id}']=this.value" onchange="tkSaveItem('${i.id}', this.value)" class="flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"><button type="button" data-act="del-item" data-id="${i.id}" class="text-gray-500 hover:text-red-400 p-2 shrink-0" aria-label="Slet punkt"><i class="fa-solid fa-xmark"></i></button></div>`).join('');
     const plan = taskPlanChipHtml(t);
     let h = (plan ? `<div>${plan}</div>` : '') + taskExtraHtml(t).replace(/pl-9/g, '');
     if (S.itemsReady) h += `<div data-voicebox="subtask:${t.id}"></div>`;
@@ -3947,36 +3947,43 @@ function taskModalDyn() {
 function openTaskEdit(id) {
     const t = S.tasks.find(x => x.id === id); if (!t) return;
     S.editTask = { id, set: new Set(taskAssignees(t)), texts: {}, delArm: false };
-    $('tk-text').value = t.text; $('tk-items').value = ''; $('tk-items').style.height = '';
+    $('tk-text').value = t.text; $('tk-items').value = '';
     $('tk-assignees').innerHTML = tkAssignHtml();
     show('modal-task', true);
     taskModalDyn();
 }
-async function saveTaskEdit(btn) {
+async function tkSave() {
     const E = S.editTask; if (!E) return;
-    const text = $('tk-text').value.trim(); if (!text) return toast('Skriv en overskrift.');
+    const text = $('tk-text').value.trim();
+    const t0 = S.tasks.find(x => x.id === E.id); if (!t0) return;
+    if (!text) { $('tk-text').value = t0.text; return toast('Skriv en overskrift.'); }
     const ids = [...E.set];
-    btn.disabled = true;
     try {
         const payload = { text: text.slice(0, 500), assigned_to: ids[0] || null };
         if (!S.noAssignees) payload.assignees = ids;
         let res = await sb.from('tasks').update(payload).eq('id', E.id).select().single();
         if (res.error && missingCol(res.error)) { S.noAssignees = true; delete payload.assignees; res = await sb.from('tasks').update(payload).eq('id', E.id).select().single(); }
         if (res.error) throw res.error;
-        mergeRow(S.tasks, res.data);
-        for (const it of taskItemsOf(E.id)) {
-            const v = (E.texts[it.id] != null ? String(E.texts[it.id]) : it.text).trim().slice(0, 300);
-            if (v && v !== it.text) {
-                const r = await sb.from('task_items').update({ text: v }).eq('id', it.id).select().single();
-                if (r.error) throw r.error;
-                mergeRow(S.taskItems, r.data);
-            }
-        }
-        const more = S.itemsReady ? linesOf($('tk-items').value) : [];
-        if (more.length) await addItems(E.id, more);
-        closeModal('modal-task'); S.editTask = null; renderTasks();
+        mergeRow(S.tasks, res.data); renderTasks();
     } catch (e) { fail(e); }
-    btn.disabled = false;
+}
+async function tkSaveItem(id, v) {
+    v = String(v || '').trim().slice(0, 300);
+    const it = S.taskItems.find(x => x.id === id); if (!it) return;
+    if (!v) { if (S.editTask) delete S.editTask.texts[id]; return taskModalDyn(); }
+    if (v === it.text) return;
+    try {
+        const r = await sb.from('task_items').update({ text: v }).eq('id', id).select().single();
+        if (r.error) throw r.error;
+        mergeRow(S.taskItems, r.data); if (S.editTask) delete S.editTask.texts[id]; renderTasks();
+    } catch (e) { fail(e); }
+}
+async function tkAddItem() {
+    const E = S.editTask; if (!E || !S.itemsReady) return;
+    const lines = linesOf($('tk-items').value); if (!lines.length) return;
+    $('tk-items').value = '';
+    await addItems(E.id, lines);
+    $('tk-items').focus();
 }
 async function taskModalAct(act) {
     const E = S.editTask; if (!E) return;
@@ -5119,7 +5126,7 @@ async function applyVoice(box, kind, d, text, usedAi) {
         const main = d.main || (d.items && d.items[0]) || vCap(text);
         $('tk-text').value = main;
         if (d.assignees && d.assignees.length) { E.set = new Set(d.assignees); $('tk-assignees').innerHTML = tkAssignHtml(); }
-        toast(how + ' – tjek og tryk Gem.', 'ok');
+        await tkSave(); toast(how + ' – gemt.', 'ok');
         return;
     }
     if (kind === 'task') {
@@ -7262,7 +7269,7 @@ async function handleAct(act, el) {
         case 'add-item': { const inp = document.querySelector('[data-sub-input="' + d.id + '"]'); return inp && addItem(d.id, inp); }
         case 'del-item': return delItem(d.id);
         case 'task-assign': { const set = S.taskAssign[d.src]; if (!set) return; toggleAssign(set, d.user); return renderTasks(); }
-        case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = tkAssignHtml(); return; }
+        case 'edit-assign': { if (!S.editTask) return; toggleAssign(S.editTask.set, d.user); $('tk-assignees').innerHTML = tkAssignHtml(); return tkSave(); }
         case 'tk-finish': case 'tk-reopen': case 'tk-delete': return taskModalAct(act);
         case 'task-new': return openNewTask();
         case 'task-filter': S.taskFilter = (S.taskFilter === d.f && d.f !== 'all') ? 'all' : d.f; return renderTasks();
