@@ -294,6 +294,7 @@
                     <p class="text-xs text-gray-400" id="pc-header-subtitle">Live fra marken</p>
                 </div>
                 <div class="flex items-center space-x-3">
+                    <button id="pc-sa-btn" data-act="sa-open" class="hidden bg-violet-950/60 hover:bg-violet-900/60 border border-violet-700/60 text-violet-200 px-3.5 py-2 rounded-xl text-xs font-bold items-center space-x-1.5 transition"><i class="fa-solid fa-crown"></i><span>Superadmin</span></button>
                     <button onclick="openTimerModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow flex items-center space-x-1.5 transition"><i class="fa-solid fa-plus"></i><span>Registrér Timer</span></button>
                     <button onclick="triggerCamera('ks')" class="brand-orange hover:bg-orange-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow flex items-center space-x-1.5 transition"><i class="fa-solid fa-camera"></i><span>Upload KS Foto</span></button>
                     <button onclick="openExport('timer')" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition"><i class="fa-solid fa-file-export text-emerald-400"></i><span>Eksportér timer</span></button>
@@ -1120,6 +1121,7 @@ const placeW = pl => {
 };
 const placeCap = pl => { const w = placeW(pl); return w.charAt(0).toUpperCase() + w.slice(1); };
 function applyIndustry() {
+    try { const sa = document.getElementById('pc-sa-btn'); if (sa) { const on = !!(S.profile && S.profile.is_superadmin === true); sa.classList.toggle('hidden', !on); sa.classList.toggle('flex', on); } } catch (e) {}
     const ks = hasKs(), sh = hasShifts();
     const set = (el, on) => { if (el) el.style.display = on ? '' : 'none'; };
     const g = isGuest(), mat = hasMat(), tm = modOn('time') && !g, tk = modOn('tasks'), shOn = sh && modOn('shifts') && !g, plOn = !sh && hasPlan();
