@@ -233,6 +233,7 @@
     <input type="file" id="camera-input-mat" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoTaken(event, 'materiale')">
     <input type="file" id="gallery-input" accept="image/*" multiple class="hidden" onchange="handlePhotoTaken(event)">
     <input type="file" id="tk-upd-file" accept="image/*" multiple class="hidden" onchange="tkUpdSend(this.files)">
+    <input type="file" id="case-file" accept="image/*" multiple class="hidden" onchange="caseSend(this.files)">
 
     <div id="app-root" class="hidden">
 
@@ -1307,7 +1308,7 @@ function resetApp() {
     if (S.chPlan) { try { sb.removeChannel(S.chPlan); } catch (e) {} S.chPlan = null; }
     Object.assign(S, {
         session: null, profile: null, company: null, started: false,
-        projects: [], members: [], profiles: [], time: [], approvals: [], photos: [], tasks: [], shifts: [], invitations: [], taskUpdates: [], updReady: false,
+        projects: [], members: [], profiles: [], time: [], approvals: [], photos: [], tasks: [], shifts: [], invitations: [], taskUpdates: [], updReady: false, ksUpdates: [], caseReady: false,
         urls: {}, range: { time: null, shifts: null }, weekOffset: 0, shiftOffset: 0, live: 'wait'
     });
     if (typeof resetUg === 'function') resetUg();
@@ -1439,6 +1440,7 @@ async function loadCore() {
     await loadSafetyCols();
     await loadDevCols();
     await loadTaskUpdates();
+    await loadKsUpdates();
 }
 
 function keyOf(row) {
@@ -1863,7 +1865,7 @@ function photoImg(p, cls, idx) {
 function photoHead(p, fallback) { const t = p.title || p.note || fallback; return t.length > 140 ? t.slice(0, 137) + '…' : t; }
 function photoMeta(p, tone) {
     const bits = [];
-    if (p.category) bits.push(`<span class="bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded text-[9px] font-bold">${esc(p.category)}</span>`);
+    if (p.category) bits.push(`<span class="bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded text-[9px] font-bold">${esc(catName(p.category))}</span>`);
     if (p.quantity) bits.push(`<span class="text-${tone}-400 font-black">${esc(p.quantity)}</span>`);
     if (p.location) bits.push(`<span class="text-gray-400">Oplag: ${esc(p.location)}</span>`);
     const nPh = photoPaths(p).length; if (nPh > 1) bits.push(`<span class="text-sky-300 font-bold"><i class="fa-solid fa-images mr-1"></i>${nPh} billeder</span>`);
@@ -1879,7 +1881,7 @@ function renderPhotos() {
     const nums = numbering();
     const ksAll = photosOf('ks'), mat = photosOf('materiale');
     const sf = S.safeFilter;
-    const ks = S.ksExtraOnly ? ksAll.filter(p => p.is_extra) : sf ? ksAll.filter(p => p.safety_level && (sf === 'open' ? !isClosed(p) : p.safety_level === sf)) : ksAll;
+    const ks = S.ksExtraOnly ? ksAll.filter(p => p.is_extra) : sf ? ksAll.filter(p => sf === 'open' ? ((isCasePt(p) || p.safety_level) && !isClosed(p)) : sf === 'fm' ? (isCasePt(p) && p.category === 'Afvigelse') : (p.safety_level === sf)) : ksAll;
     const barH = ksBarHtml();
     ['ks-extra-bar', 'pc-ks-extra-bar'].forEach(id => { const el = $(id); if (el) { el.innerHTML = barH; el.classList.toggle('hidden', !barH); } });
 
@@ -1891,7 +1893,7 @@ function renderPhotos() {
 
     $('pc-ks-grid').innerHTML = ks.length ? ks.map(p =>
         `<div data-act="open-photo" data-id="${p.id}" class="bg-card border border-card rounded-2xl overflow-hidden cursor-pointer hover:border-orange-500/60 transition flex flex-col"><div class="h-44 bg-gray-900 relative">${photoThumb(p, 'w-full h-full object-cover', 'fa-clipboard-check', 'orange')}` +
-        `<span class="absolute top-2 left-2 bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span>${(p.is_extra || p.safety_level) ? '<span class="absolute bottom-2 left-2">' + extraTag(p) + safetyTag(p) + '</span>' : ''}</div>` +
+        `<span class="absolute top-2 left-2 bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow">Punkt #${nums[p.id]} (${esc(userName(p.user_id))})</span>${(p.is_extra || p.safety_level || isCasePt(p)) ? '<span class="absolute bottom-2 left-2">' + extraTag(p) + safetyTag(p) + '</span>' : ''}</div>` +
         `<div class="p-3.5 space-y-1"><p class="text-xs font-bold text-white line-clamp-2">${esc(photoHead(p, 'Ingen beskrivelse'))}</p>${photoMeta(p, 'orange')}<span class="text-[10px] text-gray-500">${whenLabel(p.created_at)}</span>${gpsBlock(p)}</div></div>`
     ).join('') : '<p class="col-span-3 text-xs text-gray-500 py-8 text-center">Ingen KS-punkter endnu.</p>';
 
@@ -3139,7 +3141,7 @@ async function fillAddress(p) {
     mergeRow(S.photos, r.data); scheduleRender();
 }
 function gpsBlock(p, full) {
-    const canEdit = isManager() || p.user_id === myId();
+    const canEdit = canEditPt(p);
     const upd = canEdit ? `<button type="button" data-act="update-gps" data-id="${p.id}" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 px-2.5 py-2 rounded-lg text-[11px] font-bold"><i class="fa-solid fa-rotate mr-1"></i>Opdater GPS</button>` : '';
     if (p.lat == null) return `<div class="mt-1.5 flex items-center justify-between gap-2"><span class="text-[11px] text-amber-300 font-bold"><i class="fa-solid fa-location-dot mr-1"></i>Ingen GPS gemt</span>${upd}</div>`;
     const acc = p.gps_accuracy != null ? ` <span class="${accClass(p.gps_accuracy)} font-bold">±${Math.round(p.gps_accuracy)} m</span>` : '';
@@ -3322,7 +3324,7 @@ async function savePhotoEntry(btn) {
     const wantSafety = activeKind === 'ks' && S.safetyReady && base.category === 'Sikkerhed';
     if (wantSafety && !S.safeLv) return toast('Vælg Grøn, Gul eller Rød for Sikkerhed.');
     const wantExtra = !wantSafety && activeKind === 'ks' && S.extraReady && isManager() && $('pf-extra').checked;
-    const wantDev = activeKind === 'ks' && S.devReady && base.category === 'Afvigelse';
+    const wantDev = activeKind === 'ks' && base.category === 'Afvigelse';
     if (wantExtra && !base.note) return toast('Skriv eller indtal en kort beskrivelse af ekstraarbejdet.', 'info');
     if (S.gpsState === 'denied' || S.gpsState === 'fail') toast('Gemmer uden GPS-position.', 'info');
     btn.disabled = true;
@@ -3344,9 +3346,8 @@ async function savePhotoEntry(btn) {
             gps_accuracy: gps ? Math.round(gps.accuracy * 10) / 10 : null, gps_at: gps ? new Date(gps.ts).toISOString() : null
         }, base);
         if (S.multiPhoto) row.image_paths = paths;
-        if (wantSafety) { row.safety_level = S.safeLv; if (S.safeTask) { row.safety_make_task = true; row.safety_assignees = [...S.safeAssign]; } }
+        if (wantSafety) { row.safety_level = S.safeLv; }
         if (wantExtra) { row.is_extra = true; row.extra_assignees = [...S.extraAssign]; }
-        if (wantDev && S.devTask) { row.dev_make_task = true; row.dev_assignees = [...S.devAssign]; }
         if (activeKind === 'materiale' && S.matRef && S.extraReady) row.extra_ref = S.matRef;
         if (U.ready && U.photoZone && activeKind === 'ks') row.zone_id = U.photoZone;
         const { data, error } = await photoWrite(row, pl => sb.from('photo_entries').insert(pl).select().single());
@@ -3356,8 +3357,8 @@ async function savePhotoEntry(btn) {
         clearShots();
         closeModal('modal-photo-note');
         if (data.is_extra) { await pullExtraTask(data); toast('Ekstraarbejde ' + exNo(data) + ' er oprettet – opgaven ligger under Opgaver' + (S.extraAssign.size ? '.' : ' (modtager kan vælges senere).'), 'ok'); }
-        if (wantDev && data.task_id) { await pullExtraTask(data); toast('Afvigelsen er gemt – opgaven ligger under Opgaver' + (S.devAssign.size ? '.' : ' (modtager kan vælges senere).'), 'ok'); }
-        if (data.safety_level) { if (data.task_id) await pullExtraTask(data); toast(sfNo(data) + ' (' + SAFE[data.safety_level].n + ') er gemt' + (data.task_id ? ' – opgaven ligger under Opgaver.' : '.'), 'ok'); }
+        if (wantDev && S.caseReady) toast((data.dev_no ? devNo(data) : 'Fejl og mangler') + ' er gemt – skriv og afslut direkte i punktet.', 'ok');
+        if (data.safety_level) toast(sfNo(data) + ' (' + SAFE[data.safety_level].n + ') er gemt' + (S.caseReady ? ' – skriv og afslut direkte i punktet.' : '.'), 'ok');
         const keepRef = S.matRef; S.matRef = null;
         fillAddress(data);
         resolveUrls();
@@ -3369,7 +3370,7 @@ async function savePhotoEntry(btn) {
 }
 function renderEditGallery() {
     const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
-    const paths = photoPaths(p), canEdit = isManager() || p.user_id === myId();
+    const paths = photoPaths(p), canEdit = canEditPt(p);
     if (PH.idx >= paths.length) PH.idx = Math.max(0, paths.length - 1);
     $('edit-photo-wrap').innerHTML = paths.length ? photoImg(p, 'h-full w-full object-contain', PH.idx) : '';
     show('edit-photo-wrap', paths.length > 0);
@@ -3420,8 +3421,8 @@ async function editDeletePhoto(i) {
 function openPhoto(id) {
     const p = S.photos.find(x => x.id === id);
     if (!p) return;
-    S.editPhotoId = id; PH.idx = 0; PH.target = 'edit';
-    const canEdit = isManager() || p.user_id === myId();
+    S.editPhotoId = id; PH.idx = 0; PH.target = 'edit'; S.caseDraft = '';
+    const canEdit = canEditPt(p);
     $('edit-modal-title').textContent = (p.kind === 'ks' ? 'KS' : 'Materiale') + ' – ' + userName(p.user_id);
     renderEditGallery();
     S.editSafeLv = ''; renderEditExtra(p); renderEditSafety(p);
@@ -3434,6 +3435,7 @@ function openPhoto(id) {
     $('ef-qty').value = p.quantity || '';
     $('ef-loc').value = p.location || '';
     $('edit-note-text').value = p.note || '';
+    renderEditSafety(p);          // efter at kategorien er sat
     ['ef-title', 'ef-cat', 'ef-qty', 'ef-loc', 'edit-note-text'].forEach(i => { $(i).disabled = !canEdit; });
     show('edit-voice-wrap', canEdit);
     show('btn-edit-save', canEdit);
@@ -3503,11 +3505,16 @@ const extraTagBlock = t => { const p = extraOfTask(t); if (p) return `<span clas
 const pathImg = (path, cls) => { const u = path ? S.urls[path] : null; return u ? `<img src="${esc(u.url)}" loading="lazy" alt="" class="${cls}">` : `<div class="${cls} bg-gray-800 animate-pulse"></div>`; };
 
 function safetyBarHtml() {
-    const sp = safetyPoints();
-    if (!S.safetyReady || !sp.length) return '';
+    const cp = S.caseReady ? casePoints() : [], sp = safetyPoints();
+    const showSafe = S.safetyReady && sp.length;
+    if (!showSafe && !cp.length) return '';
     const chip = (f, label, n, cls) => `<button type="button" data-act="safe-filter" data-f="${f}" class="chip ${S.safeFilter === f ? 'chip-on' : ''}" aria-pressed="${S.safeFilter === f}">${cls ? `<span class="inline-block w-2.5 h-2.5 rounded-full mr-1.5 ${cls}"></span>` : ''}${label} (${n})</button>`;
-    return `<div class="flex flex-wrap items-center gap-2">` + chip('roed', 'Rød', sp.filter(p => p.safety_level === 'roed').length, 'bg-red-500') + chip('gul', 'Gul', sp.filter(p => p.safety_level === 'gul').length, 'bg-amber-400') + chip('groen', 'Grøn', sp.filter(p => p.safety_level === 'groen').length, 'bg-emerald-500') +
-        chip('open', 'Åbne', sp.filter(p => !isClosed(p)).length, '') + `<button type="button" data-act="safe-report" class="chip ml-auto"><i class="fa-solid fa-file-export mr-1"></i>Sikkerhedsrapport</button></div>`;
+    const fm = cp.filter(p => p.category === 'Afvigelse');
+    let h = `<div class="flex flex-wrap items-center gap-2">`;
+    if (fm.length) h += chip('fm', 'Fejl og mangler', fm.length, 'bg-amber-500');
+    if (showSafe) h += chip('roed', 'Rød', sp.filter(p => p.safety_level === 'roed').length, 'bg-red-500') + chip('gul', 'Gul', sp.filter(p => p.safety_level === 'gul').length, 'bg-amber-400') + chip('groen', 'Grøn', sp.filter(p => p.safety_level === 'groen').length, 'bg-emerald-500');
+    const openN = S.caseReady ? cp.filter(p => !isClosed(p)).length : sp.filter(p => !isClosed(p)).length;
+    return h + chip('open', 'Åbne', openN, '') + `<button type="button" data-act="safe-report" class="chip ml-auto"><i class="fa-solid fa-file-export mr-1"></i>Rapport</button></div>`;
 }
 function ksBarHtml() {
     const pts = extraPoints(), sb2 = safetyBarHtml();
@@ -3766,12 +3773,10 @@ async function loadDevCols() {
 }
 const devOfTask = t => t ? (S.photos.find(p => p.category === 'Afvigelse' && !p.safety_level && !p.is_extra && p.task_id === t.id) || null) : null;
 function devFormRender() {
-    const on = S.devReady && activeKind === 'ks' && $('pf-cat') && $('pf-cat').value === 'Afvigelse';
+    const on = S.caseReady && activeKind === 'ks' && $('pf-cat') && $('pf-cat').value === 'Afvigelse';
     show('pf-w-dev', on);
     if (!on) return;
-    $('pf-dev-body').innerHTML =
-        `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl p-3 cursor-pointer"><span class="min-w-0"><span class="font-black text-sm text-white block"><i class="fa-solid fa-list-check text-sky-400 mr-1.5"></i>Opret opgave</span><span class="text-[11px] text-gray-400">Valgfrit – til opfølgning og udbedring</span></span><input type="checkbox" data-chg="pf-dev-task" ${S.devTask ? 'checked' : ''} class="w-8 h-8 accent-sky-500 shrink-0"></label>` +
-        (S.devTask ? `<div class="space-y-2"><span class="lbl">Hvem skal løse den?</span><div class="flex flex-wrap gap-2">${assignChipsHtml(S.devAssign, 'dev-assign', '', 'Vælges senere')}</div></div>` : '');
+    $('pf-dev-body').innerHTML = `<p class="text-[11px] text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-circle-info text-amber-400 mr-1.5"></i>Gem punktet. Så kan alle skrive kommentarer og tage billeder direkte i punktet – og afslutte det, når det er løst.</p>`;
 }
 async function devCreateTask() {
     const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
@@ -3795,14 +3800,20 @@ const safetyPoints = () => S.photos.filter(p => p.project_id === S.currentProjec
 const safetyOfTask = t => t ? (S.photos.find(p => p.safety_level && p.task_id === t.id) || null) : null;
 const pointOfTask = t => extraOfTask(t) || safetyOfTask(t) || devOfTask(t);
 const pointNo = p => p.is_extra ? exNo(p) : sfNo(p);
-const isClosed = p => !!p.safety_closed_at;
-function ageDays(p) { const end = p.safety_closed_at ? new Date(p.safety_closed_at) : new Date(); return Math.max(0, Math.floor((end - new Date(p.created_at)) / 86400000)); }
+const closedAt = p => p.safety_level ? p.safety_closed_at : p.dev_closed_at;
+const closedBy = p => p.safety_level ? p.safety_closed_by : p.dev_closed_by;
+const closeNoteOf = p => p.safety_level ? p.safety_close_note : p.dev_close_note;
+const isClosed = p => !!closedAt(p);
+function ageDays(p) { const end = closedAt(p) ? new Date(closedAt(p)) : new Date(); return Math.max(0, Math.floor((end - new Date(p.created_at)) / 86400000)); }
 function ageTxt(p) {
     const d = ageDays(p), n = d === 0 ? 'samme dag' : d + (d === 1 ? ' dag' : ' dage');
-    return p.safety_closed_at ? 'Lukket efter ' + n : (d === 0 ? 'Åbent i dag' : 'Åbent i ' + n);
+    return closedAt(p) ? 'Afsluttet efter ' + n : (d === 0 ? 'Åbent i dag' : 'Åbent i ' + n);
 }
 function safetyTag(p) {
     if (!p || p.kind !== 'ks') return '';
+    if (S.caseReady && !p.is_extra && p.category === 'Afvigelse' && !p.safety_level) {
+        return `<span class="inline-flex items-center gap-1 flex-wrap"><span class="bg-amber-500 text-gray-950 px-1.5 py-0.5 rounded text-[9px] font-black">${p.dev_no ? devNo(p) + ' · ' : ''}FEJL OG MANGLER</span><span class="border px-1.5 py-0.5 rounded text-[9px] font-black ${isClosed(p) ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-amber-950 text-amber-300 border-amber-700/60'}">${esc(ageTxt(p))}</span></span>`;
+    }
     if (!p.safety_level) return (p.category === 'Sikkerhed' && S.safetyReady) ? '<span class="border border-gray-700 bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded text-[9px] font-black">Sikkerhed · uden farve</span>' : '';
     const c = SAFE[p.safety_level];
     return `<span class="inline-flex items-center gap-1 flex-wrap"><span class="${c.cls} px-1.5 py-0.5 rounded text-[9px] font-black">${sfNo(p)} · ${c.n.toUpperCase()}</span><span class="border px-1.5 py-0.5 rounded text-[9px] font-black ${isClosed(p) ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-amber-950 text-amber-300 border-amber-700/60'}">${esc(ageTxt(p))}</span></span>`;
@@ -3823,12 +3834,102 @@ function safeFormRender() {
     if (!on) return;
     $('pf-safe-body').innerHTML = `<span class="lbl">Farve <span class="text-red-400">(påkrævet)</span></span><div class="grid grid-cols-3 gap-2">` +
         SAFE_ORDER.slice().reverse().map(lv => `<button type="button" data-act="safe-lv" data-lv="${lv}" aria-pressed="${S.safeLv === lv}" class="py-4 rounded-xl text-sm font-black border-2 transition active:scale-95 ${S.safeLv === lv ? SAFE[lv].cls + ' border-white' : 'bg-gray-900 border-gray-700 text-gray-200'}">${SAFE[lv].n}</button>`).join('') + `</div>` +
-        `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl p-3 cursor-pointer"><span class="min-w-0"><span class="font-black text-sm text-white block"><i class="fa-solid fa-list-check text-sky-400 mr-1.5"></i>Opret opgave</span><span class="text-[11px] text-gray-400">Valgfrit – til opfølgning og udbedring</span></span><input type="checkbox" data-chg="pf-safe-task" ${S.safeTask ? 'checked' : ''} class="w-8 h-8 accent-sky-500 shrink-0"></label>` +
-        (S.safeTask ? `<div class="space-y-2"><span class="lbl">Hvem skal løse den?</span><div class="flex flex-wrap gap-2">${assignChipsHtml(S.safeAssign, 'safe-assign', '', 'Vælges senere')}</div></div>` : '');
+        `<p class="text-[11px] text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-circle-info text-sky-400 mr-1.5"></i>Gem punktet. Så kan alle skrive kommentarer og tage billeder direkte i punktet – og afslutte det, når det er løst.</p>`;
 }
 function safeFormReset() { S.safeLv = ''; S.safeTask = false; S.safeAssign = new Set(); S.devTask = false; S.devAssign = new Set(); safeFormRender(); }
 
-/* ---- panel i punktet: farve, opgave, efter-billeder, luk ---- */
+/* ---- FEJL OG MANGLER + SIKKERHED: én sag i selve punktet (status, tråd, afslut med ét tryk) ---- */
+S.caseReady = false; S.ksUpdates = []; S.caseDraft = '';
+async function loadKsUpdates() {
+    try {
+        const c = await sb.from('photo_entries').select('dev_no,dev_closed_at').limit(1);
+        if (c.error) throw c.error;
+        const r = await sb.from('ks_updates').select('*').order('created_at', { ascending: true }).limit(3000);
+        if (r.error) throw r.error;
+        S.ksUpdates = r.data || []; S.caseReady = true;
+    } catch (e) { S.ksUpdates = []; S.caseReady = false; }
+}
+function catName(c) { return c === 'Afvigelse' ? 'Fejl og mangler' : (c || ''); }
+const CASE_CATS = ['Afvigelse', 'Sikkerhed'];
+const isCasePt = p => !!p && S.caseReady && p.kind === 'ks' && !p.is_extra && CASE_CATS.indexOf(p.category) !== -1;
+const casePoints = () => S.photos.filter(p => p.project_id === S.currentProject && isCasePt(p));
+const devNo = p => 'FM-' + String(p && p.dev_no || 0).padStart(3, '0');
+const caseNo = p => p.safety_level ? sfNo(p) : (p.dev_no ? devNo(p) : '');
+const caseUpdatesOf = p => S.ksUpdates.filter(u => u.photo_id === p.id);
+const canEditPt = p => isManager() || (!!p && p.user_id === myId() && !isCasePt(p));
+const caseAuthor = u => u.user_id === myId() ? 'Dig' : userName(u.user_id);
+function caseThreadLines(p) {
+    return caseUpdatesOf(p).map(u => dkWhen(u.created_at) + ' · ' + userName(u.user_id) + (u.kind === 'status' ? ' (status)' : '') + (u.text ? ': ' + u.text.replace(/\s+/g, ' ') : '') + ((u.image_paths || []).length ? ' [' + u.image_paths.length + (u.image_paths.length === 1 ? ' billede]' : ' billeder]') : ''));
+}
+async function resolveCaseUrls(pid) {
+    const p = S.photos.find(x => x.id === pid);
+    const need = caseUpdatesOf({ id: pid }).flatMap(u => u.image_paths || []).concat(p ? (p.done_paths || []) : []).filter(pt => pt && (!S.urls[pt] || S.urls[pt].exp < Date.now() + 60000));
+    if (!need.length) return;
+    try {
+        const { data, error } = await sb.storage.from(BUCKET).createSignedUrls(need, 3600);
+        if (error) return;
+        let got = 0;
+        (data || []).forEach(d => { if (d.signedUrl) { S.urls[d.path] = { url: d.signedUrl, exp: Date.now() + 3600000 }; got++; } });
+        if (got && S.editPhotoId === pid && !$('modal-edit-ks').classList.contains('hidden')) renderEditSafety(S.photos.find(x => x.id === pid));
+    } catch (e) { /* ignore */ }
+}
+const caseImgs = paths => (paths || []).length ? `<div class="grid grid-cols-3 gap-1.5">` + paths.map(pt => { const x = S.urls[pt]; return x ? `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(x.url)}" loading="lazy" alt="" class="w-full aspect-square object-cover rounded-lg border border-gray-800"></a>` : `<div class="w-full aspect-square rounded-lg bg-gray-800 animate-pulse"></div>`; }).join('') + `</div>` : '';
+function casePanelHtml(p) {
+    const closed = isClosed(p), isSafe = p.category === 'Sikkerhed';
+    const ico = isSafe ? 'fa-shield-halved text-sky-400' : 'fa-triangle-exclamation text-amber-400';
+    let h = `<div class="rounded-2xl border border-gray-700 bg-gray-900/60 p-3 space-y-3" data-casebox="${p.id}"><div class="flex items-center justify-between gap-2 flex-wrap"><span class="text-xs font-black text-white"><i class="fa-solid ${ico} mr-1.5"></i>${isSafe ? 'Sikkerhed' : 'Fejl og mangler'}</span>${safetyTag(p)}</div>`;
+    if (closed) {
+        const by = closedBy(p), nt = closeNoteOf(p);
+        h += `<div class="rounded-xl border border-emerald-700/60 bg-emerald-950/40 p-3 space-y-1"><p class="text-xs font-black text-emerald-300"><i class="fa-solid fa-circle-check mr-1.5"></i>Afsluttet ${esc(dkWhen(closedAt(p)))}${by ? ' af ' + esc(userName(by)) : ''}</p>${nt ? `<p class="text-xs text-gray-200 whitespace-pre-line">${esc(nt)}</p>` : ''}</div>`;
+    }
+    const legacy = p.done_paths || [];
+    if (legacy.length) h += `<div class="bg-gray-900/70 border border-gray-800 rounded-xl p-3 space-y-1.5"><span class="text-[11px] font-bold text-gray-300">Efter-billeder</span>${caseImgs(legacy)}</div>`;
+    const ups = caseUpdatesOf(p);
+    h += `<div class="space-y-2" id="case-thread"><span class="lbl !mb-0">Dokumentation</span>` + (ups.length ? ups.map(u =>
+        `<div class="bg-gray-900/70 border border-gray-800 rounded-xl p-3 space-y-1.5" data-upd="${u.id}"><div class="flex justify-between gap-2 text-[11px]"><span class="font-bold ${u.user_id === myId() ? 'text-orange-300' : 'text-gray-200'}">${esc(caseAuthor(u))}${u.kind === 'status' ? ' <span class="text-emerald-400">· status</span>' : ''}</span><span class="text-gray-500 shrink-0">${esc(dkWhen(u.created_at))}</span></div>` +
+        (u.text ? `<p class="text-sm ${u.kind === 'status' ? 'font-black text-emerald-300' : 'text-gray-100'} whitespace-pre-wrap break-words">${esc(u.text)}</p>` : '') + caseImgs(u.image_paths) + `</div>`).join('') : '<p class="text-xs text-gray-500">Intet skrevet endnu.</p>') + `</div>`;
+    h += `<div class="space-y-2"><textarea id="case-text" rows="2" maxlength="2000" oninput="S.caseDraft=this.value;autoGrow(this)" placeholder="${closed ? 'Skriv en kommentar…' : 'Skriv kommentar – eller en afslutningsnote…'}" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">${esc(S.caseDraft || '')}</textarea>` +
+        `<div class="flex items-stretch gap-2"><div data-voicebox="cupd"></div><button type="button" data-act="case-photo" class="flex-1 bg-sky-950/60 border border-sky-800 text-sky-200 py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-camera mr-1.5"></i>Billeder</button>` +
+        `<button type="button" data-act="case-send" class="flex-1 brand-orange text-white py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send</button></div></div>`;
+    h += closed
+        ? `<button type="button" data-act="case-reopen" class="w-full bg-gray-800 border border-gray-600 text-gray-100 py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-rotate-left mr-1.5"></i>Åbn igen</button>`
+        : `<button type="button" data-act="case-close" class="w-full bg-emerald-500 text-gray-950 py-4 rounded-xl text-base font-black"><i class="fa-solid fa-check mr-1.5"></i>Afslut</button>`;
+    if (isManager() && isSafe && !closed) h += `<details class="rounded-xl border border-gray-800"><summary class="px-3 py-2.5 text-xs font-bold text-gray-400 cursor-pointer">Skift farve (admin)</summary><div class="p-3">${safeLevelBtns(p.safety_level || S.editSafeLv, 'edit-safe-lv')}</div></details>`;
+    return h + `</div>`;
+}
+async function caseSend(files) {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p || !isCasePt(p)) return;
+    const ta = $('case-text'), text = ((ta ? ta.value : S.caseDraft) || '').trim().slice(0, 2000);
+    files = [...(files || [])].slice(0, 10);
+    if (!text && !files.length) return toast('Skriv en kommentar eller tilføj et billede.', 'info');
+    const paths = [];
+    try {
+        for (const f of files) {
+            const blob = await compressImage(f), path = p.company_id + '/' + p.project_id + '/' + newUuid() + '.jpg';
+            const up = await sb.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+            if (up.error) throw up.error;
+            paths.push(path);
+        }
+        const r = await sb.from('ks_updates').insert({ company_id: p.company_id, photo_id: p.id, user_id: myId(), kind: paths.length ? 'foto' : 'kommentar', text: text || null, image_paths: paths }).select().single();
+        if (r.error) { if (paths.length) { try { await sb.storage.from(BUCKET).remove(paths); } catch (x) { /* ignore */ } } throw r.error; }
+        mergeRow(S.ksUpdates, r.data); S.caseDraft = '';
+        await resolveCaseUrls(p.id); renderEditSafety(p);
+        toast(paths.length ? 'Sendt med ' + paths.length + (paths.length === 1 ? ' billede.' : ' billeder.') : 'Kommentar gemt.', 'ok');
+    } catch (e) { fail(e); }
+}
+async function caseClose(close) {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p || !isCasePt(p)) return;
+    const ta = $('case-text'), note = close ? ((ta ? ta.value : S.caseDraft) || '').trim() : '';
+    const res = await sb.rpc('case_close', { p_id: p.id, p_close: close, p_note: note || null });
+    if (res.error) return fail(res.error);
+    mergeRow(S.photos, res.data); S.caseDraft = '';
+    try { const u = await sb.from('ks_updates').select('*').eq('photo_id', p.id).order('created_at', { ascending: true }); (u.data || []).forEach(r => mergeRow(S.ksUpdates, r)); } catch (e) { /* ignore */ }
+    renderAll();
+    if (close) { closeModal('modal-edit-ks'); toast((caseNo(res.data) || 'Punktet') + ' er afsluttet.', 'ok'); }
+    else { renderEditSafety(res.data); toast((caseNo(res.data) || 'Punktet') + ' er åbnet igen.', 'ok'); }
+}
+
+/* ---- panel i punktet: farve, opgave, efter-billeder, luk (gammel visning, bruges kun uden unisjak_pro §20) ---- */
 function editSafeRender() { renderEditSafety(S.photos.find(x => x.id === S.editPhotoId)); }
 function safeLevelBtns(cur, act) {
     return `<div class="grid grid-cols-3 gap-2">` + SAFE_ORDER.slice().reverse().map(lv => `<button type="button" data-act="${act}" data-lv="${lv}" aria-pressed="${cur === lv}" class="py-3 rounded-xl text-xs font-black border-2 ${cur === lv ? SAFE[lv].cls + ' border-white' : 'bg-gray-900 border-gray-700 text-gray-200'}">${SAFE[lv].n}</button>`).join('') + `</div>`;
@@ -3836,6 +3937,15 @@ function safeLevelBtns(cur, act) {
 function renderEditSafety(p) {
     const box = $('edit-safety'); if (!box) return;
     const catNow = p ? (($('ef-cat') && $('ef-cat').value) || p.category) : '';
+    if (p && isCasePt(p) && catNow === p.category) {
+        const ae = document.activeElement;
+        if (ae && ae.id === 'case-text' && box.contains(ae)) return;          // skriver – bevar feltet
+        show('edit-safety', true);
+        box.innerHTML = casePanelHtml(p);
+        renderVoiceBoxes(); resolveCaseUrls(p.id);
+        return;
+    }
+    if (S.caseReady && catNow === 'Afvigelse') { show('edit-safety', false); return; }
     if (!p || p.kind !== 'ks' || (!S.safetyReady && !(S.devReady && catNow === 'Afvigelse'))) { show('edit-safety', false); return; }
     if (!p.safety_level && S.devReady && catNow === 'Afvigelse' && !p.is_extra) {
         show('edit-safety', true);
@@ -3924,26 +4034,31 @@ async function buildSafetyReport(fmt, opt) {
     const enc = s => new TextEncoder().encode(s), comp = reportCompany(), pr = curProj();
     if (!pr) return { empty: 'Vælg en sag først.' };
     const inRange = exSafetyRange();
-    let list = safetyPoints().filter(inRange).filter(p => !EX.sel || EX.sel.has(p.id));
+    let list = exCaseList().filter(inRange).filter(p => !EX.sel || EX.sel.has(p.id));
     if ($('ex-open') && $('ex-open').checked) list = list.filter(p => !isClosed(p));
-    if (!list.length) return { empty: safetyPoints().length ? 'Ingen sikkerhedspunkter matcher valget.' : 'Der er ingen sikkerhedspunkter med farve på sagen endnu.' };
-    list.sort((a, b) => (Number(isClosed(a)) - Number(isClosed(b))) || (SAFE_ORDER.indexOf(a.safety_level) - SAFE_ORDER.indexOf(b.safety_level)) || ((a.safety_no || 0) - (b.safety_no || 0)));
-    const whoOf = p => { const t = extraTaskOf(p), ids = t ? taskAssignees(t) : []; return t ? (ids.length ? ids.map(u => userName(u)).join(', ') : 'Ikke valgt') : 'Ingen opgave'; };
-    const cnt = lv => list.filter(p => p.safety_level === lv), openN = arr => arr.filter(p => !isClosed(p)).length;
-    const subject = comp + ' – Sikkerhed – ' + projLabel(pr);
+    if (!list.length) return { empty: exCaseList().length ? 'Ingen punkter matcher valget.' : 'Der er ingen punkter i Fejl og mangler eller Sikkerhed på ' + placeW() + ' endnu.' };
+    const rank = p => p.safety_level ? SAFE_ORDER.indexOf(p.safety_level) : 1.5;
+    list.sort((a, b) => (Number(isClosed(a)) - Number(isClosed(b))) || (rank(a) - rank(b)) || ((a.safety_no || a.dev_no || 0) - (b.safety_no || b.dev_no || 0)));
+    const typeOf = p => p.safety_level ? 'Sikkerhed ' + SAFE[p.safety_level].n : (p.category === 'Sikkerhed' ? 'Sikkerhed' : 'Fejl og mangler');
+    const rgbOf = p => p.safety_level ? SAFE[p.safety_level].rgb : (p.category === 'Sikkerhed' ? [90, 100, 110] : [217, 119, 6]);
+    const numOf = p => caseNo(p) || (p.category === 'Sikkerhed' ? 'SIK' : 'FM');
+    const openN = arr => arr.filter(p => !isClosed(p)).length;
+    const subject = comp + ' – Fejl og mangler / Sikkerhed – ' + projLabel(pr);
     const periodTxt = ($('ex-from').value || $('ex-to').value) ? (($('ex-from').value ? dkFull($('ex-from').value) : '…') + ' – ' + ($('ex-to').value ? dkFull($('ex-to').value) : '…')) : 'Alle datoer';
     if (fmt === 'csv') {
-        const rows = list.map(p => [sfNo(p), SAFE[p.safety_level].n, isClosed(p) ? 'Lukket' : 'Åben', dkWhen(p.created_at), userName(p.user_id), (p.note || '').replace(/\s+/g, ' '), whoOf(p), p.safety_closed_at ? dkWhen(p.safety_closed_at) : '', p.safety_closed_by ? userName(p.safety_closed_by) : '', (p.safety_close_note || '').replace(/\s+/g, ' '), ageDays(p), photoPaths(p).length, (p.done_paths || []).length, p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.lat != null ? mapsUrl(p.lat, p.lng) : '']);
-        return { bytes: enc(csvOf(['Nr', 'Farve', 'Status', 'Oprettet', 'Oprettet af', 'Kommentar', 'Opgave modtager', 'Lukket', 'Lukket af', 'Afslutningskommentar', 'Dage åben', 'Billeder før', 'Billeder efter', 'Lat', 'Lng', 'Google Maps'], rows)), mime: 'text/csv', filename: 'UniSjak_Sikkerhed_' + safeName(pr.case_number || pr.name) + '.csv', subject };
+        const rows = list.map(p => [numOf(p), typeOf(p), isClosed(p) ? 'Afsluttet' : 'Åben', dkWhen(p.created_at), userName(p.user_id), (p.note || '').replace(/\s+/g, ' '), closedAt(p) ? dkWhen(closedAt(p)) : '', closedBy(p) ? userName(closedBy(p)) : '', (closeNoteOf(p) || '').replace(/\s+/g, ' '), ageDays(p), photoPaths(p).length, caseUpdatesOf(p).filter(u => u.kind !== 'status').length, caseThreadLines(p).join(' | '), p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.lat != null ? mapsUrl(p.lat, p.lng) : '']);
+        return { bytes: enc(csvOf(['Nr', 'Type', 'Status', 'Oprettet', 'Oprettet af', 'Beskrivelse', 'Afsluttet', 'Afsluttet af', 'Afslutningskommentar', 'Dage åben', 'Billeder', 'Indlæg i tråd', 'Tråd', 'Lat', 'Lng', 'Google Maps'], rows)), mime: 'text/csv', filename: 'UniSjak_FejlOgSikkerhed_' + safeName(pr.case_number || pr.name) + '.csv', subject };
     }
-    const doc = newReport({ company: comp, title: 'Sikkerhedsrapport', sub: placeCap() + ': ' + projLabel(pr), sub2: 'Periode: ' + periodTxt + ' · pr. ' + dkFull(fmtDate(new Date())) }, false);
-    doc.paragraph(list.length + (list.length === 1 ? ' punkt' : ' punkter') + ' – ' + openN(list) + ' åbne, ' + (list.length - openN(list)) + ' lukkede', { size: 10, bold: true });
+    const doc = newReport({ company: comp, title: 'Fejl og mangler / Sikkerhed', sub: placeCap() + ': ' + projLabel(pr), sub2: 'Periode: ' + periodTxt + ' · pr. ' + dkFull(fmtDate(new Date())) }, false);
+    doc.paragraph(list.length + (list.length === 1 ? ' punkt' : ' punkter') + ' – ' + openN(list) + ' åbne, ' + (list.length - openN(list)) + ' afsluttede', { size: 10, bold: true });
     doc.y += 6;
-    doc.table([{ title: 'Farve', w: 90 }, { title: 'Åbne', w: 80, align: 'right' }, { title: 'Lukkede', w: 80, align: 'right' }, { title: 'I alt', w: 80, align: 'right' }],
-        SAFE_ORDER.map(lv => [{ t: SAFE[lv].n, bold: true, color: SAFE[lv].rgb }, String(openN(cnt(lv))), String(cnt(lv).length - openN(cnt(lv))), { t: String(cnt(lv).length), bold: true }]));
+    const groups = [];
+    list.forEach(p => { const k = typeOf(p); let g = groups.find(x => x.k === k); if (!g) { g = { k, rgb: rgbOf(p), items: [] }; groups.push(g); } g.items.push(p); });
+    doc.table([{ title: 'Type', w: 140 }, { title: 'Åbne', w: 80, align: 'right' }, { title: 'Afsluttede', w: 80, align: 'right' }, { title: 'I alt', w: 80, align: 'right' }],
+        groups.map(g => [{ t: g.k, bold: true, color: g.rgb }, String(openN(g.items)), String(g.items.length - openN(g.items)), { t: String(g.items.length), bold: true }]));
     doc.y += 8;
-    doc.table([{ title: 'Nr', w: 50 }, { title: 'Farve', w: 40 }, { title: 'Kommentar', w: 215 }, { title: 'Status', w: 110 }, { title: 'Modtager', w: 100.28 }],
-        list.map(p => [{ t: sfNo(p), bold: true }, { t: SAFE[p.safety_level].n, bold: true, color: SAFE[p.safety_level].rgb }, (p.note || '').replace(/\s+/g, ' ').slice(0, 110), ageTxt(p), whoOf(p)]));
+    doc.table([{ title: 'Nr', w: 52 }, { title: 'Type', w: 78 }, { title: 'Beskrivelse', w: 220 }, { title: 'Status', w: 110 }, { title: 'Indlæg', w: 53.28, align: 'right' }],
+        list.map(p => [{ t: numOf(p), bold: true }, { t: typeOf(p), bold: true, color: rgbOf(p) }, (p.note || '').replace(/\s+/g, ' ').slice(0, 110), ageTxt(p), String(caseUpdatesOf(p).filter(u => u.kind !== 'status').length)]));
     const usePhotos = opt.photos !== false;
     let shown = 0;
     const strip = async (label, paths) => {
@@ -3961,12 +4076,12 @@ async function buildSafetyReport(fmt, opt) {
     doc.addPage();
     for (const p of list) {
         doc.ensure(usePhotos ? 220 : 120);
-        const c = SAFE[p.safety_level], top = doc.y;
-        doc.rect(doc.margin, top, doc.W - doc.margin * 2, 18, { fill: c.rgb });
-        doc.text(doc.margin + 6, top + 4, sfNo(p) + '  ·  ' + c.n.toUpperCase() + '  ·  ' + ageTxt(p), { size: 9.5, bold: true, color: [255, 255, 255] });
+        const top = doc.y;
+        doc.rect(doc.margin, top, doc.W - doc.margin * 2, 18, { fill: rgbOf(p) });
+        doc.text(doc.margin + 6, top + 4, numOf(p) + '  ·  ' + typeOf(p).toUpperCase() + '  ·  ' + ageTxt(p), { size: 9.5, bold: true, color: [255, 255, 255] });
         doc.y = top + 24;
-        doc.paragraph((p.note || 'Ingen kommentar').trim(), { size: 10, bold: true });
-        doc.paragraph(['Oprettet af ' + userName(p.user_id), dkWhen(p.created_at), 'Modtager: ' + whoOf(p)].join('  ·  '), { size: 8.5, color: [110, 110, 110] });
+        doc.paragraph((p.note || 'Ingen beskrivelse').trim(), { size: 10, bold: true });
+        doc.paragraph(['Oprettet af ' + userName(p.user_id), dkWhen(p.created_at)].join('  ·  '), { size: 8.5, color: [110, 110, 110] });
         if (p.lat != null) {
             doc.paragraph('GPS: ' + Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5) + (p.address ? ' – ' + p.address : ''), { size: 8, color: [110, 110, 110] });
             doc.ensure(14);
@@ -3976,15 +4091,25 @@ async function buildSafetyReport(fmt, opt) {
             doc.y += 14;
         }
         doc.y += 3;
-        await strip('Før', photoPaths(p));
-        await strip('Efter', p.done_paths || []);
+        await strip('Billeder af punktet', photoPaths(p));
+        const ups = caseUpdatesOf(p);
+        if (ups.length || (p.done_paths || []).length) {
+            doc.ensure(30); doc.paragraph('Dokumentation', { size: 9, bold: true, color: [60, 60, 60] });
+            await strip('Efter-billeder', p.done_paths || []);
+            for (const u of ups) {
+                doc.ensure(28);
+                doc.paragraph(dkWhen(u.created_at) + '  ·  ' + userName(u.user_id) + (u.kind === 'status' ? '  ·  STATUS' : ''), { size: 8, color: [110, 110, 110], bold: true });
+                if (u.text) doc.paragraph(u.text, { size: 9, bold: u.kind === 'status', color: u.kind === 'status' ? [20, 110, 60] : [30, 30, 30] });
+                await strip('Billeder', u.image_paths || []);
+            }
+        }
         if (isClosed(p)) {
             doc.ensure(30);
-            doc.paragraph('Afsluttet ' + dkWhen(p.safety_closed_at) + (p.safety_closed_by ? ' af ' + userName(p.safety_closed_by) : '') + (p.safety_close_note ? ': ' + p.safety_close_note : ''), { size: 9, color: [20, 110, 60], bold: true });
+            doc.paragraph('Afsluttet ' + dkWhen(closedAt(p)) + (closedBy(p) ? ' af ' + userName(closedBy(p)) : '') + (closeNoteOf(p) ? ': ' + closeNoteOf(p) : ''), { size: 9, color: [20, 110, 60], bold: true });
         }
         doc.y += 4; doc.line(doc.margin, doc.y, doc.W - doc.margin, doc.y, { color: [225, 228, 232] }); doc.y += 10;
     }
-    return { bytes: doc.build(), mime: 'application/pdf', filename: 'UniSjak_Sikkerhed_' + safeName(pr.case_number || pr.name) + '.pdf', subject };
+    return { bytes: doc.build(), mime: 'application/pdf', filename: 'UniSjak_FejlOgSikkerhed_' + safeName(pr.case_number || pr.name) + '.pdf', subject };
 }
 
 /* ------------------------------ OPGAVER (flere medarbejdere + underpunkter) ------------------------------ */
@@ -4708,6 +4833,7 @@ function parseLocal(kind, text, ctx) {
         case 'task': return parseTask(text, ctx.people);
         case 'subtask': return parseSubtasks(text);
         case 'tupd': return { text: String(text || '').trim() };
+        case 'cupd': return { text: String(text || '').trim() };
         case 'shift': return parseShift(text, ctx.projects, ctx.roles);
         case 'case': return parseCase(text);
         case 'plan': return parsePlan(text, ctx.people, ctx.today);
@@ -5287,6 +5413,7 @@ const VOICE_CFG = {
     'task-edit':  { label: 'Indtal opgave', hint: '', nohelp: true },
     subtask:      { label: '', compact: true, hint: '' },
     tupd:         { label: '', compact: true, hint: '' },
+    cupd:         { label: '', compact: true, hint: '' },
     shift:        { label: 'Indtal vagt', hint: 'Sig fx: "fra 7 til 15 på sag 1001, medbring stige"' },
     case:         { label: 'Indtal sag', hint: 'Sig fx: "sag 1001 Hovedgade 12 Randers"' },
     role:         { label: 'Indtal rolle', hint: 'Sig fx: "Bar fra 16 til 23, to personer"' },
@@ -5405,7 +5532,7 @@ async function processVoice(box, kind, text) {
     try {
         const ctx = voiceCtx();
         const local = parseLocal(kind, text, ctx);
-        const localOnly = kind === 'task' || kind === 'subtask' || kind === 'tupd' || kind === 'sick' || kind === 'multi';   // struktur (hovedopgave/underpunkter/personer) tolkes lokalt
+        const localOnly = kind === 'task' || kind === 'subtask' || kind === 'tupd' || kind === 'cupd' || kind === 'sick' || kind === 'multi';   // struktur (hovedopgave/underpunkter/personer) tolkes lokalt
         const ai = localOnly ? null : await aiParse(kind, text);
         let data = localOnly ? local : mergeVoice(local, ai);
         if (kind === 'shift' && ai && ai.project_number && !local.project_id) {
@@ -5472,6 +5599,11 @@ async function applyVoice(box, kind, d, text, usedAi) {
         if (!got.length) { put(noteId, vCap(text)); }
         toast(how + ' – tjek felterne og tryk Gem.', 'ok'); flash(got);
         return;
+    }
+    if (kind === 'cupd') {
+        const add = vCap(d.text || text), ta = $('case-text');
+        S.caseDraft = ((S.caseDraft || '') + ' ' + add).trim(); if (ta) { ta.value = S.caseDraft; autoGrow(ta); }
+        return toast('Indtalt – tryk Send.', 'ok');
     }
     if (kind === 'tupd') {
         const add = vCap(d.text || text), ta = $('tk-upd-text');
@@ -5727,7 +5859,7 @@ function openMultiCard(d, text) {
         `<div><label class="lbl">Beskrivelse</label><input type="text" id="qm-notes" maxlength="400" class="${f}" value="${esc(d.notes || '')}"></div><p class="text-xs font-black text-emerald-300" id="qm-total"></p></div>`;
     h += `<div class="rounded-xl border border-gray-700 bg-gray-900/60 p-3 space-y-3"><label class="flex items-center gap-2 text-[10px] font-black uppercase text-orange-300"><input type="checkbox" id="qm-ks-on" ${d.hasKs ? 'checked' : ''} class="w-5 h-5"><i class="fa-solid fa-clipboard-check mr-1"></i>Opret KS-punkt</label>` +
         `<div id="qm-ks-box" class="${d.hasKs ? '' : 'hidden'} space-y-3"><div><label class="lbl">Beskrivelse</label><textarea id="qm-ks-note" rows="2" maxlength="1000" class="${f}">${esc((d.ks && d.ks.note) || '')}</textarea></div>` +
-        `<div><label class="lbl">Kategori</label><select id="qm-ks-cat" class="${f}">${KS_CATS.map(c => `<option ${d.ks && d.ks.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div><p class="text-[11px] text-gray-400" id="qm-gps">GPS-position tages ved gem.</p>`+
+        `<div><label class="lbl">Kategori</label><select id="qm-ks-cat" class="${f}">${KS_CATS.map(c => `<option value="${esc(c)}" ${d.ks && d.ks.category === c ? 'selected' : ''}>${esc(catName(c))}</option>`).join('')}</select></div><p class="text-[11px] text-gray-400" id="qm-gps">GPS-position tages ved gem.</p>`+
         `<div id="qm-ks-lvbox" class="${(S.safetyReady && d.ks && d.ks.category === 'Sikkerhed') ? '' : 'hidden'}"><label class="lbl">Sikkerhedsfarve (påkrævet)</label><select id="qm-ks-lv" class="${f}"><option value="">Vælg farve…</option><option value="groen">Grøn</option><option value="gul">Gul</option><option value="roed">Rød</option></select></div></div></div>`;
     h += `<button data-act="multi-save" id="qm-save" class="w-full brand-orange text-white py-4 rounded-xl font-black shadow-lg"><i class="fa-solid fa-check mr-1"></i><span id="qm-save-txt"></span></button>`;
     $('qk-body').innerHTML = h;
@@ -5801,18 +5933,19 @@ async function loadPlan() {
 function subscribePlan() {
     if (S.chPlan) { try { sb.removeChannel(S.chPlan); } catch (e) { /* ignore */ } }
     const ch = sb.channel('unisjak-plan');
-    ['shift_roles', 'employee_roles', 'availability', 'task_items', 'time_clock'].concat(S.swapsReady ? ['shift_swaps'] : []).concat(S.payReady ? ['absences', 'payroll_exports', 'payroll_corrections'] : []).concat(S.tplReady ? ['task_templates'] : []).concat(S.updReady ? ['task_updates'] : []).forEach(t => ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, p => { try { onPlanChange(t, p); } catch (e) { console.error(e); } }));
+    ['shift_roles', 'employee_roles', 'availability', 'task_items', 'time_clock'].concat(S.swapsReady ? ['shift_swaps'] : []).concat(S.payReady ? ['absences', 'payroll_exports', 'payroll_corrections'] : []).concat(S.tplReady ? ['task_templates'] : []).concat(S.updReady ? ['task_updates'] : []).concat(S.caseReady ? ['ks_updates'] : []).forEach(t => ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, p => { try { onPlanChange(t, p); } catch (e) { console.error(e); } }));
     ch.subscribe(() => {});
     S.chPlan = ch;
 }
 function onPlanChange(t, p) {
     if (!S.started) return;
-    const key = { shift_roles: 'roles', employee_roles: 'empRoles', availability: 'avail', task_items: 'taskItems', time_clock: 'clock', shift_swaps: 'swaps', task_templates: 'templates', task_updates: 'taskUpdates', absences: 'absences', payroll_exports: 'payExports', payroll_corrections: 'payCorr' }[t];
+    const key = { shift_roles: 'roles', employee_roles: 'empRoles', availability: 'avail', task_items: 'taskItems', time_clock: 'clock', shift_swaps: 'swaps', task_templates: 'templates', task_updates: 'taskUpdates', ks_updates: 'ksUpdates', absences: 'absences', payroll_exports: 'payExports', payroll_corrections: 'payCorr' }[t];
     const row = p.new && Object.keys(p.new).length ? p.new : null;
     const old = p.old && Object.keys(p.old).length ? p.old : null;
     if (row && row.company_id && row.company_id !== S.profile.company_id) return;
     if (p.eventType === 'DELETE') { if (old) dropRow(S[key], old); } else if (row) mergeRow(S[key], row);
     if (t === 'task_updates' && row && S.editTask && row.task_id === S.editTask.id) { resolveUpdUrls(row.task_id); if (row.user_id !== myId()) toast(updAuthor(row) + ' har skrevet i opgaven.', 'info'); }
+    if (t === 'ks_updates' && row && S.editPhotoId === row.photo_id) { resolveCaseUrls(row.photo_id); if (row.user_id !== myId() && row.kind !== 'status') toast(userName(row.user_id) + ' har skrevet i punktet.', 'info'); }
     if (t === 'payroll_corrections') S.payCorr = S.payCorr.filter(x => !x.resolved_batch);
     if (t === 'absences' && !$('modal-absence').classList.contains('hidden')) renderAbList();
     if (t === 'shift_swaps' && row && row.status === 'approved') { refreshShifts().then(scheduleRender).catch(() => {}); }
@@ -7018,7 +7151,7 @@ async function ugSetLang(val) {
 
 /* ------------------------------ EKSPORT (PDF + CSV + e-mail) ------------------------------ */
 const EX = { kind: null, fmt: 'pdf', busy: false, sel: null, vis: [] };
-const EX_TITLES = { safety: 'Sikkerhedsrapport', timer: 'Eksportér timer', plan: 'Print planlægning', planrapport: 'Bygherre-ugerapport', ks: 'Eksportér kvalitetssikring', materiale: 'Eksportér materialer', shifts: 'Eksportér vagtplan', extra: 'Ekstraarbejde-rapport' };
+const EX_TITLES = { safety: 'Rapport: fejl og mangler / sikkerhed', timer: 'Eksportér timer', plan: 'Print planlægning', planrapport: 'Bygherre-ugerapport', ks: 'Eksportér kvalitetssikring', materiale: 'Eksportér materialer', shifts: 'Eksportér vagtplan', extra: 'Ekstraarbejde-rapport' };
 function csvSafe(v) {
     let s = String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').replace(/;/g, ',');
     if (/^[=+\-@\t]/.test(s)) s = "'" + s;
@@ -7038,7 +7171,7 @@ function openExport(kind) {
         const all = exPickList(); EX.sel = new Set(all.map(p => p.id));
         const cats = [...new Set(all.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'da'));
         $('ex-pick-q').value = '';
-        $('ex-pick-cat').innerHTML = '<option value="">Alle kategorier</option>' + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        $('ex-pick-cat').innerHTML = '<option value="">Alle kategorier</option>' + cats.map(c => `<option value="${esc(c)}">${esc(catName(c))}</option>`).join('');
         show('ex-pick-cat', kind === 'ks' && cats.length > 0);
         exPickRender();
     } else { EX.sel = null; show('ex-w-pick', false); }
@@ -7067,7 +7200,8 @@ function openExport(kind) {
     renderVoiceBoxes();
     show('modal-export', true);
 }
-function exPickList() { if (EX.kind === 'safety') { const f = exSafetyRange(); return safetyPoints().filter(f).sort((a, b) => (a.safety_no || 0) - (b.safety_no || 0)); } return EX.kind === 'extra' ? extraPoints().slice().sort((a, b) => (a.extra_no || 0) - (b.extra_no || 0)) : photosOf(EX.kind === 'materiale' ? 'materiale' : 'ks').slice().reverse(); }
+const exCaseList = () => S.caseReady ? casePoints() : safetyPoints();
+function exPickList() { if (EX.kind === 'safety') { const f = exSafetyRange(); return exCaseList().filter(f).sort((a, b) => (a.safety_no || a.dev_no || 0) - (b.safety_no || b.dev_no || 0)); } return EX.kind === 'extra' ? extraPoints().slice().sort((a, b) => (a.extra_no || 0) - (b.extra_no || 0)) : photosOf(EX.kind === 'materiale' ? 'materiale' : 'ks').slice().reverse(); }
 function exPickCount() {
     const list = exPickList(), n = list.filter(p => EX.sel && EX.sel.has(p.id)).length;
     const el = $('ex-pick-count'); if (el) el.textContent = n + ' af ' + list.length + ' valgt';
@@ -7081,8 +7215,8 @@ function exPickRender() {
     $('ex-pick-list').innerHTML = vis.length ? vis.map(p => {
         const on1 = EX.sel.has(p.id), n = photoPaths(p).length;
         return `<label class="flex items-center gap-3 bg-gray-900 border ${on1 ? 'border-orange-500/60' : 'border-gray-800'} rounded-xl p-2.5 cursor-pointer"><input type="checkbox" data-chg="ex-pick" data-id="${p.id}" ${on1 ? 'checked' : ''} class="w-6 h-6 accent-orange-500 shrink-0">` +
-            `<span class="min-w-0 flex-1 text-xs"><span class="font-black text-white">${EX.kind === 'ks' ? '#' + nums[p.id] : EX.kind === 'extra' ? exNo(p) : EX.kind === 'safety' ? sfNo(p) + ' · ' + SAFE[p.safety_level].n : ''}</span> <span class="text-gray-200">${esc(photoHead(p, EX.kind === 'ks' ? 'Ingen beskrivelse' : 'Materiale').slice(0, 80))}</span>` +
-            `<span class="block text-[10px] text-gray-500">${esc(p.category || '')}${p.category ? ' · ' : ''}${dkWhen(p.created_at)}${n > 1 ? ' · ' + n + ' billeder' : n === 1 ? ' · 1 billede' : ' · uden billede'}</span></span></label>`;
+            `<span class="min-w-0 flex-1 text-xs"><span class="font-black text-white">${EX.kind === 'ks' ? '#' + nums[p.id] : EX.kind === 'extra' ? exNo(p) : EX.kind === 'safety' ? (p.safety_level ? sfNo(p) + ' · ' + SAFE[p.safety_level].n : (caseNo(p) ? caseNo(p) + ' · ' : '') + catName(p.category)) : ''}</span> <span class="text-gray-200">${esc(photoHead(p, EX.kind === 'ks' ? 'Ingen beskrivelse' : 'Materiale').slice(0, 80))}</span>` +
+            `<span class="block text-[10px] text-gray-500">${esc(catName(p.category))}${p.category ? ' · ' : ''}${dkWhen(p.created_at)}${n > 1 ? ' · ' + n + ' billeder' : n === 1 ? ' · 1 billede' : ' · uden billede'}</span></span></label>`;
     }).join('') : '<p class="text-xs text-gray-500 text-center py-3">Ingen punkter matcher søgningen.</p>';
     exPickCount();
 }
@@ -7175,11 +7309,11 @@ async function buildExport(kind, fmt, opt) {
         const nums = numbering();
         const subject = comp + ' – Kvalitetssikring – ' + projLabel(pr);
         if (fmt === 'csv') {
-            return { bytes: enc(csvOf(['Punkt', 'Kategori', 'Beskrivelse', 'Oprettet af', 'Tidspunkt', 'Lat', 'Lng', 'Præcision (m)', 'Adresse', 'Google Maps', 'Antal billeder'],
-                list.map(p => [nums[p.id], p.category || '', [p.title, p.note].filter(Boolean).join(' – '), userName(p.user_id), dkWhen(p.created_at), p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.gps_accuracy != null ? Math.round(p.gps_accuracy) : '', p.address || '', p.lat != null ? mapsUrl(p.lat, p.lng) : '', photoPaths(p).length]))), mime: 'text/csv', filename: 'UniSjak_KS_' + safeName(pr.case_number || pr.name) + '.csv', subject };
+            return { bytes: enc(csvOf(['Punkt', 'Kategori', 'Beskrivelse', 'Oprettet af', 'Tidspunkt', 'Lat', 'Lng', 'Præcision (m)', 'Adresse', 'Google Maps', 'Antal billeder', 'Status', 'Tråd'],
+                list.map(p => [nums[p.id], catName(p.category), [p.title, p.note].filter(Boolean).join(' – '), userName(p.user_id), dkWhen(p.created_at), p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.gps_accuracy != null ? Math.round(p.gps_accuracy) : '', p.address || '', p.lat != null ? mapsUrl(p.lat, p.lng) : '', photoPaths(p).length, isCasePt(p) ? (isClosed(p) ? 'Afsluttet' : 'Åben') : '', isCasePt(p) ? caseThreadLines(p).join(' | ') : '']))), mime: 'text/csv', filename: 'UniSjak_KS_' + safeName(pr.case_number || pr.name) + '.csv', subject };
         }
         const doc = newReport({ company: comp, title: 'Kvalitetssikring', sub: placeCap() + ': ' + projLabel(pr), sub2: 'Rapport pr. ' + dkFull(fmtDate(new Date())) }, false);
-        const cats = {}; list.forEach(p => { const c = p.category || 'Uden kategori'; cats[c] = (cats[c] || 0) + 1; });
+        const cats = {}; list.forEach(p => { const c = catName(p.category) || 'Uden kategori'; cats[c] = (cats[c] || 0) + 1; });
         doc.paragraph(list.length + ' KS-punkter' + ' – ' + Object.keys(cats).map(c => c + ': ' + cats[c]).join('  ·  '), { size: 10, bold: true });
         doc.y += 8;
         const usePhotos = opt.photos !== false;
@@ -7193,8 +7327,14 @@ async function buildExport(kind, fmt, opt) {
             doc.y = top;
             const saveBottom = doc.bottom;
             doc.paragraph('Punkt #' + nums[p.id] + (p.title ? ' – ' + p.title : ''), { x: tx, w: tw, size: 11, bold: true });
-            doc.paragraph([p.category, 'Af ' + userName(p.user_id), dkWhen(p.created_at)].filter(Boolean).join('  ·  '), { x: tx, w: tw, size: 8.5, color: [110, 110, 110] });
+            doc.paragraph([catName(p.category), 'Af ' + userName(p.user_id), dkWhen(p.created_at)].filter(Boolean).join('  ·  '), { x: tx, w: tw, size: 8.5, color: [110, 110, 110] });
             if (p.note) { doc.y += 3; doc.paragraph(p.note, { x: tx, w: tw, size: 9 }); }
+            if (isCasePt(p)) {
+                doc.y += 3;
+                doc.paragraph([caseNo(p), catName(p.category), isClosed(p) ? 'Afsluttet ' + dkWhen(closedAt(p)) + (closedBy(p) ? ' af ' + userName(closedBy(p)) : '') : ageTxt(p)].filter(Boolean).join('  ·  '), { x: tx, w: tw, size: 8.5, bold: true, color: isClosed(p) ? [20, 110, 60] : [180, 110, 0] });
+                if (isClosed(p) && closeNoteOf(p)) doc.paragraph('Afslutning: ' + closeNoteOf(p), { x: tx, w: tw, size: 8, color: [20, 110, 60] });
+                caseThreadLines(p).forEach(l => doc.paragraph(l, { x: tx, w: tw, size: 8, color: [60, 60, 60] }));
+            }
             if (p.lat != null) {
                 doc.y += 2;
                 doc.paragraph('GPS: ' + Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5) + (p.gps_accuracy != null ? ' (±' + Math.round(p.gps_accuracy) + ' m)' : ''), { x: tx, w: tw, size: 8, color: [110, 110, 110] });
@@ -7677,6 +7817,10 @@ async function handleAct(act, el) {
         case 'ks-extra-filter': S.ksExtraOnly = !S.ksExtraOnly; if (S.ksExtraOnly) S.safeFilter = ''; return scheduleRender();
         case 'safe-filter': S.safeFilter = S.safeFilter === d.f ? '' : d.f; if (S.safeFilter) S.ksExtraOnly = false; return scheduleRender();
         case 'safe-report': return openExport('safety');
+        case 'case-photo': { const f = $('case-file'); if (f) { f.value = ''; f.click(); } return; }
+        case 'case-send': return caseSend([]);
+        case 'case-close': return caseClose(true);
+        case 'case-reopen': return caseClose(false);
         case 'safe-lv': S.safeLv = d.lv; return safeFormRender();
         case 'safe-assign': toggleAssign(S.safeAssign, d.user); return safeFormRender();
         case 'dev-assign': toggleAssign(S.devAssign, d.user); return devFormRender();
@@ -7925,7 +8069,7 @@ function lpDemoStart(mode) {
     switchAuthTab('login');
     lpPrice(5);
     $('timer-date-input').value = fmtDate(new Date());
-    ['pf-cat', 'ef-cat'].forEach(id => { $(id).innerHTML = '<option value="">Vælg kategori…</option>' + KS_CATS.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join(''); });
+    ['pf-cat', 'ef-cat'].forEach(id => { $(id).innerHTML = '<option value="">Vælg kategori…</option>' + KS_CATS.map(c => `<option value="${esc(c)}">${esc(catName(c))}</option>`).join(''); });
     $('pf-cat').addEventListener('change', safeFormRender); $('ef-cat').addEventListener('change', () => { S.editSafeLv = S.editSafeLv || ''; editSafeRender(); });
     renderVoiceBoxes();
     sb.auth.onAuthStateChange((event, session) => { setTimeout(() => onAuthEvent(event, session), 0); });
