@@ -1336,7 +1336,7 @@ function resetApp() {
         urls: {}, range: { time: null, shifts: null }, weekOffset: 0, shiftOffset: 0, live: 'wait'
     });
     if (typeof resetUg === 'function') resetUg();
-    if (typeof saStop === 'function') { saStop(); S.sa.list = []; S.sa.companies = []; S.sa.threads = []; S.sa.acct = null; S.sa.msgs = []; S.sa.view = 'list'; S.sa.logo = null; S.sa.today = []; S.sa.counts = {}; S.sa.pg = { rows: [], total: 0 }; S.sa.q = ''; S.sa.health = ''; S.sa.filter = 'alle'; S.sa.tab = 'idag'; }
+    if (typeof saStop === 'function') { saStop(); S.sa.list = []; S.sa.companies = []; S.sa.threads = []; S.sa.acct = null; S.sa.msgs = []; S.sa.view = 'list'; S.sa.logo = null; S.sa.today = []; S.sa.queue = []; S.sa.tpls = []; S.sa.counts = {}; S.sa.pg = { rows: [], total: 0 }; S.sa.q = ''; S.sa.health = ''; S.sa.filter = 'alle'; S.sa.tab = 'idag'; }
 }
 
 async function loadMyProfile(uid) {
@@ -2717,7 +2717,7 @@ const SA_STAGES = [['lead', 'Lead'], ['kontaktet', 'Kontaktet'], ['tilbud', 'Til
 const SA_SEG = [['', 'Ikke valgt'], ['enkeltmand', 'Enkeltmand'], ['entreprenor', 'Entreprenør'], ['offentlig', 'Offentlig'], ['butik', 'Butik / restaurant'], ['andet', 'Andet']];
 const SA_MAIL_ST = { queued: 'I kø', sent: 'Sendt', delivered: 'Leveret', opened: 'Åbnet', bounced: 'Kunne ikke leveres', complained: 'Markeret som spam', failed: 'Fejlede', received: 'Modtaget' };
 const SA_STAGE_CLS = { lead: 'bg-gray-800 text-gray-200', kontaktet: 'bg-sky-950 text-sky-300', tilbud: 'bg-violet-950 text-violet-300', proeve: 'bg-amber-950 text-amber-300', aktiv: 'bg-emerald-950 text-emerald-300', inaktiv: 'bg-red-950 text-red-300', tabt: 'bg-stone-800 text-stone-400' };
-S.sa = { fromLead: null, tab: 'idag', view: 'list', filter: 'alle', q: '', health: '', today: [], counts: {}, pg: { rows: [], total: 0 }, seq: 0, list: [], companies: [], threads: [], sel: null, selThread: null, acct: null, msgs: [], keep: null, ch: null, busy: false };
+S.sa = { queue: [], tpls: [], rules: [], logs: [], camps: [], tplSel: null, campSel: null, campRun: null, fromLead: null, tab: 'idag', view: 'list', filter: 'alle', q: '', health: '', today: [], counts: {}, pg: { rows: [], total: 0 }, seq: 0, list: [], companies: [], threads: [], sel: null, selThread: null, acct: null, msgs: [], keep: null, ch: null, busy: false };
 const saStage = k => (SA_STAGES.find(x => x[0] === k) || [k, k])[1];
 const saDT = t => t ? new Date(t).toLocaleString('da-DK', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 function saAgo(t) {
@@ -2777,13 +2777,15 @@ async function saLoadCompany(cid) {
 }
 async function saReload() {
     try { await sb.rpc('sa_refresh_health'); } catch (e) { /* øjebliksbilledet er valgfrit */ }
-    const [cn, td, t] = await Promise.all([sb.rpc('sa_crm_counts'), sb.rpc('sa_crm_page', { p_filter: 'handling', p_limit: 40, p_offset: 0 }),
-        sb.from('mail_threads').select('*').order('last_at', { ascending: false }).limit(300)]);
+    const [cn, td, t, qu, tp] = await Promise.all([sb.rpc('sa_crm_counts'), sb.rpc('sa_crm_page', { p_filter: 'handling', p_limit: 40, p_offset: 0 }),
+        sb.from('mail_threads').select('*').order('last_at', { ascending: false }).limit(300),
+        sb.from('agent_queue').select('*').in('status', ['pending', 'failed']).order('created_at', { ascending: false }).limit(100), sb.from('mail_templates').select('*').order('name')]);
     const bad = cn.error || td.error;
     if (bad) { $('sa-main').innerHTML = `<p class="text-xs text-red-300">${esc(bad.message || 'Fejl')}</p>`; return; }
     S.sa.counts = cn.data || {}; S.sa.today = td.data || []; saMerge(S.sa.today); S.sa.threads = t.data || [];
+    S.sa.queue = qu.error ? [] : (qu.data || []); if (!tp.error) S.sa.tpls = tp.data || [];
     try { await saFetchPage(false); } catch (e) { console.error(e); }
-    const miss = [...new Set(S.sa.threads.map(x => x.account_id).filter(id => id && !S.sa.list.some(a => a.id === id)))].slice(0, 200);
+    const miss = [...new Set(S.sa.threads.concat(S.sa.queue).map(x => x.account_id).filter(id => id && !S.sa.list.some(a => a.id === id)))].slice(0, 200);
     if (miss.length) { const m = await sb.rpc('sa_crm_page', { p_ids: miss, p_limit: 200, p_offset: 0 }); if (!m.error) saMerge(m.data); }
     if (S.sa.view === 'acct' && S.sa.sel) await saLoadAcct(); else if (S.sa.view === 'thread' && S.sa.selThread) await saLoadThread(true);
     saRender();
@@ -2799,7 +2801,7 @@ function saRefresh() { clearTimeout(saTimer); saTimer = setTimeout(() => { if (S
 function saSubscribe() {
     if (S.sa.ch) return;
     const ch = sb.channel('unisjak-sa');
-    ['crm_accounts', 'crm_events', 'mail_threads', 'mail_messages'].forEach(table => ch.on('postgres_changes', { event: '*', schema: 'public', table }, saRefresh));
+    ['crm_accounts', 'crm_events', 'mail_threads', 'mail_messages', 'agent_queue', 'mail_campaigns'].forEach(table => ch.on('postgres_changes', { event: '*', schema: 'public', table }, saRefresh));
     ch.subscribe(st => { const d = $('sa-live'); if (d) d.className = 'w-2.5 h-2.5 rounded-full ' + (st === 'SUBSCRIBED' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'); });
     S.sa.ch = ch;
 }
@@ -2824,15 +2826,15 @@ async function saLoadThread(quiet) {
 }
 
 function saKeepIn() { const m = {}; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { m[e.dataset.saF] = e.value; }); return { view: S.sa.view, m }; }
-function saKeepOut(k) { if (!k || k.view !== S.sa.view) return; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { if (k.m[e.dataset.saF] != null && !e.value) e.value = k.m[e.dataset.saF]; }); }
+function saKeepOut(k) { if (!k || k.view !== S.sa.view) return; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { const n = e.dataset.saF, v = k.m[n]; if (v != null && (!e.value || (/^q[sb]-/.test(n) && v !== e.value))) e.value = v; }); }
 
 function saRender() {
     const B = $('sa-main'); if (!B) return;
     const keep = saKeepIn(), v = S.sa.view;
     const unread = S.sa.threads.filter(t => t.unread).length;
     const todayN = (S.sa.today || []).length;
-    $('sa-tabs').innerHTML = [['idag', 'I dag', 'fa-bolt', todayN], ['kunder', 'Kunder', 'fa-building', 0], ['indbakke', 'Indbakke', 'fa-inbox', unread]].map(([k, t, ic, n]) =>
-        `<button type="button" data-act="sa-tab" data-tab="${k}" class="flex-1 py-3 rounded-xl font-black text-sm ${S.sa.tab === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}"><i class="fa-solid ${ic} mr-1.5"></i>${t}${n ? ` <span class="ml-1 bg-white text-orange-600 rounded-full text-[10px] px-1.5 py-0.5">${n}</span>` : ''}</button>`).join('');
+    $('sa-tabs').innerHTML = [['idag', 'I dag', 'fa-bolt', todayN], ['kunder', 'Kunder', 'fa-building', 0], ['indbakke', 'Indbakke', 'fa-inbox', unread], ['godkend', 'Godkend', 'fa-circle-check', (S.sa.queue || []).length]].map(([k, t, ic, n]) =>
+        `<button type="button" data-act="sa-tab" data-tab="${k}" class="flex-1 py-3 rounded-xl font-black text-xs sm:text-sm ${S.sa.tab === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}"><i class="fa-solid ${ic} mr-1"></i>${t}${n ? ` <span class="ml-1 bg-white text-orange-600 rounded-full text-[10px] px-1.5 py-0.5">${n}</span>` : ''}</button>`).join('');
     $('sa-close-btn').classList.toggle('hidden', !S.started);
     if (v === 'new') B.innerHTML = saNewHtml();
     else if (v === 'lead') B.innerHTML = saLeadHtml();
@@ -2840,7 +2842,14 @@ function saRender() {
     else if (v === 'cust') B.innerHTML = saCustHtml();
     else if (v === 'compose') B.innerHTML = saComposeHtml();
     else if (v === 'thread') B.innerHTML = saThreadHtml();
+    else if (v === 'tpls') B.innerHTML = saTplsHtml();
+    else if (v === 'tpl') B.innerHTML = saTplHtml();
+    else if (v === 'rules') B.innerHTML = saRulesHtml();
+    else if (v === 'camps') B.innerHTML = saCampsHtml();
+    else if (v === 'camp-new') B.innerHTML = saCampNewHtml();
+    else if (v === 'camp') B.innerHTML = saCampHtml();
     else if (S.sa.tab === 'indbakke') B.innerHTML = saInboxHtml();
+    else if (S.sa.tab === 'godkend') B.innerHTML = saQueueHtml();
     else if (S.sa.tab === 'idag') B.innerHTML = saTodayHtml();
     else if (document.activeElement && document.activeElement.matches && document.activeElement.matches('[data-sa-q]') && $('sa-rows')) saRenderRows();
     else B.innerHTML = saListHtml();
@@ -2863,6 +2872,7 @@ function saTodayHtml() {
     const tile = (n, t, cls, k) => `<button type="button" data-act="sa-kpi" data-k="${k}" class="bg-gray-900/80 border border-gray-800 rounded-xl p-3 text-left active:scale-[.98]"><p class="text-2xl font-black ${cls}">${Number(n) || 0}</p><p class="text-[10px] text-gray-400 font-bold leading-tight mt-0.5">${t}</p></button>`;
     return `<div class="grid grid-cols-4 gap-2">${tile(c.new_30d, 'Nye<br>30 dage', 'text-white', 'nye')}${tile(c.active, 'Aktive<br>kunder', 'text-emerald-400', 'groen')}${tile(c.at_risk, 'I fare', 'text-red-400', 'roed')}${tile(c.churned_30d, 'Sprunget<br>fra', 'text-gray-300', 'inaktiv')}</div>` +
         `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-new-lead" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-user-plus mr-1.5"></i>Nyt lead</button><button type="button" data-act="sa-new" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-building-circle-check mr-1.5"></i>Ny kunde</button></div>` +
+        ((S.sa.queue || []).length ? `<button type="button" data-act="sa-tab" data-tab="godkend" class="w-full bg-violet-950/60 border border-violet-700/50 text-violet-200 rounded-xl p-3.5 text-left font-black text-sm"><i class="fa-solid fa-circle-check mr-1.5"></i>${S.sa.queue.length} udkast venter på dit ok</button>` : '') +
         (T.length ? `<h3 class="font-black text-white text-sm pt-1">${T.length >= 40 ? '40+' : T.length} ting kræver dig</h3>` : '') +
         `<div class="space-y-2">` + (T.map(a => {
             const sig = saSignals(a), pr = saPrimary(a);
@@ -2871,7 +2881,8 @@ function saTodayHtml() {
                 `<div class="flex flex-wrap gap-1.5 mt-2">${sig.map(x => saChip(x[2], x[1])).join('')}</div></button>` +
                 `<div class="grid grid-cols-[1fr_auto] gap-2"><button type="button" data-act="${pr[0]}" data-id="${a.id}" data-kind="${pr[3] || ''}" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm active:scale-95 transition"><i class="fa-solid ${pr[2]} mr-1.5"></i>${pr[1]}</button>` +
                 `<button type="button" data-act="sa-snooze" data-id="${a.id}" class="bg-gray-800 border border-gray-700 text-gray-200 px-4 rounded-xl font-bold text-xs">Udsæt 3 dage</button></div></div>`;
-        }).join('') || `<div class="text-center py-10"><p class="text-3xl mb-2">✓</p><p class="text-sm font-black text-white">Alt er under kontrol</p><p class="text-xs text-gray-400 mt-1">Ingen kunder kræver handling lige nu.</p></div>`) + `</div>`;
+        }).join('') || `<div class="text-center py-10"><p class="text-3xl mb-2">✓</p><p class="text-sm font-black text-white">Alt er under kontrol</p><p class="text-xs text-gray-400 mt-1">Ingen kunder kræver handling lige nu.</p></div>`) + `</div>` +
+        `<div class="grid grid-cols-3 gap-2 pt-3 border-t border-gray-800">${[['tpls', 'Skabeloner', 'fa-file-lines'], ['camps', 'Udsendelser', 'fa-bullhorn'], ['rules', 'Regler', 'fa-robot']].map(([v, t, ic]) => `<button type="button" data-act="sa-go" data-v="${v}" class="bg-gray-900 border border-gray-800 text-gray-200 py-3 rounded-xl font-bold text-xs"><i class="fa-solid ${ic} block text-base mb-1 text-gray-400"></i>${t}</button>`).join('')}</div>`;
 }
 
 /* ---- Kundeliste ---- */
@@ -2900,6 +2911,148 @@ function saListHtml() {
     return `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-new-lead" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-user-plus mr-1.5"></i>Nyt lead</button><button type="button" data-act="sa-new" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-building-circle-check mr-1.5"></i>Ny kunde</button></div>` +
         `<div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i><input data-sa-q type="search" autocomplete="off" maxlength="80" placeholder="Søg navn, CVR eller e-mail" value="${esc(S.sa.q)}" class="inp !pl-10"></div>` +
         `<div id="sa-chips" class="space-y-2">${saChipsHtml()}</div><div id="sa-rows" class="space-y-2">${saRowsHtml()}</div>`;
+}
+
+/* ---- Godkend (kø fra regler og AI) ---- */
+const SA_AGENT = { regel: ['Regel', 'bg-sky-950 text-sky-300'], support: ['AI-svar', 'bg-violet-950 text-violet-300'] };
+const saBackTo = (v, txt) => `<button type="button" data-act="sa-go" data-v="${v}" class="text-sm text-sky-300 font-bold py-1"><i class="fa-solid fa-chevron-left mr-1"></i>${txt}</button>`;
+function saQueueHtml() {
+    const Q = S.sa.queue || [];
+    return `<p class="text-xs text-gray-400">Udkast fra regler og AI. Intet sendes, før du trykker Send. Du kan rette teksten først.</p>` +
+        (Q.map(q => {
+            const a = S.sa.list.find(x => x.id === q.account_id), ag = SA_AGENT[q.agent] || [q.agent, 'bg-gray-800 text-gray-300'];
+            return `<div class="bg-gray-900/80 border ${q.status === 'failed' ? 'border-red-700/60' : 'border-gray-800'} rounded-xl p-3.5 space-y-2.5">` +
+                `<div class="flex justify-between items-center gap-2"><span class="font-black text-white text-sm truncate">${esc(a ? a.name : q.to_email)}</span>${saChip(ag[1], ag[0])}</div>` +
+                `<p class="text-[11px] text-gray-400 truncate">Til ${esc(q.to_email)}${q.reason ? ' · ' + esc(q.reason) : ''}</p>` +
+                (q.status === 'failed' ? `<p class="text-[11px] text-red-300 font-bold">Kunne ikke sendes${q.error ? ': ' + esc(q.error) : ''}</p>` : '') +
+                `<input data-sa-f="qs-${q.id}" class="inp" maxlength="300" value="${esc(q.subject)}"><textarea data-sa-f="qb-${q.id}" rows="7" maxlength="20000" class="inp">${esc(q.body)}</textarea>` +
+                `<div class="grid grid-cols-[1fr_auto] gap-2"><button type="button" data-act="sa-q-send" data-id="${q.id}" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm active:scale-95 transition"><i class="fa-solid fa-paper-plane mr-1.5"></i>${q.status === 'failed' ? 'Prøv igen' : 'Send'}</button>` +
+                `<button type="button" data-act="sa-q-reject" data-id="${q.id}" class="bg-gray-800 border border-gray-700 text-gray-200 px-5 rounded-xl font-bold text-xs">Afvis</button></div></div>`;
+        }).join('') || `<div class="text-center py-10"><p class="text-3xl mb-2">✓</p><p class="text-sm font-black text-white">Ingen udkast venter</p><p class="text-xs text-gray-400 mt-1">Nye udkast fra regler og AI dukker op her.</p></div>`);
+}
+async function saQSend(id) {
+    const q = S.sa.queue.find(x => x.id === id); if (!q || S.sa.busy) return;
+    const B = $('sa-main'), val = n => { const e = B.querySelector('[data-sa-f="' + n + '-' + id + '"]'); return e ? e.value.trim() : ''; };
+    const sub = val('qs') || q.subject, body = val('qb') || q.body;
+    if (!sub || !body) return toast('Emne og tekst må ikke være tomme.');
+    S.sa.busy = true;
+    try {
+        const up = await sb.from('agent_queue').update({ subject: sub, body, status: 'approved' }).eq('id', id).in('status', ['pending', 'failed']).select('id');
+        if (up.error) return fail(up.error);
+        if (!up.data || !up.data.length) { toast('Udkastet er allerede håndteret.'); return; }
+        const r = await crmSend({ to: q.to_email, subject: sub, message: body, thread_id: q.thread_id || undefined, account_id: q.account_id || undefined });
+        if (r.ok) { await sb.from('agent_queue').update({ status: 'sent', error: null }).eq('id', id); toast('Mail sendt.', 'ok'); }
+        else { await sb.from('agent_queue').update({ status: 'failed', error: crmSendErr(r).slice(0, 300) }).eq('id', id); toast(crmSendErr(r)); }
+    } finally { S.sa.busy = false; await saReload(); }
+}
+async function saQReject(id) {
+    const r = await sb.from('agent_queue').update({ status: 'rejected' }).eq('id', id).in('status', ['pending', 'failed']);
+    if (r.error) return fail(r.error); toast('Udkastet er afvist.', 'ok'); return saReload();
+}
+
+/* ---- Skabeloner ---- */
+const SA_SYS_TPL = ['welcome', 'help', 'trial', 'upsell', 'inactive'];
+const SA_MERGE_HINT = 'Flettefelter: {navn} (kontaktens fornavn) og {virksomhed}.';
+function saTplsHtml() {
+    return saBackTo('list', 'Tilbage') + `<h3 class="font-black text-white text-base">Mailskabeloner</h3><p class="text-xs text-gray-400">${SA_MERGE_HINT} Bruges af "I dag"-knapperne, reglerne og udsendelser.</p>` +
+        `<button type="button" data-act="sa-tpl-open" data-key="" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Ny skabelon</button>` +
+        `<div class="space-y-2">` + (S.sa.tpls || []).map(t => `<button type="button" data-act="sa-tpl-open" data-key="${esc(t.key)}" class="w-full text-left bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 active:scale-[.99]"><p class="font-black text-white text-sm">${esc(t.name)}</p><p class="text-[11px] text-gray-400 truncate mt-0.5">${esc(t.subject)}</p></button>`).join('') + `</div>`;
+}
+function saTplHtml() {
+    const t = (S.sa.tpls || []).find(x => x.key === S.sa.tplSel) || { key: '', name: '', subject: '', body: '' };
+    return saBackTo('tpls', 'Skabeloner') + `<h3 class="font-black text-white text-base">${t.key ? 'Rediger skabelon' : 'Ny skabelon'}</h3><p class="text-xs text-gray-400">${SA_MERGE_HINT}</p>` +
+        `<div><label class="lbl">Navn</label><input data-sa-f="t_name" class="inp" maxlength="80" value="${esc(t.name)}"></div>` +
+        `<div><label class="lbl">Emne</label><input data-sa-f="t_subject" class="inp" maxlength="300" value="${esc(t.subject)}"></div>` +
+        `<div><label class="lbl">Tekst</label><textarea data-sa-f="t_body" rows="12" maxlength="20000" class="inp">${esc(t.body)}</textarea></div>` +
+        `<button type="button" data-act="sa-tpl-save" class="w-full brand-orange text-white py-4 rounded-xl font-black">Gem</button>` +
+        (t.key && !SA_SYS_TPL.includes(t.key) ? `<button type="button" data-act="sa-tpl-del" class="w-full bg-gray-800 border border-gray-700 text-red-300 py-3.5 rounded-xl font-bold text-sm">Slet skabelon</button>` : '');
+}
+async function saTplSave() {
+    const { f } = saVals(), name = f('t_name'), subject = f('t_subject'), body = $('sa-main').querySelector('[data-sa-f="t_body"]').value.trim();
+    if (!name || !subject || !body) return toast('Udfyld navn, emne og tekst.');
+    const cur = (S.sa.tpls || []).find(x => x.key === S.sa.tplSel);
+    const key = cur ? cur.key : ('s_' + name.toLowerCase().replace(/æ/g, 'ae').replace(/ø/g, 'oe').replace(/å/g, 'aa').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) + '_' + Math.random().toString(36).slice(2, 5)).slice(0, 40);
+    const r = cur ? await sb.from('mail_templates').update({ name, subject, body }).eq('key', key) : await sb.from('mail_templates').insert({ key, name, subject, body });
+    if (r.error) return fail(r.error); toast('Skabelonen er gemt.', 'ok'); await saLoadTpls(); S.sa.view = 'tpls'; saRender();
+}
+async function saLoadTpls() { const r = await sb.from('mail_templates').select('*').order('name'); if (!r.error) S.sa.tpls = r.data || []; }
+
+/* ---- Regler og agenter ---- */
+async function saLoadRules() {
+    const [r, l] = await Promise.all([sb.from('crm_rules').select('*'), sb.from('agent_logs').select('*').order('created_at', { ascending: false }).limit(12)]);
+    if (!r.error) S.sa.rules = (r.data || []).slice().sort((a, b) => SA_SYS_TPL.indexOf(a.key) - SA_SYS_TPL.indexOf(b.key)); S.sa.logs = l.error ? [] : (l.data || []);
+}
+function saRulesHtml() {
+    const R = S.sa.rules || [], L = S.sa.logs || [];
+    return saBackTo('list', 'Tilbage') + `<h3 class="font-black text-white text-base">Regler og agenter</h3><p class="text-xs text-gray-400">Reglerne tjekker hver time og lægger udkast i <b>Godkend</b>. Intet sendes automatisk. Teksterne rettes under Skabeloner.</p>` +
+        `<div class="space-y-2">` + R.map(x => `<div class="flex items-center justify-between gap-3 bg-gray-900/80 border border-gray-800 rounded-xl p-3.5"><span class="text-sm font-bold text-white">${esc(x.name)}</span>` +
+            `<button type="button" data-act="sa-rule-toggle" data-key="${esc(x.key)}" aria-pressed="${x.enabled}" class="shrink-0 w-14 h-8 rounded-full relative transition ${x.enabled ? 'bg-emerald-600' : 'bg-gray-700'}"><span class="absolute top-1 w-6 h-6 rounded-full bg-white transition-all ${x.enabled ? 'left-7' : 'left-1'}"></span></button></div>`).join('') + `</div>` +
+        `<button type="button" data-act="sa-rules-now" class="w-full bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-rotate mr-1.5"></i>Tjek nu</button>` +
+        `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 space-y-1"><p class="text-sm font-black text-white"><i class="fa-solid fa-robot text-violet-300 mr-1.5"></i>AI-svar på indgående mails</p><p class="text-xs text-gray-400">Når en kunde svarer, skriver AI et udkast til dig i Godkend. Kræver ANTHROPIC_API_KEY i Netlify. Kun kendte kunder får udkast, højst 100 om dagen.</p></div>` +
+        `<span class="lbl">Seneste aktivitet</span><div class="space-y-1.5">` + (L.map(x => `<p class="text-[11px] text-gray-400"><span class="text-gray-500">${saDT(x.created_at)}</span> · ${esc(x.agent)}: ${x.event === 'udkast_oprettet' ? 'udkast oprettet' + (x.detail && x.detail.antal ? ' (' + x.detail.antal + ')' : '') : 'dublet sprunget over'}</p>`).join('') || '<p class="text-xs text-gray-500">Ingen endnu.</p>') + `</div>`;
+}
+
+/* ---- Udsendelser ---- */
+const SA_CAMP_ST = { draft: ['Klar', 'bg-gray-800 text-gray-200'], sending: ['Sender', 'bg-amber-950 text-amber-300'], done: ['Færdig', 'bg-emerald-950 text-emerald-300'] };
+async function saLoadCamps() { const r = await sb.from('mail_campaigns').select('*').order('created_at', { ascending: false }).limit(50); if (!r.error) S.sa.camps = r.data || []; }
+function saCampsHtml() {
+    return saBackTo('list', 'Tilbage') + `<h3 class="font-black text-white text-base">Udsendelser</h3><p class="text-xs text-gray-400">Send én mail til et helt segment. Hver modtager får sin egen tråd, og afmeldte springes over.</p>` +
+        `<button type="button" data-act="sa-camp-new" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Ny udsendelse</button>` +
+        `<div class="space-y-2">` + ((S.sa.camps || []).map(c => { const st = SA_CAMP_ST[c.status] || SA_CAMP_ST.draft;
+            return `<button type="button" data-act="sa-camp-open" data-id="${c.id}" class="w-full text-left bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 active:scale-[.99]"><div class="flex justify-between items-center gap-2"><span class="font-black text-white text-sm truncate">${esc(c.name)}</span>${saChip(st[1], st[0])}</div><p class="text-[11px] text-gray-400 mt-1">${c.n_sent}/${c.n_total} sendt · ${saDT(c.created_at)}</p></button>`; }).join('') || '<p class="text-xs text-gray-500 py-6 text-center">Ingen udsendelser endnu.</p>') + `</div>`;
+}
+function saCampNewHtml() {
+    const opt = (arr, none) => `<option value="">${none}</option>` + arr.map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('');
+    return saBackTo('camps', 'Udsendelser') + `<h3 class="font-black text-white text-base">Ny udsendelse</h3>` +
+        `<div><label class="lbl">Navn (kun til dig)</label><input data-sa-f="c_name" class="inp" maxlength="120" placeholder="F.eks. Nyhed: vagtplan"></div>` +
+        `<span class="lbl">Hvem skal have den?</span><div class="grid grid-cols-3 gap-2"><select data-sa-f="cf_stage" data-chg="sa-camp-count" class="inp">${opt(SA_STAGES, 'Alle faser')}</select><select data-sa-f="cf_health" data-chg="sa-camp-count" class="inp">${opt([['groen', 'Grøn'], ['gul', 'Gul'], ['roed', 'Rød']], 'Al sundhed')}</select><select data-sa-f="cf_segment" data-chg="sa-camp-count" class="inp">${opt(SA_SEG.filter(s => s[0]), 'Alle typer')}</select></div>` +
+        `<p id="sa-camp-n" class="text-xs font-bold text-sky-300">Tæller modtagere…</p>` +
+        `<div><label class="lbl">Brug skabelon</label><select data-chg="sa-camp-tpl" class="inp"><option value="">Skriv selv</option>${(S.sa.tpls || []).map(t => `<option value="${esc(t.key)}">${esc(t.name)}</option>`).join('')}</select></div>` +
+        `<div><label class="lbl">Emne</label><input data-sa-f="c_subject" class="inp" maxlength="300"></div>` +
+        `<div><label class="lbl">Tekst</label><textarea data-sa-f="c_body" rows="9" maxlength="20000" class="inp"></textarea><p class="text-[11px] text-gray-500 mt-1">${SA_MERGE_HINT}</p></div>` +
+        `<button type="button" data-act="sa-camp-create" class="w-full brand-orange text-white py-4 rounded-xl font-black">Opret udsendelse</button><p class="text-[11px] text-gray-500">Den sendes først, når du bekræfter på næste skærm.</p>`;
+}
+function saCampHtml() {
+    const c = (S.sa.camps || []).find(x => x.id === S.sa.campSel); if (!c) return saBackTo('camps', 'Udsendelser');
+    const st = SA_CAMP_ST[c.status] || SA_CAMP_ST.draft, run = S.sa.campRun === c.id, left = c.n_total - c.n_sent - c.n_skipped - c.n_failed, pct = c.n_total ? Math.round((c.n_sent + c.n_skipped + c.n_failed) / c.n_total * 100) : 0;
+    return saBackTo('camps', 'Udsendelser') + `<div class="flex justify-between items-center gap-2"><h3 class="font-black text-white text-base truncate">${esc(c.name)}</h3>${saChip(st[1], st[0])}</div>` +
+        `<div class="grid grid-cols-4 gap-2 text-center">${[['Sendt', c.n_sent, 'text-emerald-400'], ['Sprunget over', c.n_skipped, 'text-gray-300'], ['Fejlet', c.n_failed, c.n_failed ? 'text-red-400' : 'text-gray-300'], ['I alt', c.n_total, 'text-white']].map(([t, n, cl]) => `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-2.5"><p class="text-xl font-black ${cl}">${n}</p><p class="text-[10px] text-gray-400 font-bold">${t}</p></div>`).join('')}</div>` +
+        `<div class="h-2 bg-gray-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${pct}%"></div></div>` +
+        (c.status !== 'done' ? `<button type="button" data-act="sa-camp-run" data-id="${c.id}" ${run ? 'disabled' : ''} class="w-full brand-orange text-white py-4 rounded-xl font-black ${run ? 'opacity-60' : ''}"><i class="fa-solid fa-paper-plane mr-1.5"></i>${run ? 'Sender… ' + pct + '%' : (c.status === 'draft' ? 'Send nu til ' + left + ' modtagere' : 'Fortsæt udsendelsen (' + left + ' mangler)')}</button>` +
+            (run ? '<p class="text-[11px] text-gray-400">Bliv på siden, til den er færdig. Mister du forbindelsen, kan du trykke Fortsæt.</p>' : '') : '') +
+        (c.status === 'draft' && !run ? `<button type="button" data-act="sa-camp-del" data-id="${c.id}" class="w-full bg-gray-800 border border-gray-700 text-red-300 py-3 rounded-xl font-bold text-sm">Slet udkast</button>` : '') +
+        `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 space-y-1"><p class="text-xs text-gray-400">Emne</p><p class="text-sm text-white font-bold">${esc(c.subject)}</p><p class="text-xs text-gray-400 mt-2">Tekst</p><p class="text-sm text-gray-100 whitespace-pre-wrap break-words">${esc(c.body)}</p></div>`;
+}
+async function saCampCount() {
+    const { f } = saVals(), el = $('sa-camp-n'); if (!el) return;
+    const r = await sb.rpc('sa_campaign_count', { p_stage: f('cf_stage'), p_health: f('cf_health'), p_segment: f('cf_segment') });
+    const e2 = $('sa-camp-n'); if (e2) e2.textContent = r.error ? 'Kunne ikke tælle modtagere.' : (Number(r.data) || 0) + ' modtagere (kunder med en kontakt-mail, ikke afmeldt)';
+}
+async function saCampCreate() {
+    if (S.sa.busy) return; const { f } = saVals(), body = $('sa-main').querySelector('[data-sa-f="c_body"]').value.trim();
+    if (!f('c_name') || !f('c_subject') || !body) return toast('Udfyld navn, emne og tekst.');
+    S.sa.busy = true;
+    try {
+        const r = await sb.rpc('sa_campaign_create', { p_name: f('c_name'), p_subject: f('c_subject'), p_body: body, p_stage: f('cf_stage'), p_health: f('cf_health'), p_segment: f('cf_segment') });
+        if (r.error) return fail(r.error);
+        await saLoadCamps(); S.sa.campSel = r.data; S.sa.view = 'camp'; saRender();
+    } finally { S.sa.busy = false; }
+}
+async function saCampRun(id) {
+    if (S.sa.campRun) return; S.sa.campRun = id; saRender();
+    try {
+        for (let i = 0; i < 500; i++) {
+            const ses = await sb.auth.getSession(), tok = ses && ses.data && ses.data.session && ses.data.session.access_token;
+            if (!tok) { toast('Du er logget ud.'); break; }
+            let r, j = {};
+            try { r = await fetch('/.netlify/functions/crm-campaign-send', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ campaign_id: id }) }); }
+            catch (e) { toast('Ingen forbindelse – tryk Fortsæt for at genoptage.'); break; }
+            try { j = await r.json(); } catch (e) { /* funktionen findes ikke */ }
+            if (!r.ok || j.ok !== true) { toast(r.status === 404 || r.status === 0 ? 'Udsendelsesfunktionen er ikke installeret på Netlify endnu.' : r.status === 500 ? 'Mailopsætningen mangler i Netlify (fx SUPABASE_SERVICE_ROLE_KEY).' : r.status === 429 ? 'For mange mails lige nu – tryk Fortsæt om lidt.' : 'Udsendelsen blev afbrudt – tryk Fortsæt.'); break; }
+            await saLoadCamps(); if (S.sa.view === 'camp') saRender();
+            if (j.status === 'done' || j.remaining === 0) { toast('Udsendelsen er færdig.', 'ok'); break; }
+        }
+    } finally { S.sa.campRun = null; await saLoadCamps(); saRender(); }
 }
 
 /* ---- Indbakke ---- */
@@ -3137,9 +3290,27 @@ async function saAct(act, el) {
         case 'sa-more': try { await saFetchPage(true); } catch (e) { return fail(e); } return saRenderRows();
         case 'sa-kpi': S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.q = ''; S.sa.filter = d.k === 'inaktiv' ? 'inaktiv' : 'alle'; S.sa.health = ['groen', 'roed'].includes(d.k) ? d.k : ''; saRender(); return saPageRefresh();
         case 'sa-snooze': { const r = await sb.from('crm_accounts').update({ snoozed_until: fmtDate(addDays(new Date(), 3)) }).eq('id', d.id); if (r.error) return fail(r.error); toast('Udsat i 3 dage.', 'ok'); return saReload(); }
+        case 'sa-go': { S.sa.view = d.v; if (d.v === 'camps') { await saLoadCamps(); } else if (d.v === 'rules') { await saLoadRules(); } else if (d.v === 'tpls') { await saLoadTpls(); } saRender(); return window.scrollTo(0, 0); }
+        case 'sa-tpl-open': S.sa.tplSel = d.key || null; S.sa.view = 'tpl'; return saRender();
+        case 'sa-tpl-save': return saTplSave();
+        case 'sa-tpl-del': { const cur = S.sa.tplSel; if (!cur || SA_SYS_TPL.includes(cur)) return; const r = await sb.from('mail_templates').delete().eq('key', cur); if (r.error) return fail(r.error); await saLoadTpls(); S.sa.view = 'tpls'; return saRender(); }
+        case 'sa-rule-toggle': { const x = (S.sa.rules || []).find(r => r.key === d.key); if (!x) return; const r = await sb.from('crm_rules').update({ enabled: !x.enabled }).eq('key', d.key); if (r.error) return fail(r.error); x.enabled = !x.enabled; return saRender(); }
+        case 'sa-rules-now': {
+            const ses = await sb.auth.getSession(), tok = ses && ses.data && ses.data.session && ses.data.session.access_token; if (!tok) return;
+            let r, j = {}; try { r = await fetch('/.netlify/functions/crm-rules-now', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: '{}' }); j = await r.json(); } catch (e) { /* ingen funktion */ }
+            if (!r || !r.ok || j.ok !== true) return toast('Regelfunktionen er ikke installeret eller sat op på Netlify endnu.');
+            toast(j.created ? j.created + ' nye udkast i Godkend.' : 'Ingen nye udkast lige nu.', 'ok'); await saLoadRules(); return saReload();
+        }
+        case 'sa-camp-new': S.sa.view = 'camp-new'; saRender(); return saCampCount();
+        case 'sa-camp-create': return saCampCreate();
+        case 'sa-camp-open': S.sa.campSel = d.id; S.sa.view = 'camp'; return saRender();
+        case 'sa-camp-run': return saCampRun(d.id);
+        case 'sa-camp-del': { const r = await sb.from('mail_campaigns').delete().eq('id', d.id); if (r.error) return fail(r.error); await saLoadCamps(); S.sa.view = 'camps'; return saRender(); }
+        case 'sa-q-send': return saQSend(d.id);
+        case 'sa-q-reject': return saQReject(d.id);
         case 'sa-today-reply': { const th = S.sa.threads.find(x => x.account_id === d.id && x.unread) || S.sa.threads.find(x => x.account_id === d.id); if (th) return saOpenThread(th.id); return saOpenAcct(d.id); }
         case 'sa-today-mail': {
-            const a = S.sa.list.find(x => x.id === d.id); if (!a) return; const t = saFill(SA_TPL[d.kind] || SA_TPL.help, a);
+            const a = S.sa.list.find(x => x.id === d.id); if (!a) return; const t = saFill((S.sa.tpls || []).find(x => x.key === d.kind) || SA_TPL[d.kind] || SA_TPL.help, a);
             S.sa.sel = a.id; S.sa.acct = null; await saLoadAcct();
             S.sa.compose = { account: a.id, to: a.contact_email || '', subject: t.subject, message: t.body };
             return saGo('compose');
@@ -3186,6 +3357,8 @@ async function saLogoDel() {
     S.sa.logo = { cid: a.company_id, b64: null }; toast('Logoet er fjernet.', 'ok'); saRender();
 }
 async function saChg(chg, el) {
+    if (chg === 'sa-camp-count') return saCampCount();
+    if (chg === 'sa-camp-tpl') { const t = (S.sa.tpls || []).find(x => x.key === el.value); if (!t) return; const B = $('sa-main'); B.querySelector('[data-sa-f="c_subject"]').value = t.subject; B.querySelector('[data-sa-f="c_body"]').value = t.body; return; }
     if (chg === 'sa-logo-file') return saLogoPick(el);
     if (chg === 'sa-thread-link') {
         const th = S.sa.threads.find(x => x.id === S.sa.selThread); if (!th || !el.value) return;

@@ -6,6 +6,7 @@
 // Events: email.sent, email.delivered, email.bounced, email.complained, email.opened, email.received
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { draftReply } from './_lib/ai-draft.mjs';
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const STATUS = { 'email.sent': 'sent', 'email.delivered': 'delivered', 'email.opened': 'opened', 'email.bounced': 'bounced', 'email.complained': 'complained' };
@@ -49,7 +50,8 @@ export default async (req) => {
   const type = String(ev?.type || ''), d = ev?.data || {};
   const base = env.SUPABASE_URL.replace(/\/+$/, '');
   const S = { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY, 'Content-Type': 'application/json' };
-  const rpc = async (fn, args) => { const r = await fetch(`${base}/rest/v1/rpc/${fn}`, { method: 'POST', headers: S, body: JSON.stringify(args) }); if (!r.ok) throw new Error(fn + ' ' + r.status + ' ' + (await r.text()).slice(0, 200)); };
+  const rpc = async (fn, args) => { const r = await fetch(`${base}/rest/v1/rpc/${fn}`, { method: 'POST', headers: S, body: JSON.stringify(args) }); const t = await r.text(); if (!r.ok) throw new Error(fn + ' ' + r.status + ' ' + t.slice(0, 200)); try { return t ? JSON.parse(t) : null; } catch { return null; } };
+  const get = async path => { const r = await fetch(`${base}/rest/v1/${path}`, { headers: S }); if (!r.ok) throw new Error('GET ' + r.status); return r.json(); };
 
   try {
     if (STATUS[type] && d.email_id) {
@@ -66,13 +68,32 @@ export default async (req) => {
       const text = String(m.text || stripHtml(m.html) || '').slice(0, 100000);
       const atts = (Array.isArray(m.attachments) ? m.attachments : (Array.isArray(d.attachments) ? d.attachments : []))
         .slice(0, 20).map(a => ({ id: a.id, filename: String(a.filename || '').slice(0, 200), content_type: a.content_type, size: a.size || null }));
-      await rpc('mail_ingest_in', {
+      const msgId = await rpc('mail_ingest_in', {
         p_resend_id: String(d.email_id), p_message_id: m.message_id || d.message_id || null,
         p_in_reply_to: hdr(m.headers, 'in-reply-to') || null, p_thread: thread,
         p_from: from, p_to: tos, p_subject: String(m.subject || d.subject || ''), p_text: text, p_attachments: atts
       });
       if (STOP.test(text)) {   // modtageren beder om at blive fjernet
         await fetch(`${base}/rest/v1/mail_suppressions?on_conflict=email`, { method: 'POST', headers: { ...S, Prefer: 'resolution=ignore-duplicates,return=minimal' }, body: JSON.stringify({ email: from, reason: 'afmeldt' }) });
+      } else if (env.ANTHROPIC_API_KEY && msgId) {
+        // AI-udkast til godkendelseskøen – må aldrig få selve webhook'en til at fejle
+        try {
+          const [mm] = await get(`mail_messages?id=eq.${encodeURIComponent(msgId)}&select=thread_id`);
+          const [th] = mm ? await get(`mail_threads?id=eq.${encodeURIComponent(mm.thread_id)}&select=id,account_id,contact_email,subject`) : [];
+          if (th && th.account_id) {                                              // kun for kendte kunder
+            const today = new Date().toISOString().slice(0, 10) + 'T00:00:00Z';
+            const cnt = await fetch(`${base}/rest/v1/agent_logs?agent=eq.support&event=eq.udkast_oprettet&created_at=gte.${today}&select=id`, { headers: { ...S, Prefer: 'count=exact', Range: '0-0' } });
+            const used = Number((cnt.headers.get('content-range') || '').split('/')[1]) || 0;
+            if (used < (Number(env.AI_MAX_DRAFTS_PER_DAY) || 100)) {
+              const [acc] = await get(`crm_accounts?id=eq.${encodeURIComponent(th.account_id)}&select=name`);
+              const [ct] = await get(`crm_contacts?account_id=eq.${encodeURIComponent(th.account_id)}&email=eq.${encodeURIComponent(th.contact_email || from)}&select=name`);
+              const hist = (await get(`mail_messages?thread_id=eq.${encodeURIComponent(th.id)}&select=direction,body_text&order=created_at.desc&limit=6`)).reverse();
+              const body = await draftReply(env, { subject: th.subject, company: acc && acc.name, contact: ct && ct.name, history: hist });
+              if (body) await rpc('agent_queue_add', { p_agent: 'support', p_account: th.account_id, p_thread: th.id, p_to: th.contact_email || from,
+                p_subject: /^re:/i.test(th.subject || '') ? th.subject : 'Re: ' + (th.subject || ''), p_body: body, p_reason: 'AI-udkast til svar på ' + from, p_dedupe: 'reply:' + msgId });
+            }
+          }
+        } catch (e) { console.error('AI-udkast', e && e.message); }
       }
     }
     // Revisionsspor (samme hændelse logges kun én gang)
