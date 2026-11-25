@@ -1337,7 +1337,7 @@ function resetApp() {
         urls: {}, range: { time: null, shifts: null }, weekOffset: 0, shiftOffset: 0, live: 'wait'
     });
     if (typeof resetUg === 'function') resetUg();
-    if (typeof saStop === 'function') { saStop(); S.sa.list = []; S.sa.companies = []; S.sa.threads = []; S.sa.acct = null; S.sa.msgs = []; S.sa.view = 'list'; S.sa.logo = null; S.sa.today = []; S.sa.queue = []; S.sa.tpls = []; S.sa.counts = {}; S.sa.pg = { rows: [], total: 0 }; S.sa.q = ''; S.sa.health = ''; S.sa.filter = 'alle'; S.sa.tab = 'idag'; }
+    if (typeof saStop === 'function') { saStop(); S.sa.list = []; S.sa.companies = []; S.sa.threads = []; S.sa.acct = null; S.sa.msgs = []; S.sa.view = 'list'; S.sa.logo = null; S.sa.al = null; S.sa.today = []; S.sa.queue = []; S.sa.tpls = []; S.sa.counts = {}; S.sa.pg = { rows: [], total: 0 }; S.sa.q = ''; S.sa.health = ''; S.sa.filter = 'alle'; S.sa.tab = 'idag'; }
 }
 
 async function loadMyProfile(uid) {
@@ -2033,7 +2033,7 @@ function renderPayroll() {
     const perUser = users.map(u => { const rs = rows.filter(r => r.user_id === u), h = rs.reduce((a, r) => a + Number(r.hours), 0); return { u, h, d: new Set(rs.map(r => r.work_date)).size }; }).sort((a, b) => b.h - a.h);
     const legend = mgr && perUser.length ? `<div class="mt-3 space-y-1">` + perUser.map(x => `<div class="flex items-center justify-between text-xs"><span class="flex items-center min-w-0"><span class="w-2.5 h-2.5 rounded-sm mr-2 shrink-0" style="background:hsl(${hue(x.u)} 80% 55%)"></span><span class="text-gray-200 font-bold truncate">${esc(userName(x.u))}</span></span><span class="text-gray-400 shrink-0"><strong class="text-white">${hFmt(x.h)} t</strong> · ${x.d} dage</span></div>`).join('') + `</div>` : '';
     const cur = S.payOffset === 0;
-    const edit = isAdmin() ? (S.payEdit ? `<div class="mt-3 flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-xl p-2.5"><span class="text-[11px] text-gray-300">Perioden slutter den</span><input type="number" min="1" max="28" value="${payCutoff()}" data-payday class="w-16 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center"><span class="text-[11px] text-gray-300">. i måneden</span><button data-act="pay-save" class="ml-auto bg-emerald-500 text-gray-950 px-3 py-1.5 rounded-lg text-xs font-black">Gem</button></div>` + allowCfgHtml() : `<button data-act="pay-edit" class="mt-2 text-[11px] text-gray-500 hover:text-gray-300 underline">Skift skæringsdato og tillæg (nu: ${payCutoff() + 1}.–${payCutoff()}.)</button>`) : '';
+    const edit = isAdmin() ? (S.payEdit ? `<div class="mt-3 flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-xl p-2.5"><span class="text-[11px] text-gray-300">Perioden slutter den</span><input type="number" min="1" max="28" value="${payCutoff()}" data-payday class="w-16 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center"><span class="text-[11px] text-gray-300">. i måneden</span><button data-act="pay-save" class="ml-auto bg-emerald-500 text-gray-950 px-3 py-1.5 rounded-lg text-xs font-black">Gem</button></div>` + allowCfgHtml() : `<button data-act="pay-edit" class="mt-2 text-[11px] text-gray-500 hover:text-gray-300 underline">Indstillinger: lønperiode og tillæg (diæt, kørsel)</button>`) : '';
     const html = `<div data-payroll class="bg-card border border-card rounded-2xl p-4 shadow-lg"><div class="flex items-center justify-between gap-2">` +
         `<button data-act="pay-nav" data-dir="-1" aria-label="Forrige lønperiode" class="w-10 h-10 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 active:scale-95"><i class="fa-solid fa-chevron-left"></i></button>` +
         `<div class="text-center"><p class="text-[10px] font-black uppercase text-gray-400">Lønperiode${cur ? ' · gældende' : ''}</p><p class="font-black text-white text-sm">${payLbl(per.start)} – ${payLbl(per.end)} ${per.end.getFullYear()}</p></div>` +
@@ -3186,6 +3186,27 @@ function saLeadHtml() {
         `<div><label class="lbl">Hvor kom de fra? (valgfri)</label><input data-sa-f="source" class="inp" maxlength="120" placeholder="Fx anbefaling, messe, hjemmeside"></div>` +
         `<button type="button" data-act="sa-lead-create" class="w-full brand-orange text-white py-4 rounded-xl font-black">Gem lead</button>`;
 }
+const saAllowHtml = cid => {
+    const on = S.sa.al && S.sa.al.cid === cid ? S.sa.al.keys : null;
+    return AL_PRESETS.map(t => `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 cursor-pointer"><span class="text-sm font-bold text-white">${esc(t.label)}${t.kind === 'km' ? ' <span class="text-[10px] text-gray-500 font-normal">(antal km)</span>' : ''}</span><input type="checkbox" data-act="sa-al" data-key="${t.key}" ${on && on.includes(t.key) ? 'checked' : ''} ${on ? '' : 'disabled'} class="w-6 h-6 accent-amber-500"></label>`).join('');
+};
+async function saLoadAllow() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a || !a.company_id) return;
+    const r = await sb.rpc('sa_get_allowances', { p_id: a.company_id });
+    S.sa.al = { cid: a.company_id, keys: r.error ? [] : (Array.isArray(r.data) ? r.data.map(t => t.key) : []) };
+    if (r.error) toast('Tillæg kan ikke hentes endnu – kør unisjak_pro.sql i Supabase først.', 'info');
+    if (S.sa.view === 'cust') saRender();
+}
+async function saToggleAllow(el) {
+    const al = S.sa.al; if (!al) return;
+    const key = el.dataset.key; let keys = al.keys.filter(k => k !== key); if (el.checked) keys.push(key);
+    el.disabled = true;
+    const r = await sb.rpc('sa_set_allowances', { p_id: al.cid, p_keys: keys });
+    el.disabled = false;
+    if (r.error) { el.checked = !el.checked; return fail(r.error); }
+    S.sa.al = { cid: al.cid, keys: (r.data || []).map(t => t.key) };
+    toast(el.checked ? 'Slået til for kunden.' : 'Slået fra for kunden.', 'ok');
+}
 const saModsHtml = m => SA_MODULES.map(([k, t]) => `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 cursor-pointer"><span class="text-sm font-bold text-white">${t}</span><input type="checkbox" data-sa-mod="${k}" ${(m || {})[k] === false ? '' : 'checked'} class="w-6 h-6 accent-orange-500"></label>`).join('');
 const saLabsHtml = l => SA_LABELS.map(([k, t]) => `<div><label class="lbl">${t}</label><input data-sa-lbl="${k}" maxlength="40" class="inp" value="${esc((l || {})[k] || '')}" placeholder="Standard"></div>`).join('');
 function saNewHtml() {
@@ -3201,6 +3222,7 @@ function saCustHtml() {
     return saBack('sa-acct-back', a.name) + `<h3 class="font-black text-white text-base">Kundeindstillinger</h3>` +
         `<div><label class="lbl">Navn</label><input data-sa-f="name" class="inp" maxlength="120" value="${esc(c.name)}"></div>` +
         `<div class="grid grid-cols-3 gap-2"><div><label class="lbl">Brugere (nu ${c.n_interne})</label><input data-sa-f="max_int" type="number" min="0" class="inp" value="${c.max_interne}"></div><div><label class="lbl">Gæster (nu ${c.n_gaest})</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="${c.max_gaest}"></div><div><label class="lbl">Prøve til</label><input data-sa-f="trial" type="date" class="inp" value="${esc(String(c.trial_ends_at || '').slice(0, 10))}"></div></div>` +
+        `<span class="lbl">Tillæg på timeregistrering</span><div class="space-y-1.5">${saAllowHtml(c.id)}</div><p class="text-[10px] text-gray-500">Slås til og fra med det samme. Medarbejderne ser en kontakt pr. dag.</p>` +
         `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${saModsHtml(c.modules)}</div><span class="lbl">Egne navne (tomt = standard)</span><div class="grid grid-cols-2 gap-2">${saLabsHtml(c.labels)}</div>` +
         `<div class="border-t border-gray-800 pt-3 space-y-2"><span class="lbl">Logo (på kundens PDF\'er)</span>` + logoBoxHtml(S.sa.logo && S.sa.logo.cid === c.id ? S.sa.logo.b64 : null, 'sa-logo-file', 'sa-logo-del', 'Kunden kan selv skifte det under Indstillinger. PNG eller JPG.') + `</div>` +
         `<button type="button" data-act="sa-save" class="w-full brand-orange text-white py-4 rounded-xl font-black">Gem</button>` +
@@ -3360,10 +3382,11 @@ async function saAct(act, el) {
         case 'sa-back': S.sa.view = S.sa.fromLead ? 'acct' : 'list'; S.sa.fromLead = null; S.sa.selThread = null; return saRender();
         case 'sa-acct-back': S.sa.view = 'acct'; return saRender();
         case 'sa-acct': return saOpenAcct(d.id);
-        case 'sa-cust': { const a = S.sa.list.find(x => x.id === S.sa.sel); if (a) await saLoadCompany(a.company_id); saGo('cust'); return saLoadLogo(); }
+        case 'sa-cust': { const a = S.sa.list.find(x => x.id === S.sa.sel); if (a) await saLoadCompany(a.company_id); S.sa.al = null; saGo('cust'); saLoadAllow(); return saLoadLogo(); }
         case 'sa-logo-del': return saLogoDel();
         case 'sa-create': return saCreate();
         case 'sa-save': return saSave();
+        case 'sa-al': return saToggleAllow(el);
         case 'sa-invite': return saInvite();
         case 'sa-lead-create': return saLeadCreate();
         case 'sa-acct-save': return saAcctSave();
