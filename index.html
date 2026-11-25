@@ -511,9 +511,9 @@
             <div id="tab-ks" class="hidden space-y-3">
                 <div class="flex justify-between items-center bg-card p-2 rounded-xl border border-card">
                     <span class="text-sm font-bold text-gray-300 pl-2">KS &amp; Dokumentation</span>
-                    <div class="flex space-x-2"><button onclick="quickVoice('ks')" class="bg-red-600 text-white px-3.5 py-2.5 rounded-lg text-sm font-bold shadow flex items-center space-x-1.5"><i class="fa-solid fa-microphone"></i><span>Indtal</span></button><button onclick="triggerCamera('ks')" class="brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow flex items-center space-x-1.5"><i class="fa-solid fa-camera"></i><span>Nyt foto</span></button></div>
+                    <div id="ks-head-btns" class="flex space-x-2"><button onclick="quickVoice('ks')" class="bg-red-600 text-white px-3.5 py-2.5 rounded-lg text-sm font-bold shadow flex items-center space-x-1.5"><i class="fa-solid fa-microphone"></i><span>Indtal</span></button><button onclick="triggerCamera('ks')" class="brand-orange text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow flex items-center space-x-1.5"><i class="fa-solid fa-camera"></i><span>Nyt foto</span></button></div>
                 </div>
-                <button onclick="openExport('ks')" class="w-full bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 py-3 rounded-xl font-bold text-sm flex items-center justify-center space-x-2"><i class="fa-solid fa-file-export text-orange-400"></i><span>Eksportér KS-rapport</span></button>
+                <button id="ks-export-btn" onclick="openExport('ks')" class="w-full bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 py-3 rounded-xl font-bold text-sm flex items-center justify-center space-x-2"><i class="fa-solid fa-file-export text-orange-400"></i><span>Eksportér KS-rapport</span></button>
                 <div class="bg-card border border-card rounded-2xl p-2 space-y-2">
                     <div class="flex justify-between items-center px-1"><span class="text-[10px] font-bold uppercase text-gray-400">Byggepladskort</span><span class="text-[10px] text-orange-400 font-semibold" id="map-point-count">0 punkter</span></div>
                     <div id="leaflet-map" class="w-full h-48 rounded-xl overflow-hidden border border-gray-800 z-0"></div>
@@ -1106,8 +1106,8 @@ const modOn = k => !(S.company && S.company.modules && typeof S.company.modules 
 const canPlan = () => !!S.profile && !isGuest() && (isAdmin() || S.profile.perm_plan === true || !('perm_plan' in S.profile));
 const LBL = () => (S.company && S.company.labels && typeof S.company.labels === 'object') ? S.company.labels : {};
 const lbl = (k, d) => { const v = LBL()[k]; return typeof v === 'string' && v.trim() ? v.trim().slice(0, 40) : d; };
-const hasKs = () => industry() === 'haandvaerk' && modOn('ks') && !isGuest();
-const hasMat = () => hasKs() && modOn('materials');
+const hasKs = () => industry() === 'haandvaerk' && modOn('ks') && (!isGuest() || (S.caseReady && S.photos.some(isCasePt)));
+const hasMat = () => hasKs() && modOn('materials') && !isGuest();
 const hasShifts = () => industry() === 'butik';
 async function setCompanyIndustry(cid, val) {
     // Første og eneste gang: sæt branchen og lås den (databasen afviser senere ændringer)
@@ -1144,9 +1144,9 @@ function applyIndustry() {
     if (!tk && S.pcView === 'tasks') switchPcView('overview');
     if (!tm && S.mobTab === 'timer') switchTab('home');
     if (!tk && S.mobTab === 'tasks') switchTab('home');
-    if (g) { document.body.classList.add('force-mobile'); const bb = $('btn-back-to-pc'); if (bb) bb.classList.add('hidden'); if (S.mobTab !== 'tasks' && S.mobTab !== 'admin') switchTab('tasks'); }
+    if (g) { document.body.classList.add('force-mobile'); const bb = $('btn-back-to-pc'); if (bb) bb.classList.add('hidden'); if (S.mobTab !== 'tasks' && S.mobTab !== 'admin' && !(S.mobTab === 'ks' && ks)) switchTab(ks && !S.tasks.length ? 'ks' : 'tasks'); [$('ks-head-btns'), $('ks-export-btn')].forEach(el => set(el, false)); }
     const nl = (id, t) => { const el = $(id); const sp = el && (el.tagName === 'SPAN' ? el : el.lastElementChild); if (sp && sp.tagName === 'SPAN' && !sp.children.length && t) sp.textContent = t; };
-    nl('nav-ks', lbl('ks', 'KS')); nl('pc-nav-ks', lbl('ks', 'Kvalitetssikring')); nl('nav-tasks', lbl('opgaver', 'Opgaver')); nl('pc-nav-tasks', lbl('opgaver', 'Opgaver'));
+    nl('nav-ks', g ? 'Sager' : lbl('ks', 'KS')); nl('pc-nav-ks', lbl('ks', 'Kvalitetssikring')); nl('nav-tasks', lbl('opgaver', 'Opgaver')); nl('pc-nav-tasks', lbl('opgaver', 'Opgaver'));
     set(document.querySelector('#pc-shell header button[onclick*="triggerCamera(\'ks\')"]'), ks);
     set(document.querySelector('#tab-home button[onclick*="triggerCamera(\'ks\')"]'), ks);
     set(document.querySelector('#tab-home button[onclick*="switchTab(\'shifts\')"]'), shOn);
@@ -1850,11 +1850,11 @@ function renderTimerTab() {
 }
 
 /* ---- fotos ---- */
-function photosOf(kind) { return S.photos.filter(p => p.project_id === S.currentProject && p.kind === kind).sort((a, b) => a.created_at < b.created_at ? 1 : -1); }
+function photosOf(kind) { return S.photos.filter(p => (p.project_id === S.currentProject || isGuest()) && p.kind === kind).sort((a, b) => a.created_at < b.created_at ? 1 : -1); }
 function numbering() {
     const m = {};
     ['ks', 'materiale'].forEach(kind => {
-        S.photos.filter(p => p.project_id === S.currentProject && p.kind === kind).sort((a, b) => a.created_at < b.created_at ? -1 : 1).forEach((p, i) => { m[p.id] = i + 1; });
+        S.photos.filter(p => (p.project_id === S.currentProject || isGuest()) && p.kind === kind).sort((a, b) => a.created_at < b.created_at ? -1 : 1).forEach((p, i) => { m[p.id] = i + 1; });
     });
     return m;
 }
@@ -1868,6 +1868,7 @@ function photoMeta(p, tone) {
     if (p.category) bits.push(`<span class="bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded text-[9px] font-bold">${esc(catName(p.category))}</span>`);
     if (p.quantity) bits.push(`<span class="text-${tone}-400 font-black">${esc(p.quantity)}</span>`);
     if (p.location) bits.push(`<span class="text-gray-400">Oplag: ${esc(p.location)}</span>`);
+    if (isCasePt(p) && (p.case_assignees || []).length) bits.push(`<span class="text-sky-300 font-bold"><i class="fa-solid fa-user-check mr-1"></i>${esc(p.case_assignees.map(caseWho).map(n => isGuest() ? n : firstName(n)).join(', '))}</span>`);
     const nPh = photoPaths(p).length; if (nPh > 1) bits.push(`<span class="text-sky-300 font-bold"><i class="fa-solid fa-images mr-1"></i>${nPh} billeder</span>`);
     const meta = bits.length ? `<div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[11px]">${bits.join('')}</div>` : '';
     const sub = (p.title && p.note) ? `<p class="text-[11px] text-gray-400 mt-1 line-clamp-2">${esc(p.note)}</p>` : '';
@@ -1881,7 +1882,7 @@ function renderPhotos() {
     const nums = numbering();
     const ksAll = photosOf('ks'), mat = photosOf('materiale');
     const sf = S.safeFilter;
-    const ks = S.ksExtraOnly ? ksAll.filter(p => p.is_extra) : sf ? ksAll.filter(p => sf === 'open' ? ((isCasePt(p) || p.safety_level) && !isClosed(p)) : sf === 'fm' ? (isCasePt(p) && p.category === 'Afvigelse') : (p.safety_level === sf)) : ksAll;
+    const ks = S.ksExtraOnly ? ksAll.filter(p => p.is_extra) : sf ? ksAll.filter(p => sf === 'open' ? ((isCasePt(p) || p.safety_level) && !isClosed(p)) : sf === 'fm' ? (isCasePt(p) && p.category === 'Afvigelse') : sf === 'mine' ? (isCasePt(p) && (p.case_assignees || []).includes(myId()) && !isClosed(p)) : (p.safety_level === sf)) : ksAll;
     const barH = ksBarHtml();
     ['ks-extra-bar', 'pc-ks-extra-bar'].forEach(id => { const el = $(id); if (el) { el.innerHTML = barH; el.classList.toggle('hidden', !barH); } });
 
@@ -3347,6 +3348,7 @@ async function savePhotoEntry(btn) {
         }, base);
         if (S.multiPhoto) row.image_paths = paths;
         if (wantSafety) { row.safety_level = S.safeLv; }
+        if (S.caseReady && (wantSafety || wantDev)) row.case_assignees = [...S.caseAssign];
         if (wantExtra) { row.is_extra = true; row.extra_assignees = [...S.extraAssign]; }
         if (activeKind === 'materiale' && S.matRef && S.extraReady) row.extra_ref = S.matRef;
         if (U.ready && U.photoZone && activeKind === 'ks') row.zone_id = U.photoZone;
@@ -3511,6 +3513,8 @@ function safetyBarHtml() {
     const chip = (f, label, n, cls) => `<button type="button" data-act="safe-filter" data-f="${f}" class="chip ${S.safeFilter === f ? 'chip-on' : ''}" aria-pressed="${S.safeFilter === f}">${cls ? `<span class="inline-block w-2.5 h-2.5 rounded-full mr-1.5 ${cls}"></span>` : ''}${label} (${n})</button>`;
     const fm = cp.filter(p => p.category === 'Afvigelse');
     let h = `<div class="flex flex-wrap items-center gap-2">`;
+    const mine = cp.filter(p => (p.case_assignees || []).includes(myId()) && !isClosed(p)).length;
+    if (mine) h += chip('mine', 'Mine', mine, 'bg-sky-400');
     if (fm.length) h += chip('fm', 'Fejl og mangler', fm.length, 'bg-amber-500');
     if (showSafe) h += chip('roed', 'Rød', sp.filter(p => p.safety_level === 'roed').length, 'bg-red-500') + chip('gul', 'Gul', sp.filter(p => p.safety_level === 'gul').length, 'bg-amber-400') + chip('groen', 'Grøn', sp.filter(p => p.safety_level === 'groen').length, 'bg-emerald-500');
     const openN = S.caseReady ? cp.filter(p => !isClosed(p)).length : sp.filter(p => !isClosed(p)).length;
@@ -3776,7 +3780,7 @@ function devFormRender() {
     const on = S.caseReady && activeKind === 'ks' && $('pf-cat') && $('pf-cat').value === 'Afvigelse';
     show('pf-w-dev', on);
     if (!on) return;
-    $('pf-dev-body').innerHTML = `<p class="text-[11px] text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-circle-info text-amber-400 mr-1.5"></i>Gem punktet. Så kan alle skrive kommentarer og tage billeder direkte i punktet – og afslutte det, når det er løst.</p>`;
+    $('pf-dev-body').innerHTML = `<p class="text-[11px] text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-circle-info text-amber-400 mr-1.5"></i>Gem punktet. Så kan alle skrive kommentarer og tage billeder direkte i punktet – og afslutte det, når det er løst.</p>` + caseAssignBlock();
 }
 async function devCreateTask() {
     const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
@@ -3834,15 +3838,29 @@ function safeFormRender() {
     if (!on) return;
     $('pf-safe-body').innerHTML = `<span class="lbl">Farve <span class="text-red-400">(påkrævet)</span></span><div class="grid grid-cols-3 gap-2">` +
         SAFE_ORDER.slice().reverse().map(lv => `<button type="button" data-act="safe-lv" data-lv="${lv}" aria-pressed="${S.safeLv === lv}" class="py-4 rounded-xl text-sm font-black border-2 transition active:scale-95 ${S.safeLv === lv ? SAFE[lv].cls + ' border-white' : 'bg-gray-900 border-gray-700 text-gray-200'}">${SAFE[lv].n}</button>`).join('') + `</div>` +
-        `<p class="text-[11px] text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-circle-info text-sky-400 mr-1.5"></i>Gem punktet. Så kan alle skrive kommentarer og tage billeder direkte i punktet – og afslutte det, når det er løst.</p>`;
+        `<p class="text-[11px] text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-circle-info text-sky-400 mr-1.5"></i>Gem punktet. Så kan alle skrive kommentarer og tage billeder direkte i punktet – og afslutte det, når det er løst.</p>` + caseAssignBlock();
 }
-function safeFormReset() { S.safeLv = ''; S.safeTask = false; S.safeAssign = new Set(); S.devTask = false; S.devAssign = new Set(); safeFormRender(); }
+function safeFormReset() { S.caseAssign = new Set(); S.safeLv = ''; S.safeTask = false; S.safeAssign = new Set(); S.devTask = false; S.devAssign = new Set(); safeFormRender(); }
 
 /* ---- FEJL OG MANGLER + SIKKERHED: én sag i selve punktet (status, tråd, afslut med ét tryk) ---- */
-S.caseReady = false; S.ksUpdates = []; S.caseDraft = '';
+S.caseReady = false; S.ksUpdates = []; S.caseDraft = ''; S.caseAssign = new Set();
+const caseWho = u => (isGuest() && u !== myId()) ? 'Kontoret' : userName(u);
+function caseChipsHtml(set, act) {
+    const people = S.profiles.filter(p => p.active).sort((a, b) => a.full_name.localeCompare(b.full_name, 'da'));
+    return `<button type="button" data-act="${act}" data-user="all" class="chip ${set.size === 0 ? 'chip-on' : ''}">Vælges senere</button>` +
+        people.map(p => `<button type="button" data-act="${act}" data-user="${esc(p.id)}" class="chip ${set.has(p.id) ? 'chip-on' : ''}">${esc(firstName(p.full_name))}${p.role === 'gaest' ? ' (gæst)' : ''}</button>`).join('');
+}
+const caseAssignBlock = () => S.caseReady ? `<div class="space-y-2"><span class="lbl">Ansvarlig (valgfri)</span><div class="flex flex-wrap gap-2">${caseChipsHtml(S.caseAssign, 'case-assign')}</div></div>` : '';
+async function caseAssignEdit(uid) {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p || !isCasePt(p) || !isManager()) return;
+    const set = new Set(p.case_assignees || []); toggleAssign(set, uid);
+    const res = await sb.rpc('case_assign', { p_id: p.id, p_users: [...set] });
+    if (res.error) return fail(res.error);
+    mergeRow(S.photos, res.data); renderEditSafety(res.data); renderAll();
+}
 async function loadKsUpdates() {
     try {
-        const c = await sb.from('photo_entries').select('dev_no,dev_closed_at').limit(1);
+        const c = await sb.from('photo_entries').select('dev_no,dev_closed_at,case_assignees').limit(1);
         if (c.error) throw c.error;
         const r = await sb.from('ks_updates').select('*').order('created_at', { ascending: true }).limit(3000);
         if (r.error) throw r.error;
@@ -3852,12 +3870,12 @@ async function loadKsUpdates() {
 function catName(c) { return c === 'Afvigelse' ? 'Fejl og mangler' : (c || ''); }
 const CASE_CATS = ['Afvigelse', 'Sikkerhed'];
 const isCasePt = p => !!p && S.caseReady && p.kind === 'ks' && !p.is_extra && CASE_CATS.indexOf(p.category) !== -1;
-const casePoints = () => S.photos.filter(p => p.project_id === S.currentProject && isCasePt(p));
+const casePoints = () => S.photos.filter(p => (isGuest() || p.project_id === S.currentProject) && isCasePt(p));
 const devNo = p => 'FM-' + String(p && p.dev_no || 0).padStart(3, '0');
 const caseNo = p => p.safety_level ? sfNo(p) : (p.dev_no ? devNo(p) : '');
 const caseUpdatesOf = p => S.ksUpdates.filter(u => u.photo_id === p.id);
 const canEditPt = p => isManager() || (!!p && p.user_id === myId() && !isCasePt(p));
-const caseAuthor = u => u.user_id === myId() ? 'Dig' : userName(u.user_id);
+const caseAuthor = u => u.user_id === myId() ? 'Dig' : caseWho(u.user_id);
 function caseThreadLines(p) {
     return caseUpdatesOf(p).map(u => dkWhen(u.created_at) + ' · ' + userName(u.user_id) + (u.kind === 'status' ? ' (status)' : '') + (u.text ? ': ' + u.text.replace(/\s+/g, ' ') : '') + ((u.image_paths || []).length ? ' [' + u.image_paths.length + (u.image_paths.length === 1 ? ' billede]' : ' billeder]') : ''));
 }
@@ -3878,6 +3896,10 @@ function casePanelHtml(p) {
     const closed = isClosed(p), isSafe = p.category === 'Sikkerhed';
     const ico = isSafe ? 'fa-shield-halved text-sky-400' : 'fa-triangle-exclamation text-amber-400';
     let h = `<div class="rounded-2xl border border-gray-700 bg-gray-900/60 p-3 space-y-3" data-casebox="${p.id}"><div class="flex items-center justify-between gap-2 flex-wrap"><span class="text-xs font-black text-white"><i class="fa-solid ${ico} mr-1.5"></i>${isSafe ? 'Sikkerhed' : 'Fejl og mangler'}</span>${safetyTag(p)}</div>`;
+    const ids = p.case_assignees || [];
+    h += `<div class="space-y-1.5"><span class="lbl !mb-0">Ansvarlig</span>` + (isManager()
+        ? `<div class="flex flex-wrap gap-2">${caseChipsHtml(new Set(ids), 'case-assign-edit')}</div>`
+        : `<p class="text-sm font-bold ${ids.length ? 'text-white' : 'text-gray-500'}">${esc(ids.length ? ids.map(caseWho).join(', ') : 'Ikke valgt endnu')}</p>`) + `</div>`;
     if (closed) {
         const by = closedBy(p), nt = closeNoteOf(p);
         h += `<div class="rounded-xl border border-emerald-700/60 bg-emerald-950/40 p-3 space-y-1"><p class="text-xs font-black text-emerald-300"><i class="fa-solid fa-circle-check mr-1.5"></i>Afsluttet ${esc(dkWhen(closedAt(p)))}${by ? ' af ' + esc(userName(by)) : ''}</p>${nt ? `<p class="text-xs text-gray-200 whitespace-pre-line">${esc(nt)}</p>` : ''}</div>`;
@@ -4046,8 +4068,8 @@ async function buildSafetyReport(fmt, opt) {
     const subject = comp + ' – Fejl og mangler / Sikkerhed – ' + projLabel(pr);
     const periodTxt = ($('ex-from').value || $('ex-to').value) ? (($('ex-from').value ? dkFull($('ex-from').value) : '…') + ' – ' + ($('ex-to').value ? dkFull($('ex-to').value) : '…')) : 'Alle datoer';
     if (fmt === 'csv') {
-        const rows = list.map(p => [numOf(p), typeOf(p), isClosed(p) ? 'Afsluttet' : 'Åben', dkWhen(p.created_at), userName(p.user_id), (p.note || '').replace(/\s+/g, ' '), closedAt(p) ? dkWhen(closedAt(p)) : '', closedBy(p) ? userName(closedBy(p)) : '', (closeNoteOf(p) || '').replace(/\s+/g, ' '), ageDays(p), photoPaths(p).length, caseUpdatesOf(p).filter(u => u.kind !== 'status').length, caseThreadLines(p).join(' | '), p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.lat != null ? mapsUrl(p.lat, p.lng) : '']);
-        return { bytes: enc(csvOf(['Nr', 'Type', 'Status', 'Oprettet', 'Oprettet af', 'Beskrivelse', 'Afsluttet', 'Afsluttet af', 'Afslutningskommentar', 'Dage åben', 'Billeder', 'Indlæg i tråd', 'Tråd', 'Lat', 'Lng', 'Google Maps'], rows)), mime: 'text/csv', filename: 'UniSjak_FejlOgSikkerhed_' + safeName(pr.case_number || pr.name) + '.csv', subject };
+        const rows = list.map(p => [numOf(p), typeOf(p), isClosed(p) ? 'Afsluttet' : 'Åben', dkWhen(p.created_at), userName(p.user_id), (p.note || '').replace(/\s+/g, ' '), closedAt(p) ? dkWhen(closedAt(p)) : '', closedBy(p) ? userName(closedBy(p)) : '', (closeNoteOf(p) || '').replace(/\s+/g, ' '), (p.case_assignees || []).map(userName).join(', '), ageDays(p), photoPaths(p).length, caseUpdatesOf(p).filter(u => u.kind !== 'status').length, caseThreadLines(p).join(' | '), p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.lat != null ? mapsUrl(p.lat, p.lng) : '']);
+        return { bytes: enc(csvOf(['Nr', 'Type', 'Status', 'Oprettet', 'Oprettet af', 'Beskrivelse', 'Afsluttet', 'Afsluttet af', 'Afslutningskommentar', 'Ansvarlig', 'Dage åben', 'Billeder', 'Indlæg i tråd', 'Tråd', 'Lat', 'Lng', 'Google Maps'], rows)), mime: 'text/csv', filename: 'UniSjak_FejlOgSikkerhed_' + safeName(pr.case_number || pr.name) + '.csv', subject };
     }
     const doc = newReport({ company: comp, title: 'Fejl og mangler / Sikkerhed', sub: placeCap() + ': ' + projLabel(pr), sub2: 'Periode: ' + periodTxt + ' · pr. ' + dkFull(fmtDate(new Date())) }, false);
     doc.paragraph(list.length + (list.length === 1 ? ' punkt' : ' punkter') + ' – ' + openN(list) + ' åbne, ' + (list.length - openN(list)) + ' afsluttede', { size: 10, bold: true });
@@ -4081,7 +4103,7 @@ async function buildSafetyReport(fmt, opt) {
         doc.text(doc.margin + 6, top + 4, numOf(p) + '  ·  ' + typeOf(p).toUpperCase() + '  ·  ' + ageTxt(p), { size: 9.5, bold: true, color: [255, 255, 255] });
         doc.y = top + 24;
         doc.paragraph((p.note || 'Ingen beskrivelse').trim(), { size: 10, bold: true });
-        doc.paragraph(['Oprettet af ' + userName(p.user_id), dkWhen(p.created_at)].join('  ·  '), { size: 8.5, color: [110, 110, 110] });
+        doc.paragraph(['Oprettet af ' + userName(p.user_id), dkWhen(p.created_at), 'Ansvarlig: ' + ((p.case_assignees || []).length ? p.case_assignees.map(userName).join(', ') : 'ikke valgt')].join('  ·  '), { size: 8.5, color: [110, 110, 110] });
         if (p.lat != null) {
             doc.paragraph('GPS: ' + Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5) + (p.address ? ' – ' + p.address : ''), { size: 8, color: [110, 110, 110] });
             doc.ensure(14);
@@ -7820,6 +7842,8 @@ async function handleAct(act, el) {
         case 'case-photo': { const f = $('case-file'); if (f) { f.value = ''; f.click(); } return; }
         case 'case-send': return caseSend([]);
         case 'case-close': return caseClose(true);
+        case 'case-assign': toggleAssign(S.caseAssign, d.user); return safeFormRender();
+        case 'case-assign-edit': return caseAssignEdit(d.user);
         case 'case-reopen': return caseClose(false);
         case 'safe-lv': S.safeLv = d.lv; return safeFormRender();
         case 'safe-assign': toggleAssign(S.safeAssign, d.user); return safeFormRender();
