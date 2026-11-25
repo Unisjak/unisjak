@@ -1331,12 +1331,12 @@ function resetApp() {
     if (S.chCompany) { try { sb.removeChannel(S.chCompany); } catch (e) {} S.chCompany = null; }
     if (S.chPlan) { try { sb.removeChannel(S.chPlan); } catch (e) {} S.chPlan = null; }
     Object.assign(S, {
-        session: null, profile: null, company: null, started: false,
+        session: null, profile: null, company: null, logo: null, started: false,
         projects: [], members: [], profiles: [], time: [], approvals: [], photos: [], tasks: [], shifts: [], invitations: [], taskUpdates: [], updReady: false, ksUpdates: [], caseReady: false,
         urls: {}, range: { time: null, shifts: null }, weekOffset: 0, shiftOffset: 0, live: 'wait'
     });
     if (typeof resetUg === 'function') resetUg();
-    if (typeof saStop === 'function') { saStop(); S.sa.list = []; S.sa.companies = []; S.sa.threads = []; S.sa.acct = null; S.sa.msgs = []; S.sa.view = 'list'; }
+    if (typeof saStop === 'function') { saStop(); S.sa.list = []; S.sa.companies = []; S.sa.threads = []; S.sa.acct = null; S.sa.msgs = []; S.sa.view = 'list'; S.sa.logo = null; }
 }
 
 async function loadMyProfile(uid) {
@@ -1467,6 +1467,7 @@ async function loadCore() {
     await loadDevCols();
     await loadTaskUpdates();
     await loadKsUpdates();
+    await loadLogo();
 }
 
 function keyOf(row) {
@@ -2536,10 +2537,59 @@ async function copyLastWeek() {
 }
 
 /* ---- hold & indstillinger ---- */
+/* ---- VIRKSOMHEDSLOGO (til PDF'er) ---- */
+const b64ToBytes = b => { const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+const bytesToB64 = u => { let s = ''; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); };
+function setLogoState(b64) { S.logo = null; if (b64) { try { const bytes = b64ToBytes(b64); if (jpegInfo(bytes)) S.logo = { b64, bytes }; } catch (e) { /* ugyldigt logo ignoreres */ } } }
+async function loadLogo() {
+    try {
+        const cid = S.company && S.company.id; if (!cid) return setLogoState(null);
+        const r = await sb.from('company_logos').select('data').eq('company_id', cid).maybeSingle();
+        setLogoState(r.error ? null : (r.data && r.data.data));
+    } catch (e) { setLogoState(null); }
+}
+/* Fil -> lille JPEG (base64). Gennemsigtig baggrund bliver hvid. */
+async function logoFromFile(file) {
+    if (!file) throw new Error('Vælg en billedfil.');
+    if (!/^image\/(png|jpeg)$/.test(file.type)) throw new Error('Logoet skal være en PNG- eller JPG-fil.');
+    if (file.size > 10 * 1024 * 1024) throw new Error('Filen er for stor (højst 10 MB).');
+    for (const [mx, q] of [[600, 0.88], [480, 0.8], [360, 0.7]]) {
+        const u8 = await shrinkToJpeg(file, mx, q);
+        if (!u8 || !jpegInfo(u8)) throw new Error('Billedet kunne ikke læses.');
+        const b64 = bytesToB64(u8);
+        if (b64.length <= 190000) return b64;
+    }
+    throw new Error('Logoet er for detaljeret. Brug en enklere eller mindre fil.');
+}
+async function logoSave(cid, b64) {
+    const r = await sb.from('company_logos').upsert({ company_id: cid, data: b64 }, { onConflict: 'company_id' });
+    if (r.error) throw r.error;
+}
+async function logoPick(el) {
+    const f = el.files && el.files[0]; el.value = '';
+    try {
+        const b64 = await logoFromFile(f);
+        await logoSave(S.company.id, b64); setLogoState(b64); toast('Logoet er gemt. Det kommer nu på dine PDF\'er.', 'ok'); renderTeam();
+    } catch (e) { e && e.message && !e.code ? toast(e.message) : fail(e); }
+}
+async function logoRemove() {
+    const r = await sb.from('company_logos').delete().eq('company_id', S.company.id);
+    if (r.error) return fail(r.error);
+    setLogoState(null); toast('Logoet er fjernet.', 'ok'); renderTeam();
+}
+const logoBoxHtml = (b64, chg, delAct, hint) =>
+    `<div class="flex items-center gap-3"><div class="w-28 h-16 bg-white rounded-xl border border-gray-700 flex items-center justify-center overflow-hidden shrink-0">` +
+    (b64 ? `<img src="data:image/jpeg;base64,${b64}" alt="Logo" class="max-w-full max-h-full object-contain">` : `<i class="fa-solid fa-image text-gray-400 text-xl"></i>`) + `</div>` +
+    `<p class="text-xs text-gray-400 leading-snug">${hint}</p></div>` +
+    `<div class="grid grid-cols-${b64 ? 2 : 1} gap-2"><label class="brand-orange text-white py-3.5 rounded-xl font-black text-sm text-center cursor-pointer active:scale-95 transition block"><i class="fa-solid fa-upload mr-1.5"></i>${b64 ? 'Skift logo' : 'Vælg logo'}<input type="file" accept="image/png,image/jpeg" data-chg="${chg}" class="hidden"></label>` +
+    (b64 ? `<button type="button" data-act="${delAct}" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm">Fjern logo</button>` : '') + `</div>`;
+
 function teamHtml() {
     const mgr = isManager(), admin = isAdmin(), me = S.profile;
     const box = 'bg-card border border-card rounded-2xl p-4 md:p-6 space-y-3';
     let h = '';
+    if (admin) h += `<div class="${box} md:col-span-2"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-image text-orange-500 mr-2"></i>Virksomhedslogo</h3>` +
+        logoBoxHtml(S.logo && S.logo.b64, 'logo-file', 'logo-del', 'Vises øverst på alle PDF\'er sammen med virksomhedsnavnet og teksten "Genereret af UniSjak.dk". PNG eller JPG.') + `</div>`;
     if (mgr) {
         h += `<div class="${box} md:col-span-2"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-store text-orange-500 mr-2"></i>Branche</h3>` +
             `<div class="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl p-4"><div><p class="font-black text-white text-sm">${hasShifts() ? 'Butik &amp; Restaurant' : 'Håndværk &amp; Byggeri'}</p><p class="text-[11px] text-gray-400">${hasShifts() ? 'Vagtplan, timer/stempelur, opgaver og medarbejdere' : 'Sager, timer, KS, materialer og opgaver'}</p></div><span class="text-[10px] font-black text-amber-300 bg-amber-950/40 border border-amber-700/40 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-lock mr-1"></i>Låst</span></div></div>`;
@@ -2887,6 +2937,7 @@ function saCustHtml() {
         `<div><label class="lbl">Navn</label><input data-sa-f="name" class="inp" maxlength="120" value="${esc(c.name)}"></div>` +
         `<div class="grid grid-cols-3 gap-2"><div><label class="lbl">Brugere (nu ${c.n_interne})</label><input data-sa-f="max_int" type="number" min="0" class="inp" value="${c.max_interne}"></div><div><label class="lbl">Gæster (nu ${c.n_gaest})</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="${c.max_gaest}"></div><div><label class="lbl">Prøve til</label><input data-sa-f="trial" type="date" class="inp" value="${esc(String(c.trial_ends_at || '').slice(0, 10))}"></div></div>` +
         `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${saModsHtml(c.modules)}</div><span class="lbl">Egne navne (tomt = standard)</span><div class="grid grid-cols-2 gap-2">${saLabsHtml(c.labels)}</div>` +
+        `<div class="border-t border-gray-800 pt-3 space-y-2"><span class="lbl">Logo (på kundens PDF\'er)</span>` + logoBoxHtml(S.sa.logo && S.sa.logo.cid === c.id ? S.sa.logo.b64 : null, 'sa-logo-file', 'sa-logo-del', 'Kunden kan selv skifte det under Indstillinger. PNG eller JPG.') + `</div>` +
         `<button type="button" data-act="sa-save" class="w-full brand-orange text-white py-4 rounded-xl font-black">Gem</button>` +
         `<div class="border-t border-gray-800 pt-3 space-y-2"><span class="lbl">Admins</span>` + ((c.admins || []).map(x => `<p class="text-xs text-gray-300">${esc(x.name)} <span class="text-gray-500">${esc(x.email || '')}${x.draft ? ' · afventer' : ''}</span></p>`).join('') || '<p class="text-xs text-gray-500">Ingen endnu.</p>') +
         `<div class="grid grid-cols-2 gap-2"><input data-sa-f="inv_name" class="inp" maxlength="120" placeholder="Navn"><input data-sa-f="inv_email" type="email" class="inp" placeholder="E-mail"></div><button type="button" data-act="sa-invite" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-sm font-bold">Inviter admin</button></div>`;
@@ -3015,7 +3066,8 @@ async function saAct(act, el) {
         case 'sa-back': S.sa.view = S.sa.fromLead ? 'acct' : 'list'; S.sa.fromLead = null; S.sa.selThread = null; return saRender();
         case 'sa-acct-back': S.sa.view = 'acct'; return saRender();
         case 'sa-acct': return saOpenAcct(d.id);
-        case 'sa-cust': return saGo('cust');
+        case 'sa-cust': saGo('cust'); return saLoadLogo();
+        case 'sa-logo-del': return saLogoDel();
         case 'sa-create': return saCreate();
         case 'sa-save': return saSave();
         case 'sa-invite': return saInvite();
@@ -3035,7 +3087,23 @@ async function saAct(act, el) {
         case 'sa-logout': return doLogout();
     }
 }
+async function saLoadLogo() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a || !a.company_id) return;
+    const r = await sb.from('company_logos').select('data').eq('company_id', a.company_id).maybeSingle();
+    S.sa.logo = { cid: a.company_id, b64: r.error ? null : (r.data && r.data.data) }; if (S.sa.view === 'cust') saRender();
+}
+async function saLogoPick(el) {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); const f = el.files && el.files[0]; el.value = ''; if (!a || !a.company_id) return;
+    try { const b64 = await logoFromFile(f); await logoSave(a.company_id, b64); S.sa.logo = { cid: a.company_id, b64 }; toast('Logoet er gemt.', 'ok'); saRender(); }
+    catch (e) { e && e.message && !e.code ? toast(e.message) : fail(e); }
+}
+async function saLogoDel() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a || !a.company_id) return;
+    const r = await sb.from('company_logos').delete().eq('company_id', a.company_id); if (r.error) return fail(r.error);
+    S.sa.logo = { cid: a.company_id, b64: null }; toast('Logoet er fjernet.', 'ok'); saRender();
+}
 async function saChg(chg, el) {
+    if (chg === 'sa-logo-file') return saLogoPick(el);
     if (chg === 'sa-thread-link') {
         const th = S.sa.threads.find(x => x.id === S.sa.selThread); if (!th || !el.value) return;
         const r = await sb.from('mail_threads').update({ account_id: el.value }).eq('id', th.id);
@@ -5711,7 +5779,7 @@ class PdfDoc {
         const total = this.pages.length;
         this.pages.forEach((pg, i) => {
             this.cur = pg;
-            this.text(this.W / 2, this.H - this.margin + 2, 'Side ' + (i + 1) + ' af ' + total + '  ·  Genereret med UniSjak', { size: 8, color: [130, 130, 130], align: 'center' });
+            this.text(this.W / 2, this.H - this.margin + 2, 'Side ' + (i + 1) + ' af ' + total + '  ·  unisjak.dk', { size: 8, color: [130, 130, 130], align: 'center' });
         });
         const chunks = []; let len = 0; const offsets = [];
         const enc = s => { const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255; return u; };
@@ -5753,10 +5821,23 @@ class PdfDoc {
 /* Standard-sidehoved: logo + titel + undertitel (sag/periode) */
 function pdfHeader(doc, info) {
     const m = doc.margin, W = doc.W;
-    doc.rect(m, m - 6, 30, 30, { fill: [255, 85, 0] });
-    doc.text(m + 15, m + 1, 'U', { size: 20, bold: true, color: [255, 255, 255], align: 'center' });
-    doc.text(m + 38, m - 4, 'UniSjak', { size: 15, bold: true, color: [30, 34, 41] });
-    doc.text(m + 38, m + 14, info.company || '', { size: 9, color: [110, 110, 110] });
+    let tx = m;
+    const lg = info.logo;                                  // JPEG-bytes (valgfrit)
+    if (lg) {
+        const inf = jpegInfo(lg);
+        if (inf) {
+            const bw = 96, bh = 34, sc = Math.min(bw / inf.w, bh / inf.h), dw = inf.w * sc;
+            doc.image(lg, m, m - 7, dw, bh);
+            tx = m + dw + 10;
+        }
+    }
+    const titleW = Math.max(pdfTextW(info.title || '', 13, true), pdfTextW(info.sub || '', 9), pdfTextW(info.sub2 || '', 9));
+    const maxW = Math.max(60, W - m - titleW - 14 - tx);
+    let nm = String(info.company || 'UniSjak');
+    if (pdfTextW(nm, 13, true) > maxW) { while (nm.length > 1 && pdfTextW(nm + '…', 13, true) > maxW) nm = nm.slice(0, -1); nm = nm.trimEnd() + '…'; }
+    doc.text(tx, m - 4, nm, { size: 13, bold: true, color: [30, 34, 41] });
+    const gen = 'Genereret af UniSjak.dk', gw = doc.text(tx, m + 13, gen, { size: 8, color: [130, 130, 130] });
+    doc.link(tx, m + 12, gw, 11, 'https://unisjak.dk');
     doc.text(W - m, m - 4, info.title || '', { size: 13, bold: true, color: [30, 34, 41], align: 'right' });
     if (info.sub) doc.text(W - m, m + 13, info.sub, { size: 9, color: [110, 110, 110], align: 'right' });
     if (info.sub2) doc.text(W - m, m + 25, info.sub2, { size: 9, color: [110, 110, 110], align: 'right' });
@@ -7615,6 +7696,7 @@ async function pathBytes(path, max, q) {
 }
 
 function newReport(info, landscape) {
+    if (S.logo && S.logo.bytes && !info.logo) info.logo = S.logo.bytes;
     const doc = new PdfDoc({ landscape });
     doc.onNewPage = d => pdfHeader(d, info);
     pdfHeader(doc, info);
@@ -8114,6 +8196,7 @@ async function handleAct(act, el) {
     if (act.startsWith('sa-')) return saAct(act, el);
     if (['open-photo', 'extra-time', 'extra-mat', 'place-task'].includes(act) && el.closest('#modal-task')) { closeModal('modal-task'); S.editTask = null; }
     switch (act) {
+        case 'logo-del': return logoRemove();
         case 'draft-create': return draftCreate(el);
         case 'emp-new': return openEmpNew();
         case 'emp-n-role': return empNewRole(d.r);
@@ -8286,8 +8369,9 @@ async function handleAct(act, el) {
     }
 }
 async function handleChg(act, el) {
-    if (act === 'sa-thread-link') return saChg(act, el);
+    if (act.startsWith('sa-')) return saChg(act, el);
     switch (act) {
+        case 'logo-file': return logoPick(el);
         case 'uk-task': { if (!U.edit) return; ugSync(); const b = ukState(U.edit).b[el.dataset.t]; if (!b) return; b.taskId = el.value; const t = S.tasks.find(x => x.id === el.value); b.set = new Set(t ? taskAssignees(t) : []); b.dirty = false; return renderUgCell(); }
         case 'toggle-task': return toggleTask(el.dataset.id, el.checked);
         case 'toggle-item': return toggleItem(el.dataset.id, el.checked);
