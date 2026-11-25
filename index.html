@@ -217,6 +217,23 @@
         </div>
     </div>
 
+    <!-- BILLEDVISNING: zoom, panorér, bladr -->
+    <div id="lightbox" class="hidden fixed inset-0 select-none" style="z-index:120;background:rgba(0,0,0,.96);touch-action:none" role="dialog" aria-label="Billede">
+        <div id="lb-stage" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none">
+            <img id="lb-img" alt="" draggable="false" style="max-width:100%;max-height:100%;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none">
+        </div>
+        <div style="position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;gap:8px">
+            <span id="lb-count" class="text-xs font-black text-white" style="background:rgba(0,0,0,.55);padding:6px 10px;border-radius:999px"></span>
+            <div style="display:flex;gap:8px">
+                <button type="button" data-lb="out" class="text-white font-black" style="width:46px;height:46px;border-radius:999px;background:rgba(255,255,255,.14);font-size:22px" aria-label="Zoom ud">−</button>
+                <button type="button" data-lb="in" class="text-white font-black" style="width:46px;height:46px;border-radius:999px;background:rgba(255,255,255,.14);font-size:22px" aria-label="Zoom ind">+</button>
+                <button type="button" data-lb="close" class="text-white" style="width:46px;height:46px;border-radius:999px;background:rgba(255,255,255,.14);font-size:20px" aria-label="Luk"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+        <button type="button" data-lb="prev" id="lb-prev" class="text-white" style="position:absolute;left:8px;top:50%;margin-top:-26px;width:52px;height:52px;border-radius:999px;background:rgba(255,255,255,.14);font-size:20px" aria-label="Forrige"><i class="fa-solid fa-chevron-left"></i></button>
+        <button type="button" data-lb="next" id="lb-next" class="text-white" style="position:absolute;right:8px;top:50%;margin-top:-26px;width:52px;height:52px;border-radius:999px;background:rgba(255,255,255,.14);font-size:20px" aria-label="Næste"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
     <!-- FØRSTE GANG: OPRET VIRKSOMHED -->
     <div id="onboard-screen" class="hidden fixed inset-0 bg-[#292524] z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-card w-full max-w-md rounded-2xl border border-card p-6 space-y-5 shadow-2xl">
@@ -1867,9 +1884,9 @@ function numbering() {
     });
     return m;
 }
-function photoImg(p, cls, idx) {
+function photoImg(p, cls, idx, zoom) {
     const path = photoPaths(p)[idx || 0], u = path ? S.urls[path] : null;
-    return u ? `<img src="${esc(u.url)}" loading="lazy" alt="" class="${cls}">` : `<div class="${cls} bg-gray-800 animate-pulse"></div>`;
+    return u ? `<img src="${esc(u.url)}" loading="lazy" alt=""${zoom ? ` data-zoom="${zoom}"` : ''} class="${cls}${zoom ? ' cursor-zoom-in' : ''}">` : `<div class="${cls} bg-gray-800 animate-pulse"></div>`;
 }
 function photoHead(p, fallback) { const t = p.title || p.note || fallback; return t.length > 140 ? t.slice(0, 137) + '…' : t; }
 function photoMeta(p, tone) {
@@ -3579,7 +3596,7 @@ function renderShotGallery() {
     const el = $('photo-gallery'); if (!el) return;
     const n = tempShots.length;
     el.innerHTML = `<div class="flex items-center justify-between"><span class="lbl !mb-0">Billeder</span><span class="text-xs font-black text-orange-300">${n ? n + (n === 1 ? ' billede' : ' billeder') : 'Ingen endnu'}</span></div>` +
-        `<div class="grid grid-cols-3 gap-2">` + tempShots.map((s, i) => `<div class="relative aspect-square rounded-xl overflow-hidden border border-gray-800 bg-gray-900"><img src="${s.url}" alt="Billede ${i + 1}" class="w-full h-full object-cover"><button type="button" data-act="shot-del" data-i="${i}" class="absolute top-1 right-1 w-9 h-9 rounded-full bg-stone-900/85 text-red-400 flex items-center justify-center" aria-label="Fjern billede ${i + 1}"><i class="fa-solid fa-xmark"></i></button></div>`).join('') +
+        `<div class="grid grid-cols-3 gap-2">` + tempShots.map((s, i) => `<div class="relative aspect-square rounded-xl overflow-hidden border border-gray-800 bg-gray-900"><img src="${s.url}" alt="Billede ${i + 1}" data-zoom="new" class="w-full h-full object-cover cursor-zoom-in"><button type="button" data-act="shot-del" data-i="${i}" class="absolute top-1 right-1 w-9 h-9 rounded-full bg-stone-900/85 text-red-400 flex items-center justify-center" aria-label="Fjern billede ${i + 1}"><i class="fa-solid fa-xmark"></i></button></div>`).join('') +
         (n < MAX_PHOTOS ? addTilesHtml('new') : '') + `</div>`;
 }
 function shotDelete(i) {
@@ -3698,7 +3715,7 @@ function renderEditGallery() {
     const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
     const paths = photoPaths(p), canEdit = canEditPt(p);
     if (PH.idx >= paths.length) PH.idx = Math.max(0, paths.length - 1);
-    $('edit-photo-wrap').innerHTML = paths.length ? photoImg(p, 'h-full w-full object-contain', PH.idx) : '';
+    $('edit-photo-wrap').innerHTML = paths.length ? photoImg(p, 'h-full w-full object-contain', PH.idx, 'edit') : '';
     show('edit-photo-wrap', paths.length > 0);
     $('edit-gallery').innerHTML = (paths.length > 1 || canEdit) ?
         `<div class="flex items-center justify-between"><span class="lbl !mb-0">Billeder</span><span class="text-xs font-black text-orange-300">${paths.length ? paths.length + (paths.length === 1 ? ' billede' : ' billeder') : 'Ingen billeder'}</span></div>` +
@@ -3828,7 +3845,7 @@ function extraChip(p) {
 }
 const extraTag = p => p && p.is_extra ? `<span class="inline-flex items-center gap-1 flex-wrap"><span class="bg-violet-600 text-white px-1.5 py-0.5 rounded text-[9px] font-black">EKSTRA ${exNo(p)}</span>${extraChip(p)}</span>` : '';
 const extraTagBlock = t => { const p = extraOfTask(t); if (p) return `<span class="block mb-1">${extraTag(p)}</span>`; const sp = safetyOfTask(t); return sp ? `<span class="block mb-1">${safetyTag(sp)}</span>` : ''; };
-const pathImg = (path, cls) => { const u = path ? S.urls[path] : null; return u ? `<img src="${esc(u.url)}" loading="lazy" alt="" class="${cls}">` : `<div class="${cls} bg-gray-800 animate-pulse"></div>`; };
+const pathImg = (path, cls, zoom) => { const u = path ? S.urls[path] : null; return u ? `<img src="${esc(u.url)}" loading="lazy" alt=""${zoom ? ` data-zoom="${zoom}"` : ''} class="${cls}${zoom ? ' cursor-zoom-in' : ''}">` : `<div class="${cls} bg-gray-800 animate-pulse"></div>`; };
 
 function safetyBarHtml() {
     const cp = S.caseReady ? casePoints() : [], sp = safetyPoints();
@@ -3932,7 +3949,7 @@ function renderEditExtra(p) {
         h += `</div>`;
     }
     h += `<div class="space-y-2"><div class="flex items-center justify-between"><span class="lbl !mb-0">Efter-billeder</span><span class="text-xs font-black text-violet-300">${after.length ? after.length + (after.length === 1 ? ' billede' : ' billeder') : 'Ingen endnu'}</span></div><div class="grid grid-cols-4 gap-2">` +
-        after.map((pt, i) => `<div class="relative aspect-square rounded-xl overflow-hidden border border-gray-800 bg-gray-900">${pathImg(pt, 'w-full h-full object-cover')}` +
+        after.map((pt, i) => `<div class="relative aspect-square rounded-xl overflow-hidden border border-gray-800 bg-gray-900">${pathImg(pt, 'w-full h-full object-cover', 'after')}` +
             (canWork ? `<button type="button" data-act="after-del" data-i="${i}" class="absolute top-0.5 right-0.5 w-8 h-8 rounded-full bg-stone-900/85 text-red-400 flex items-center justify-center text-xs" aria-label="Slet efter-billede ${i + 1}"><i class="fa-solid fa-xmark"></i></button>` : '') + `</div>`).join('') +
         (canWork && after.length < MAX_PHOTOS ? addTilesHtml('after') : '') + `</div></div>`;
     h += `<div class="space-y-1"><div class="flex items-center justify-between"><span class="lbl !mb-0">Timer</span><span class="text-xs font-black text-violet-300">${times.length ? hFmt(tot) + ' t' : ''}</span></div>` +
@@ -4215,7 +4232,7 @@ async function resolveCaseUrls(pid) {
         if (got && S.editPhotoId === pid && !$('modal-edit-ks').classList.contains('hidden')) renderEditSafety(S.photos.find(x => x.id === pid));
     } catch (e) { /* ignore */ }
 }
-const caseImgs = paths => (paths || []).length ? `<div class="grid grid-cols-3 gap-1.5">` + paths.map(pt => { const x = S.urls[pt]; return x ? `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(x.url)}" loading="lazy" alt="" class="w-full aspect-square object-cover rounded-lg border border-gray-800"></a>` : `<div class="w-full aspect-square rounded-lg bg-gray-800 animate-pulse"></div>`; }).join('') + `</div>` : '';
+const caseImgs = paths => (paths || []).length ? `<div class="grid grid-cols-3 gap-1.5">` + paths.map(pt => { const x = S.urls[pt]; return x ? `<img src="${esc(x.url)}" loading="lazy" alt="" data-zoom="thread" class="w-full aspect-square object-cover rounded-lg border border-gray-800 cursor-zoom-in">` : `<div class="w-full aspect-square rounded-lg bg-gray-800 animate-pulse"></div>`; }).join('') + `</div>` : '';
 function casePanelHtml(p) {
     const closed = isClosed(p), isSafe = p.category === 'Sikkerhed';
     const ico = isSafe ? 'fa-shield-halved text-sky-400' : 'fa-triangle-exclamation text-amber-400';
@@ -4317,7 +4334,7 @@ function renderEditSafety(p) {
     const canLv = !closed && (isManager() || p.user_id === me);
     const after = p.done_paths || [];
     const afterHtml = `<div class="grid grid-cols-4 gap-2">` +
-        after.map((pt, i) => `<div class="relative aspect-square rounded-xl overflow-hidden border border-gray-800 bg-gray-900">${pathImg(pt, 'w-full h-full object-cover')}` +
+        after.map((pt, i) => `<div class="relative aspect-square rounded-xl overflow-hidden border border-gray-800 bg-gray-900">${pathImg(pt, 'w-full h-full object-cover', 'after')}` +
             (canWork ? `<button type="button" data-act="after-del" data-i="${i}" class="absolute top-0.5 right-0.5 w-8 h-8 rounded-full bg-stone-900/85 text-red-400 flex items-center justify-center text-xs" aria-label="Slet efter-billede ${i + 1}"><i class="fa-solid fa-xmark"></i></button>` : '') + `</div>`).join('') +
         (canWork && after.length < MAX_PHOTOS ? addTilesHtml('after') : '') + `</div>`;
     let h = `<div class="rounded-2xl border border-gray-700 bg-gray-900/60 p-3 space-y-3"><div class="flex items-center justify-between gap-2 flex-wrap"><span class="text-xs font-black text-white"><i class="fa-solid fa-shield-halved mr-1.5 text-sky-400"></i>Sikkerhed</span>${safetyTag(p)}</div>`;
@@ -4711,7 +4728,7 @@ function taskDocHtml(t) {
     if (!S.updReady) return '';
     const ups = S.taskUpdates.filter(u => u.task_id === t.id);
     const list = ups.map(u => {
-        const imgs = (u.image_paths || []).map(pt => { const x = S.urls[pt]; return x ? `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(x.url)}" loading="lazy" alt="" class="w-full aspect-square object-cover rounded-lg border border-gray-800"></a>` : `<div class="w-full aspect-square rounded-lg bg-gray-800 animate-pulse"></div>`; }).join('');
+        const imgs = (u.image_paths || []).map(pt => { const x = S.urls[pt]; return x ? `<img src="${esc(x.url)}" loading="lazy" alt="" data-zoom="thread" class="w-full aspect-square object-cover rounded-lg border border-gray-800 cursor-zoom-in">` : `<div class="w-full aspect-square rounded-lg bg-gray-800 animate-pulse"></div>`; }).join('');
         return `<div class="bg-gray-900/70 border border-gray-800 rounded-xl p-3 space-y-1.5" data-upd="${u.id}"><div class="flex justify-between gap-2 text-[11px]"><span class="font-bold ${u.user_id === myId() ? 'text-orange-300' : 'text-gray-200'}">${esc(updAuthor(u))}${u.kind === 'status' ? ' <span class="text-emerald-400">· status</span>' : ''}</span><span class="text-gray-500 shrink-0">${esc(whenLabel(u.created_at))}</span></div>` +
             (u.text ? `<p class="text-sm ${u.kind === 'status' ? 'font-black text-emerald-300' : 'text-gray-100'} whitespace-pre-wrap break-words">${esc(u.text)}</p>` : '') +
             (imgs ? `<div class="grid grid-cols-3 gap-1.5">${imgs}</div>` : '') + `</div>`;
@@ -8299,6 +8316,88 @@ document.addEventListener('change', e => {
     const el = e.target.closest('[data-chg]');
     if (el) handleChg(el.dataset.chg, el).catch(fail);
 });
+
+
+/* ------------------------------ BILLEDVISNING (zoom) ------------------------------ */
+const LB = { urls: [], i: 0, s: 1, x: 0, y: 0, ptr: new Map(), pinch: null, pan: null, tap: 0, tapX: 0, tapY: 0, swipe: null };
+const lbEl = id => document.getElementById(id);
+function lbApply() { lbEl('lb-img').style.transform = `translate(${LB.x}px,${LB.y}px) scale(${LB.s})`; }
+function lbClamp() {
+    const im = lbEl('lb-img'), st = lbEl('lb-stage');
+    const mx = Math.max(0, (im.offsetWidth * LB.s - st.clientWidth) / 2), my = Math.max(0, (im.offsetHeight * LB.s - st.clientHeight) / 2);
+    LB.x = Math.max(-mx, Math.min(mx, LB.x)); LB.y = Math.max(-my, Math.min(my, LB.y));
+    if (LB.s <= 1) { LB.x = 0; LB.y = 0; }
+}
+function lbZoomAt(ns, cx, cy) {
+    ns = Math.max(1, Math.min(6, ns));
+    const r = lbEl('lb-stage').getBoundingClientRect(), px = cx - (r.left + r.width / 2), py = cy - (r.top + r.height / 2), k = ns / LB.s;
+    LB.x = px - (px - LB.x) * k; LB.y = py - (py - LB.y) * k; LB.s = ns; lbClamp(); lbApply();
+}
+function lbZoomBtn(f) { const r = lbEl('lb-stage').getBoundingClientRect(); lbZoomAt(LB.s * f, r.left + r.width / 2, r.top + r.height / 2); }
+function lbShow(i) {
+    const n = LB.urls.length; LB.i = (i + n) % n; LB.s = 1; LB.x = 0; LB.y = 0; lbApply();
+    lbEl('lb-img').src = LB.urls[LB.i];
+    lbEl('lb-count').textContent = n > 1 ? (LB.i + 1) + ' / ' + n : 'Knib eller dobbelttryk for at zoome';
+    lbEl('lb-prev').style.display = lbEl('lb-next').style.display = n > 1 ? '' : 'none';
+}
+function lbOpen(urls, i) { if (!urls || !urls.length) return; LB.urls = urls; LB.ptr.clear(); LB.pinch = LB.pan = LB.swipe = null; show('lightbox', true); lbShow(i || 0); }
+function lbClose() { show('lightbox', false); lbEl('lb-img').removeAttribute('src'); LB.ptr.clear(); }
+// Åbn et billede: samme gruppe (fx alle billeder i samme tråd/punkt) kan bladres igennem
+document.addEventListener('click', e => {
+    const im = e.target.closest && e.target.closest('img[data-zoom]'); if (!im) return;
+    e.preventDefault(); e.stopPropagation();
+    const g = im.dataset.zoom;
+    if (g === 'edit') {
+        const p = S.photos.find(x => x.id === S.editPhotoId); if (!p) return;
+        const urls = photoPaths(p).map(pt => S.urls[pt] && S.urls[pt].url).filter(Boolean);
+        const cur = S.urls[photoPaths(p)[PH.idx]], i = cur ? urls.indexOf(cur.url) : 0;
+        return lbOpen(urls, Math.max(0, i));
+    }
+    const scope = im.closest('[id^="modal-"]') || document;
+    const all = Array.from(scope.querySelectorAll('img[data-zoom="' + g + '"]')).filter(x => x.getAttribute('src'));
+    lbOpen(all.map(x => x.getAttribute('src')), Math.max(0, all.indexOf(im)));
+}, true);
+document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-lb]'); if (!b || !$('lightbox') || $('lightbox').classList.contains('hidden')) return;
+    const a = b.dataset.lb;
+    if (a === 'close') lbClose(); else if (a === 'in') lbZoomBtn(1.6); else if (a === 'out') lbZoomBtn(1 / 1.6); else if (a === 'prev') lbShow(LB.i - 1); else if (a === 'next') lbShow(LB.i + 1);
+});
+document.addEventListener('keydown', e => {
+    if (!$('lightbox') || $('lightbox').classList.contains('hidden')) return;
+    if (e.key === 'Escape') lbClose(); else if (e.key === 'ArrowLeft' && LB.urls.length > 1) lbShow(LB.i - 1); else if (e.key === 'ArrowRight' && LB.urls.length > 1) lbShow(LB.i + 1);
+    else if (e.key === '+' || e.key === '=') lbZoomBtn(1.6); else if (e.key === '-') lbZoomBtn(1 / 1.6);
+});
+(function lbInit() {
+    const st = lbEl('lb-stage'); if (!st) return;
+    st.addEventListener('wheel', e => { e.preventDefault(); lbZoomAt(LB.s * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX, e.clientY); }, { passive: false });
+    st.addEventListener('pointerdown', e => {
+        st.setPointerCapture && st.setPointerCapture(e.pointerId);
+        LB.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (LB.ptr.size === 2) { const [a, b] = [...LB.ptr.values()]; LB.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: LB.s }; LB.swipe = null; LB.pan = null; }
+        else { LB.pan = { x: e.clientX, y: e.clientY, ox: LB.x, oy: LB.y, moved: false }; LB.swipe = { x: e.clientX, y: e.clientY }; }
+    });
+    st.addEventListener('pointermove', e => {
+        if (!LB.ptr.has(e.pointerId)) return; LB.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (LB.pinch && LB.ptr.size >= 2) { const [a, b] = [...LB.ptr.values()]; lbZoomAt(LB.pinch.s * Math.hypot(a.x - b.x, a.y - b.y) / LB.pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2); return; }
+        if (LB.pan && LB.s > 1) { const dx = e.clientX - LB.pan.x, dy = e.clientY - LB.pan.y; if (Math.abs(dx) + Math.abs(dy) > 4) LB.pan.moved = true; LB.x = LB.pan.ox + dx; LB.y = LB.pan.oy + dy; lbClamp(); lbApply(); }
+        else if (LB.pan && (Math.abs(e.clientX - LB.pan.x) + Math.abs(e.clientY - LB.pan.y) > 6)) LB.pan.moved = true;
+    });
+    const up = e => {
+        const had = LB.ptr.has(e.pointerId); LB.ptr.delete(e.pointerId);
+        if (!had) return;
+        if (LB.pinch) { if (LB.ptr.size < 2) { LB.pinch = null; LB.pan = null; LB.swipe = null; if (LB.s < 1.05) { LB.s = 1; lbClamp(); lbApply(); } } return; }
+        const sw = LB.swipe, pn = LB.pan; LB.swipe = LB.pan = null;
+        if (!sw || !pn) return;
+        const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+        if (LB.s <= 1 && Math.abs(dx) > 60 && Math.abs(dy) < 90 && LB.urls.length > 1) { lbShow(LB.i + (dx < 0 ? 1 : -1)); LB.tap = 0; return; }
+        if (pn.moved) return;
+        const now = Date.now();
+        if (now - LB.tap < 320 && Math.hypot(e.clientX - LB.tapX, e.clientY - LB.tapY) < 30) { LB.tap = 0; lbZoomAt(LB.s > 1.2 ? 1 : 2.5, e.clientX, e.clientY); return; }   // dobbelttryk
+        LB.tap = now; LB.tapX = e.clientX; LB.tapY = e.clientY;
+        if (e.target === st && LB.s <= 1) setTimeout(() => { if (LB.tap === now) lbClose(); }, 330);                                             // tryk ved siden af billedet lukker
+    };
+    st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
+})();
 
 /* ------------------------------ LANDINGSSIDE ------------------------------ */
 function lpGo(tab) { lpDemoStop(); showScreen('auth'); switchAuthTab(tab); }
