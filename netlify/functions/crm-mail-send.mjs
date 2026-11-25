@@ -7,6 +7,8 @@
 //   CRM_FROM_EMAIL   (valgfri, standard RESEND_FROM_EMAIL)     f.eks.  Morten fra UniSjak <morten@unisjak.dk>
 //   REPLY_DOMAIN     (valgfri, standard svar.unisjak.dk)
 
+import { replyToAddr, mailBodies } from './_lib/crm-auth.mjs';
+
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const EMAIL = /^[^@\s<>",;]+@[^@\s<>",;]+\.[^@\s<>",;]+$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -26,7 +28,6 @@ export default async (req) => {
   if (!env.RESEND_API_KEY || !(env.CRM_FROM_EMAIL || env.RESEND_FROM_EMAIL) || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY)
     return json({ error: 'not configured' }, 500);
   const base = env.SUPABASE_URL.replace(/\/+$/, '');
-  const replyDomain = (env.REPLY_DOMAIN || 'svar.unisjak.dk').trim();
   const from = env.CRM_FROM_EMAIL || env.RESEND_FROM_EMAIL;
 
   // 1) Hvem kalder? Kun aktiv superadmin.
@@ -74,10 +75,8 @@ export default async (req) => {
   if (!row?.thread_id || !row?.message_id) return json({ error: 'failed' }, 502);
 
   // 4) Send via Resend. Svar går til tråd-adressen.
-  const replyTo = `t-${row.thread_id.replace(/-/g, '')}@${replyDomain}`;
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1c1917"><div style="white-space:pre-wrap">${esc(message)}</div>` +
-    `<p style="margin-top:22px;font-size:12px;color:#78716c">Svar blot på denne mail. Vil du ikke høre fra os igen, så svar "afmeld".</p></div>`;
-  const text = message + '\n\n—\nSvar blot på denne mail. Vil du ikke høre fra os igen, så svar "afmeld".';
+  const replyTo = replyToAddr(env, row.thread_id);
+  const { html, text } = mailBodies(env, message);
   let resendId = null, err = null;
   try {
     const r = await fetch('https://api.resend.com/emails', {

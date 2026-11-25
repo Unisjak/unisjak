@@ -30,15 +30,43 @@ export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;'
 export const fillTpl = (txt, name, company) => String(txt || '').replace(/\{navn\}/g, (String(name || '').trim().split(/\s+/)[0]) || 'der').replace(/\{virksomhed\}/g, company || '');
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Svar-adresse med visningsnavn, så mailprogrammet viser et navn i stedet for den lange tråd-kode.
+export function replyToAddr(env, threadId) {
+  const dom = (env.REPLY_DOMAIN || 'svar.unisjak.dk').trim();
+  const nm = String(env.CRM_REPLY_NAME || 'Morten fra UniSjak').replace(/["<>\r\n]/g, '').trim() || 'UniSjak';
+  return `${nm} <t-${String(threadId).replace(/-/g, '')}@${dom}>`;
+}
+
+// Mailkrop: brevteksten + fast signatur (med logo) + lille afmeldingslinje. Tekstversionen kan altid stå alene.
+export function mailBodies(env, message) {
+  const sig = {
+    name: env.SIGNATURE_NAME || 'Morten Kampmann Jacobsen',
+    title: env.SIGNATURE_TITLE || 'Grundlægger, UniSjak',
+    phone: env.SIGNATURE_PHONE || '53 38 16 49',
+    email: env.SIGNATURE_EMAIL || 'morten@unisjak.dk',
+    web: 'unisjak.dk'
+  };
+  const logo = (env.MAIL_LOGO_URL || 'https://unisjak.dk/mail-logo.png').trim();
+  const foot = 'Svar blot på denne mail. Vil du ikke høre fra os igen, så svar "afmeld".';
+  const text = message + `\n\n--\n${sig.name}\n${sig.title}\n${sig.phone} · ${sig.email}\n${sig.web}\n\n${foot}`;
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1c1917"><div style="white-space:pre-wrap">${esc(message)}</div>` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:26px;border-top:1px solid #e7e5e4;padding-top:14px"><tr>` +
+    `<td style="vertical-align:top;padding:14px 14px 0 0"><a href="https://${esc(sig.web)}"><img src="${esc(logo)}" width="56" height="58" alt="UniSjak" style="display:block;border:0"></a></td>` +
+    `<td style="vertical-align:top;padding-top:14px;font-size:13px;line-height:1.5;color:#44403c">` +
+    `<div style="font-size:15px;font-weight:bold;color:#1c1917">${esc(sig.name)}</div><div>${esc(sig.title)}</div>` +
+    `<div>${esc(sig.phone)} &middot; <a href="mailto:${esc(sig.email)}" style="color:#ea580c;text-decoration:none">${esc(sig.email)}</a></div>` +
+    `<div><a href="https://${esc(sig.web)}" style="color:#ea580c;text-decoration:none">${esc(sig.web)}</a></div></td></tr></table>` +
+    `<p style="margin-top:18px;font-size:11px;color:#a8a29e">${esc(foot)}</p></div>`;
+  return { html, text };
+}
+
 // Send én mail via Resend. Svar går til tråd-adressen, så de lander i Kontrolcenterets indbakke.
 export async function sendViaResend(env, { from, to, subject, message, threadId }) {
-  const replyDomain = (env.REPLY_DOMAIN || 'svar.unisjak.dk').trim();
-  const replyTo = `t-${threadId.replace(/-/g, '')}@${replyDomain}`;
-  const foot = 'Svar blot på denne mail. Vil du ikke høre fra os igen, så svar "afmeld".';
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1c1917"><div style="white-space:pre-wrap">${esc(message)}</div><p style="margin-top:22px;font-size:12px;color:#78716c">${esc(foot)}</p></div>`;
+  const replyTo = replyToAddr(env, threadId);
+  const { html, text } = mailBodies(env, message);
   try {
     const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [to], subject, text: message + '\n\n—\n' + foot, html, reply_to: replyTo }) });
+      body: JSON.stringify({ from, to: [to], subject, text, html, reply_to: replyTo }) });
     const t = await r.text();
     if (!r.ok) { console.error('Resend', r.status, t.slice(0, 300)); return { err: 'Resend ' + r.status, status: r.status }; }
     let id = null; try { id = JSON.parse(t).id || null; } catch { /* ignore */ }
