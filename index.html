@@ -1336,7 +1336,7 @@ function resetApp() {
         urls: {}, range: { time: null, shifts: null }, weekOffset: 0, shiftOffset: 0, live: 'wait'
     });
     if (typeof resetUg === 'function') resetUg();
-    if (typeof saStop === 'function') { saStop(); S.sa.list = []; S.sa.companies = []; S.sa.threads = []; S.sa.acct = null; S.sa.msgs = []; S.sa.view = 'list'; S.sa.logo = null; }
+    if (typeof saStop === 'function') { saStop(); S.sa.list = []; S.sa.companies = []; S.sa.threads = []; S.sa.acct = null; S.sa.msgs = []; S.sa.view = 'list'; S.sa.logo = null; S.sa.today = []; S.sa.counts = {}; S.sa.pg = { rows: [], total: 0 }; S.sa.q = ''; S.sa.health = ''; S.sa.filter = 'alle'; S.sa.tab = 'idag'; }
 }
 
 async function loadMyProfile(uid) {
@@ -2717,7 +2717,7 @@ const SA_STAGES = [['lead', 'Lead'], ['kontaktet', 'Kontaktet'], ['tilbud', 'Til
 const SA_SEG = [['', 'Ikke valgt'], ['enkeltmand', 'Enkeltmand'], ['entreprenor', 'Entreprenør'], ['offentlig', 'Offentlig'], ['butik', 'Butik / restaurant'], ['andet', 'Andet']];
 const SA_MAIL_ST = { queued: 'I kø', sent: 'Sendt', delivered: 'Leveret', opened: 'Åbnet', bounced: 'Kunne ikke leveres', complained: 'Markeret som spam', failed: 'Fejlede', received: 'Modtaget' };
 const SA_STAGE_CLS = { lead: 'bg-gray-800 text-gray-200', kontaktet: 'bg-sky-950 text-sky-300', tilbud: 'bg-violet-950 text-violet-300', proeve: 'bg-amber-950 text-amber-300', aktiv: 'bg-emerald-950 text-emerald-300', inaktiv: 'bg-red-950 text-red-300', tabt: 'bg-stone-800 text-stone-400' };
-S.sa = { fromLead: null, tab: 'kunder', view: 'list', filter: 'alle', list: [], companies: [], threads: [], sel: null, selThread: null, acct: null, msgs: [], keep: null, ch: null, busy: false };
+S.sa = { fromLead: null, tab: 'idag', view: 'list', filter: 'alle', q: '', health: '', today: [], counts: {}, pg: { rows: [], total: 0 }, seq: 0, list: [], companies: [], threads: [], sel: null, selThread: null, acct: null, msgs: [], keep: null, ch: null, busy: false };
 const saStage = k => (SA_STAGES.find(x => x[0] === k) || [k, k])[1];
 const saDT = t => t ? new Date(t).toLocaleString('da-DK', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 function saAgo(t) {
@@ -2725,40 +2725,75 @@ function saAgo(t) {
     const d = Math.floor((Date.now() - new Date(t).getTime()) / 86400000);
     return d <= 0 ? 'i dag' : d === 1 ? 'i går' : d + ' dage siden';
 }
-// Signaler pr. kunde (kun tal og tidspunkter – aldrig kundens indhold)
+// Signaler pr. kunde – årsagerne beregnes i databasen (sa_crm_page); her vises de kun
 function saSignals(a) {
-    const s = [];
-    if (a.company_id) {
-        if (a.max_interne > 0 && a.n_interne / a.max_interne >= 0.8) s.push(['loft', 'Tæt på brugerloft', 'bg-amber-950 text-amber-300']);
-        const old = Date.now() - new Date(a.created_at).getTime() > 3 * 86400000;
-        if (['aktiv', 'proeve'].includes(a.stage) && old && (!a.last_active || Date.now() - new Date(a.last_active).getTime() > 14 * 86400000)) s.push(['inaktiv', 'Ingen aktivitet i 14 dage', 'bg-red-950 text-red-300']);
-        if (a.stage === 'proeve' && a.trial_ends_at) {
-            const left = Math.ceil((new Date(a.trial_ends_at).getTime() - Date.now()) / 86400000);
-            if (left <= 3) s.push(['proeve', left < 0 ? 'Prøven er udløbet' : 'Prøven udløber om ' + left + ' d.', 'bg-orange-950 text-orange-300']);
-        }
-    }
-    if (a.next_followup && a.next_followup <= fmtDate(new Date())) s.push(['opf', 'Opfølgning i dag', 'bg-sky-950 text-sky-300']);
-    if (a.unread > 0) s.push(['mail', a.unread + ' ulæst' + (a.unread > 1 ? 'e' : ''), 'bg-violet-950 text-violet-300']);
-    return s;
+    const out = [], left = a.trial_ends_at ? Math.ceil((new Date(a.trial_ends_at).getTime() - Date.now()) / 86400000) : null;
+    (a.reasons || []).forEach(r => {
+        if (r === 'mail') out.push(['mail', a.unread + ' ulæst' + (a.unread > 1 ? 'e' : ''), 'bg-violet-950 text-violet-300']);
+        else if (r === 'opf') out.push(['opf', 'Opfølgning i dag', 'bg-sky-950 text-sky-300']);
+        else if (r === 'proeve') out.push(['proeve', left != null && left < 0 ? 'Prøven er udløbet' : 'Prøven udløber om ' + Math.max(0, left) + ' d.', 'bg-orange-950 text-orange-300']);
+        else if (r === 'inaktiv') out.push(['inaktiv', 'Ingen aktivitet i 14 dage', 'bg-red-950 text-red-300']);
+        else if (r === 'ny') out.push(['ny', 'Ikke kommet i gang', 'bg-amber-950 text-amber-300']);
+        else if (r === 'loft') out.push(['loft', 'Tæt på brugerloft', 'bg-amber-950 text-amber-300']);
+    });
+    return out;
 }
+const SA_HEALTH = { groen: ['bg-emerald-500', 'Grøn'], gul: ['bg-amber-400', 'Gul'], roed: ['bg-red-500', 'Rød'] };
+const saDot = h => h && SA_HEALTH[h] ? `<span class="w-2.5 h-2.5 rounded-full shrink-0 ${SA_HEALTH[h][0]}" title="${SA_HEALTH[h][1]}"></span>` : '';
+/* Standardmails til "I dag" (kan skiftes ud med egne skabeloner) */
+const SA_TPL = {
+    help: { subject: 'Skal jeg hjælpe dig i gang med UniSjak?', body: 'Hej {navn}\n\nJeg kan se, at I har oprettet {virksomhed} i UniSjak, men at I ikke er kommet helt i gang endnu.\n\nSvar blot på denne mail, så hjælper jeg gerne – det tager typisk 10 minutter at få timer og kvalitetssikring op at køre.\n\nVenlig hilsen\nMorten, UniSjak' },
+    trial: { subject: 'Din prøveperiode i UniSjak nærmer sig enden', body: 'Hej {navn}\n\nJeres prøveperiode i UniSjak for {virksomhed} udløber snart.\n\nSvar blot på denne mail, hvis I vil fortsætte eller har brug for mere tid.\n\nVenlig hilsen\nMorten, UniSjak' },
+    upsell: { subject: 'Jeres brugere i UniSjak er ved at være fyldt op', body: 'Hej {navn}\n\nI har næsten brugt alle brugerpladserne i UniSjak for {virksomhed}. Det er godt at se, at I bruger det!\n\nSvar blot på denne mail, så udvider jeg jeres plads.\n\nVenlig hilsen\nMorten, UniSjak' }
+};
+const saFill = (t, a) => ({ subject: t.subject.replace(/\{virksomhed\}/g, a.name || ''), body: t.body.replace(/\{navn\}/g, ((a.contact_name || '').trim().split(/\s+/)[0]) || 'der').replace(/\{virksomhed\}/g, a.name || '') });
 const saChip = (cls, txt) => `<span class="text-[10px] font-black px-2 py-0.5 rounded-full ${cls}">${esc(txt)}</span>`;
 
 async function saEnter() {
     if (!S.profile || S.profile.is_superadmin !== true) return;
-    S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.sel = null; S.sa.selThread = null;
+    S.sa.tab = 'idag'; S.sa.view = 'list'; S.sa.sel = null; S.sa.selThread = null;
     S.saMode = true; showScreen('sa'); saRender();
     await saReload();
     saSubscribe();
 }
 const saOpen = saEnter;
 function saExit() { if (S.started) showScreen('app'); }
+const SA_PAGE = 50;
+function saMerge(rows) { (rows || []).forEach(r => { const i = S.sa.list.findIndex(x => x.id === r.id); if (i >= 0) S.sa.list[i] = r; else S.sa.list.push(r); }); }
+async function saFetchPage(append) {
+    const pg = S.sa.pg, seq = ++S.sa.seq, off = append ? pg.rows.length : 0, lim = append ? SA_PAGE : Math.min(200, Math.max(SA_PAGE, pg.rows.length));
+    const r = await sb.rpc('sa_crm_page', { p_q: S.sa.q || null, p_stage: S.sa.filter === 'alle' ? null : S.sa.filter, p_health: S.sa.health || null, p_filter: null, p_ids: null, p_limit: lim, p_offset: off });
+    if (seq !== S.sa.seq) return false;
+    if (r.error) throw r.error;
+    const rows = r.data || [];
+    pg.rows = append ? pg.rows.concat(rows) : rows; pg.total = rows.length ? Number(rows[0].total) : (append ? pg.total : 0);
+    saMerge(rows); return true;
+}
+async function saLoadCompany(cid) {
+    if (!cid) return;
+    const r = await sb.rpc('sa_company_one', { p_id: cid }); if (r.error || !r.data) return;
+    const c = Array.isArray(r.data) ? r.data[0] : r.data; if (!c) return;
+    const i = S.sa.companies.findIndex(x => x.id === c.id); if (i >= 0) S.sa.companies[i] = c; else S.sa.companies.push(c);
+}
 async function saReload() {
-    const [o, c, t] = await Promise.all([sb.rpc('sa_crm_overview'), sb.rpc('sa_list_companies'), sb.from('mail_threads').select('*').order('last_at', { ascending: false }).limit(300)]);
-    if (o.error) { $('sa-main').innerHTML = `<p class="text-xs text-red-300">${esc(o.error.message || 'Fejl')}</p>`; return; }
-    S.sa.list = o.data || []; S.sa.companies = c.data || []; S.sa.threads = t.data || [];
+    try { await sb.rpc('sa_refresh_health'); } catch (e) { /* øjebliksbilledet er valgfrit */ }
+    const [cn, td, t] = await Promise.all([sb.rpc('sa_crm_counts'), sb.rpc('sa_crm_page', { p_filter: 'handling', p_limit: 40, p_offset: 0 }),
+        sb.from('mail_threads').select('*').order('last_at', { ascending: false }).limit(300)]);
+    const bad = cn.error || td.error;
+    if (bad) { $('sa-main').innerHTML = `<p class="text-xs text-red-300">${esc(bad.message || 'Fejl')}</p>`; return; }
+    S.sa.counts = cn.data || {}; S.sa.today = td.data || []; saMerge(S.sa.today); S.sa.threads = t.data || [];
+    try { await saFetchPage(false); } catch (e) { console.error(e); }
+    const miss = [...new Set(S.sa.threads.map(x => x.account_id).filter(id => id && !S.sa.list.some(a => a.id === id)))].slice(0, 200);
+    if (miss.length) { const m = await sb.rpc('sa_crm_page', { p_ids: miss, p_limit: 200, p_offset: 0 }); if (!m.error) saMerge(m.data); }
     if (S.sa.view === 'acct' && S.sa.sel) await saLoadAcct(); else if (S.sa.view === 'thread' && S.sa.selThread) await saLoadThread(true);
     saRender();
 }
+async function saPageRefresh() { try { await saFetchPage(false); } catch (e) { return fail(e); } if (S.sa.tab === 'kunder' && S.sa.view === 'list') saRenderRows(); }
+let saQTimer;
+document.addEventListener('input', e => {
+    const el = e.target; if (!el || !el.matches || !el.matches('[data-sa-q]')) return;
+    clearTimeout(saQTimer); saQTimer = setTimeout(() => { S.sa.q = el.value.trim(); saPageRefresh(); }, 280);
+});
 let saTimer;
 function saRefresh() { clearTimeout(saTimer); saTimer = setTimeout(() => { if (S.saMode) saReload().catch(console.error); }, 350); }
 function saSubscribe() {
@@ -2795,8 +2830,9 @@ function saRender() {
     const B = $('sa-main'); if (!B) return;
     const keep = saKeepIn(), v = S.sa.view;
     const unread = S.sa.threads.filter(t => t.unread).length;
-    $('sa-tabs').innerHTML = [['kunder', 'Kunder', 'fa-building'], ['indbakke', 'Indbakke', 'fa-inbox']].map(([k, t, ic]) =>
-        `<button type="button" data-act="sa-tab" data-tab="${k}" class="flex-1 py-3 rounded-xl font-black text-sm ${S.sa.tab === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}"><i class="fa-solid ${ic} mr-1.5"></i>${t}${k === 'indbakke' && unread ? ` <span class="ml-1 bg-white text-orange-600 rounded-full px-1.5 text-[11px]">${unread}</span>` : ''}</button>`).join('');
+    const todayN = (S.sa.today || []).length;
+    $('sa-tabs').innerHTML = [['idag', 'I dag', 'fa-bolt', todayN], ['kunder', 'Kunder', 'fa-building', 0], ['indbakke', 'Indbakke', 'fa-inbox', unread]].map(([k, t, ic, n]) =>
+        `<button type="button" data-act="sa-tab" data-tab="${k}" class="flex-1 py-3 rounded-xl font-black text-sm ${S.sa.tab === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}"><i class="fa-solid ${ic} mr-1.5"></i>${t}${n ? ` <span class="ml-1 bg-white text-orange-600 rounded-full text-[10px] px-1.5 py-0.5">${n}</span>` : ''}</button>`).join('');
     $('sa-close-btn').classList.toggle('hidden', !S.started);
     if (v === 'new') B.innerHTML = saNewHtml();
     else if (v === 'lead') B.innerHTML = saLeadHtml();
@@ -2804,30 +2840,66 @@ function saRender() {
     else if (v === 'cust') B.innerHTML = saCustHtml();
     else if (v === 'compose') B.innerHTML = saComposeHtml();
     else if (v === 'thread') B.innerHTML = saThreadHtml();
-    else B.innerHTML = S.sa.tab === 'indbakke' ? saInboxHtml() : saListHtml();
+    else if (S.sa.tab === 'indbakke') B.innerHTML = saInboxHtml();
+    else if (S.sa.tab === 'idag') B.innerHTML = saTodayHtml();
+    else if (document.activeElement && document.activeElement.matches && document.activeElement.matches('[data-sa-q]') && $('sa-rows')) saRenderRows();
+    else B.innerHTML = saListHtml();
     saKeepOut(keep);
 }
 
 const saBack = (act, txt) => `<button type="button" data-act="${act}" class="text-sm text-sky-300 font-bold py-1"><i class="fa-solid fa-chevron-left mr-1"></i>${txt}</button>`;
 
-/* ---- Kundeliste / pipeline ---- */
+/* ---- I dag ---- */
+function saPrimary(a) {
+    const r = a.reasons || [];
+    if (r.includes('mail')) return ['sa-today-reply', 'Svar', 'fa-reply'];
+    if (r.includes('ny') || r.includes('inaktiv')) return ['sa-today-mail', 'Send hjælpemail', 'fa-paper-plane', 'help'];
+    if (r.includes('proeve')) return ['sa-today-mail', 'Send påmindelse', 'fa-paper-plane', 'trial'];
+    if (r.includes('loft')) return ['sa-today-mail', 'Foreslå opgradering', 'fa-arrow-up-right-dots', 'upsell'];
+    return ['sa-acct', 'Åbn kunden', 'fa-folder-open'];
+}
+function saTodayHtml() {
+    const c = S.sa.counts || {}, T = S.sa.today || [];
+    const tile = (n, t, cls, k) => `<button type="button" data-act="sa-kpi" data-k="${k}" class="bg-gray-900/80 border border-gray-800 rounded-xl p-3 text-left active:scale-[.98]"><p class="text-2xl font-black ${cls}">${Number(n) || 0}</p><p class="text-[10px] text-gray-400 font-bold leading-tight mt-0.5">${t}</p></button>`;
+    return `<div class="grid grid-cols-4 gap-2">${tile(c.new_30d, 'Nye<br>30 dage', 'text-white', 'nye')}${tile(c.active, 'Aktive<br>kunder', 'text-emerald-400', 'groen')}${tile(c.at_risk, 'I fare', 'text-red-400', 'roed')}${tile(c.churned_30d, 'Sprunget<br>fra', 'text-gray-300', 'inaktiv')}</div>` +
+        `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-new-lead" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-user-plus mr-1.5"></i>Nyt lead</button><button type="button" data-act="sa-new" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-building-circle-check mr-1.5"></i>Ny kunde</button></div>` +
+        (T.length ? `<h3 class="font-black text-white text-sm pt-1">${T.length >= 40 ? '40+' : T.length} ting kræver dig</h3>` : '') +
+        `<div class="space-y-2">` + (T.map(a => {
+            const sig = saSignals(a), pr = saPrimary(a);
+            return `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 space-y-2.5">` +
+                `<button type="button" data-act="sa-acct" data-id="${a.id}" class="w-full text-left"><div class="flex justify-between items-center gap-2"><span class="flex items-center gap-2 min-w-0">${saDot(a.health)}<span class="font-black text-white text-sm truncate">${esc(a.name)}</span></span>${saChip(SA_STAGE_CLS[a.stage] || 'bg-gray-800 text-gray-300', saStage(a.stage))}</div>` +
+                `<div class="flex flex-wrap gap-1.5 mt-2">${sig.map(x => saChip(x[2], x[1])).join('')}</div></button>` +
+                `<div class="grid grid-cols-[1fr_auto] gap-2"><button type="button" data-act="${pr[0]}" data-id="${a.id}" data-kind="${pr[3] || ''}" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm active:scale-95 transition"><i class="fa-solid ${pr[2]} mr-1.5"></i>${pr[1]}</button>` +
+                `<button type="button" data-act="sa-snooze" data-id="${a.id}" class="bg-gray-800 border border-gray-700 text-gray-200 px-4 rounded-xl font-bold text-xs">Udsæt 3 dage</button></div></div>`;
+        }).join('') || `<div class="text-center py-10"><p class="text-3xl mb-2">✓</p><p class="text-sm font-black text-white">Alt er under kontrol</p><p class="text-xs text-gray-400 mt-1">Ingen kunder kræver handling lige nu.</p></div>`) + `</div>`;
+}
+
+/* ---- Kundeliste ---- */
+function saRowHtml(a) {
+    const sig = saSignals(a);
+    return `<button type="button" data-act="sa-acct" data-id="${a.id}" class="w-full text-left bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 active:scale-[.99]">` +
+        `<div class="flex justify-between items-start gap-2"><span class="flex items-center gap-2 min-w-0">${saDot(a.health)}<span class="font-black text-white text-sm truncate">${esc(a.name)}</span></span>${saChip(SA_STAGE_CLS[a.stage] || 'bg-gray-800 text-gray-300', saStage(a.stage))}</div>` +
+        `<p class="text-[11px] text-gray-400 mt-1">${a.company_id ? `${a.n_interne}/${a.max_interne} brugere · ${a.n_gaest}/${a.max_gaest} gæster · aktiv ${saAgo(a.last_active)}` : 'Lead – ikke oprettet som kunde' + (a.contact_name ? ' · ' + esc(a.contact_name) : '')}</p>` +
+        (sig.length ? `<div class="flex flex-wrap gap-1.5 mt-2">${sig.map(s => saChip(s[2], s[1])).join('')}</div>` : '') + `</button>`;
+}
+function saRowsHtml() {
+    const pg = S.sa.pg, more = pg.total - pg.rows.length;
+    return (pg.rows.map(saRowHtml).join('') || '<p class="text-xs text-gray-500 py-6 text-center">Ingen her.</p>') +
+        (more > 0 ? `<button type="button" data-act="sa-more" class="w-full bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm">Vis flere (${more})</button>` : '');
+}
+function saChipsHtml() {
+    const c = S.sa.counts || {}, st = c.stages || {}, hl = c.health || {}, f = S.sa.filter, h = S.sa.health;
+    const stageChips = [['alle', 'Alle'], ...SA_STAGES.filter(s => s[0] !== 'inaktiv' || st.inaktiv)].map(([k, t]) =>
+        `<button type="button" data-act="sa-filter" data-f="${k}" class="shrink-0 px-3.5 py-2.5 rounded-xl text-xs font-black ${f === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}">${t} <span class="opacity-70">${k === 'alle' ? (c.total || 0) : (st[k] || 0)}</span></button>`).join('');
+    const hChips = ['roed', 'gul', 'groen'].map(k =>
+        `<button type="button" data-act="sa-health" data-h="${k}" class="shrink-0 px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 ${h === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}"><span class="w-2.5 h-2.5 rounded-full ${SA_HEALTH[k][0]}"></span>${SA_HEALTH[k][1]} <span class="opacity-70">${hl[k] || 0}</span></button>`).join('');
+    return `<div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">${stageChips}</div><div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">${hChips}</div>`;
+}
+function saRenderRows() { const r = $('sa-rows'), c = $('sa-chips'); if (r) r.innerHTML = saRowsHtml(); if (c) c.innerHTML = saChipsHtml(); }
 function saListHtml() {
-    const L = S.sa.list, f = S.sa.filter;
-    const need = a => saSignals(a).length > 0;
-    const cnt = k => k === 'alle' ? L.length : k === 'handling' ? L.filter(need).length : L.filter(a => a.stage === k).length;
-    const chips = [['alle', 'Alle'], ['handling', 'Kræver handling'], ...SA_STAGES.filter(s => s[0] !== 'inaktiv' || L.some(a => a.stage === 'inaktiv'))].map(([k, t]) =>
-        `<button type="button" data-act="sa-filter" data-f="${k}" class="shrink-0 px-3.5 py-2.5 rounded-xl text-xs font-black ${f === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}">${t} <span class="opacity-70">${cnt(k)}</span></button>`).join('');
-    let rows = L.filter(a => f === 'alle' ? true : f === 'handling' ? need(a) : a.stage === f);
-    rows = rows.slice().sort((a, b) => (need(b) ? 1 : 0) - (need(a) ? 1 : 0) || String(a.name).localeCompare(String(b.name), 'da'));
-    return `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-new-lead" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-user-plus mr-1.5"></i>Nyt lead</button><button type="button" data-act="sa-new" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Ny kunde</button></div>` +
-        `<div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">${chips}</div>` +
-        `<div class="space-y-2">` + (rows.map(a => {
-            const sig = saSignals(a);
-            return `<button type="button" data-act="sa-acct" data-id="${a.id}" class="w-full text-left bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 active:scale-[.99]">` +
-                `<div class="flex justify-between items-start gap-2"><span class="font-black text-white text-sm truncate">${esc(a.name)}</span>${saChip(SA_STAGE_CLS[a.stage] || 'bg-gray-800 text-gray-300', saStage(a.stage))}</div>` +
-                `<p class="text-[11px] text-gray-400 mt-1">${a.company_id ? `${a.n_interne}/${a.max_interne} brugere · ${a.n_gaest}/${a.max_gaest} gæster · aktiv ${saAgo(a.last_active)}` : 'Lead – ikke oprettet som kunde' + (a.contact_name ? ' · ' + esc(a.contact_name) : '')}</p>` +
-                (sig.length ? `<div class="flex flex-wrap gap-1.5 mt-2">${sig.map(s => saChip(s[2], s[1])).join('')}</div>` : '') + `</button>`;
-        }).join('') || '<p class="text-xs text-gray-500 py-6 text-center">Ingen her.</p>') + `</div>`;
+    return `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-new-lead" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-user-plus mr-1.5"></i>Nyt lead</button><button type="button" data-act="sa-new" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-building-circle-check mr-1.5"></i>Ny kunde</button></div>` +
+        `<div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i><input data-sa-q type="search" autocomplete="off" maxlength="80" placeholder="Søg navn, CVR eller e-mail" value="${esc(S.sa.q)}" class="inp !pl-10"></div>` +
+        `<div id="sa-chips" class="space-y-2">${saChipsHtml()}</div><div id="sa-rows" class="space-y-2">${saRowsHtml()}</div>`;
 }
 
 /* ---- Indbakke ---- */
@@ -2869,7 +2941,7 @@ function saComposeHtml() {
         `<div><label class="lbl">Til</label><input data-sa-f="to" type="email" class="inp" maxlength="320" value="${esc(c.to || (contacts[0] && contacts[0].email) || '')}" placeholder="navn@firma.dk"></div>` +
         (contacts.length > 1 ? `<div class="flex flex-wrap gap-1.5">${contacts.map(k => `<button type="button" data-act="sa-pick-to" data-email="${esc(k.email)}" class="text-[11px] font-bold bg-gray-800 text-gray-200 rounded-lg px-2.5 py-1.5">${esc(k.name)}</button>`).join('')}</div>` : '') +
         `<div><label class="lbl">Emne</label><input data-sa-f="subject" class="inp" maxlength="300" value="${esc(c.subject || '')}"></div>` +
-        `<div><label class="lbl">Besked</label><textarea data-sa-f="message" rows="9" maxlength="20000" class="inp"></textarea></div>` +
+        `<div><label class="lbl">Besked</label><textarea data-sa-f="message" rows="9" maxlength="20000" class="inp">${esc(c.message || '')}</textarea></div>` +
         `<button type="button" data-act="sa-send" class="w-full brand-orange text-white py-4 rounded-xl font-black"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send</button>` +
         `<p class="text-[11px] text-gray-500">Svar kommer tilbage i din indbakke her. Hvis modtageren svarer "afmeld", får hun ikke flere mails.</p>`;
 }
@@ -3060,13 +3132,24 @@ async function saAct(act, el) {
         case 'sa-open': return saEnter();
         case 'sa-close': return saExit();
         case 'sa-tab': S.sa.tab = d.tab; S.sa.view = 'list'; return saRender();
-        case 'sa-filter': S.sa.filter = d.f; return saRender();
+        case 'sa-filter': S.sa.filter = d.f; saRenderRows(); return saPageRefresh();
+        case 'sa-health': S.sa.health = S.sa.health === d.h ? '' : d.h; saRenderRows(); return saPageRefresh();
+        case 'sa-more': try { await saFetchPage(true); } catch (e) { return fail(e); } return saRenderRows();
+        case 'sa-kpi': S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.q = ''; S.sa.filter = d.k === 'inaktiv' ? 'inaktiv' : 'alle'; S.sa.health = ['groen', 'roed'].includes(d.k) ? d.k : ''; saRender(); return saPageRefresh();
+        case 'sa-snooze': { const r = await sb.from('crm_accounts').update({ snoozed_until: fmtDate(addDays(new Date(), 3)) }).eq('id', d.id); if (r.error) return fail(r.error); toast('Udsat i 3 dage.', 'ok'); return saReload(); }
+        case 'sa-today-reply': { const th = S.sa.threads.find(x => x.account_id === d.id && x.unread) || S.sa.threads.find(x => x.account_id === d.id); if (th) return saOpenThread(th.id); return saOpenAcct(d.id); }
+        case 'sa-today-mail': {
+            const a = S.sa.list.find(x => x.id === d.id); if (!a) return; const t = saFill(SA_TPL[d.kind] || SA_TPL.help, a);
+            S.sa.sel = a.id; S.sa.acct = null; await saLoadAcct();
+            S.sa.compose = { account: a.id, to: a.contact_email || '', subject: t.subject, message: t.body };
+            return saGo('compose');
+        }
         case 'sa-new': return saGo('new');
         case 'sa-new-lead': return saGo('lead');
         case 'sa-back': S.sa.view = S.sa.fromLead ? 'acct' : 'list'; S.sa.fromLead = null; S.sa.selThread = null; return saRender();
         case 'sa-acct-back': S.sa.view = 'acct'; return saRender();
         case 'sa-acct': return saOpenAcct(d.id);
-        case 'sa-cust': saGo('cust'); return saLoadLogo();
+        case 'sa-cust': { const a = S.sa.list.find(x => x.id === S.sa.sel); if (a) await saLoadCompany(a.company_id); saGo('cust'); return saLoadLogo(); }
         case 'sa-logo-del': return saLogoDel();
         case 'sa-create': return saCreate();
         case 'sa-save': return saSave();
