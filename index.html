@@ -202,6 +202,21 @@
         </div>
     </div>
 
+    <!-- SUPERADMIN-KONTROLCENTER -->
+    <div id="sa-screen" class="hidden fixed inset-0 bg-[#292524] z-50 overflow-y-auto">
+        <div class="max-w-3xl mx-auto p-4 pb-24 space-y-3">
+            <div class="flex items-center justify-between gap-2 pt-1">
+                <h1 class="font-black text-lg text-white flex items-center"><i class="fa-solid fa-crown text-violet-400 mr-2"></i>Kontrolcenter <span id="sa-live" class="ml-2 w-2.5 h-2.5 rounded-full bg-amber-500"></span></h1>
+                <div class="flex gap-2">
+                    <button id="sa-close-btn" type="button" data-act="sa-close" class="hidden bg-gray-800 text-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold">Til appen</button>
+                    <button type="button" data-act="sa-logout" class="bg-red-950/40 text-red-300 px-3.5 py-2 rounded-xl text-xs font-bold"><i class="fa-solid fa-right-from-bracket mr-1"></i>Log ud</button>
+                </div>
+            </div>
+            <div id="sa-tabs" class="flex gap-2"></div>
+            <div id="sa-main" class="space-y-3"></div>
+        </div>
+    </div>
+
     <!-- FØRSTE GANG: OPRET VIRKSOMHED -->
     <div id="onboard-screen" class="hidden fixed inset-0 bg-[#292524] z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-card w-full max-w-md rounded-2xl border border-card p-6 space-y-5 shadow-2xl">
@@ -904,15 +919,6 @@
         </div>
     </div>
 
-    <div id="modal-sa" class="hidden fixed inset-0 bg-stone-900/90 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-card w-full max-w-2xl rounded-t-2xl sm:rounded-2xl border border-card p-5 space-y-3 max-h-[94vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
-                <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-crown text-violet-400 mr-2"></i><span id="sa-title">Superadmin</span></h3>
-                <button onclick="closeModal('modal-sa')" class="text-gray-400 hover:text-white p-1" aria-label="Luk"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <div id="sa-body" class="space-y-3"></div>
-        </div>
-    </div>
     <div id="modal-emp-new" class="hidden fixed inset-0 bg-stone-900/85 backdrop-blur-sm z-[56] flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-card p-5 space-y-3 max-h-[94vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-gray-800 pb-3">
@@ -1227,6 +1233,7 @@ function showScreen(which) {
     if (which === 'landing') { if (!LP.timers.length) lpDemoStart(LP.mode || 'haandvaerk'); } else if (typeof lpDemoStop === 'function') lpDemoStop();
     show('onboard-screen', which === 'onboard');
     show('app-root', which === 'app');
+    show('sa-screen', which === 'sa');
 }
 function authMsg(text, kind) {
     const el = $('auth-msg');
@@ -1312,6 +1319,7 @@ function resetApp() {
         urls: {}, range: { time: null, shifts: null }, weekOffset: 0, shiftOffset: 0, live: 'wait'
     });
     if (typeof resetUg === 'function') resetUg();
+    if (typeof saStop === 'function') { saStop(); S.sa.list = []; S.sa.companies = []; S.sa.threads = []; S.sa.acct = null; S.sa.msgs = []; S.sa.view = 'list'; }
 }
 
 async function loadMyProfile(uid) {
@@ -1379,14 +1387,15 @@ async function doOnboard(btn) {
 
 async function handleSession(session) {
     if (!session) { resetApp(); showScreen('landing'); return; }
-    if (S.started && S.profile && S.profile.id === session.user.id) { S.session = session; return; }
+    if ((S.started || S.saMode) && S.profile && S.profile.id === session.user.id) { S.session = session; return; }
     if (S.resolving) return;
     S.resolving = true;
     try {
         S.session = session;
         showScreen('boot');
         const ok = await resolveProfile(session.user);
-        if (ok) { await startApp(); showScreen('app'); }
+        if (ok && S.profile.is_superadmin === true && !S.profile.company_id) await saEnter();     // ren superadmin: direkte i Kontrolcenter
+        else if (ok) { await startApp(); showScreen('app'); }
     } catch (e) {
         fail(e);
         showScreen('auth');
@@ -2634,75 +2643,390 @@ async function empCreate() {
         renderTeam(); scheduleRender();
     } finally { btn.disabled = false; }
 }
-/* ---- superadmin: kunder, lofter, moduler, labels (kun synlig for profiler med is_superadmin) ---- */
+/* ---- Superadmin-Kontrolcenter: kunder (CRM), indbakke, kundeindstillinger (kun profiler med is_superadmin) ---- */
 const SA_MODULES = [['ks', 'KS / kvalitetssikring'], ['safety', 'Sikkerhed (grøn/gul/rød)'], ['extra', 'Ekstraarbejde'], ['materials', 'Materialer'], ['time', 'Timer & stempling'], ['tasks', 'Opgaver'], ['plan', 'Planlægning'], ['shifts', 'Vagtplan (butik)']];
 const SA_LABELS = [['sag', 'Sag (ental)'], ['sager', 'Sager (flertal)'], ['ks', 'KS'], ['opgaver', 'Opgaver']];
-S.sa = { list: [], sel: null, view: 'list' };
-async function saOpen() {
-    if (!S.profile || S.profile.is_superadmin !== true) return;
-    S.sa.view = 'list'; S.sa.sel = null; $('sa-body').innerHTML = '<p class="text-xs text-gray-500">Henter kunder…</p>'; show('modal-sa', true);
-    await saReload();
+const SA_STAGES = [['lead', 'Lead'], ['kontaktet', 'Kontaktet'], ['tilbud', 'Tilbud'], ['proeve', 'Prøve'], ['aktiv', 'Aktiv'], ['inaktiv', 'Inaktiv'], ['tabt', 'Tabt']];
+const SA_SEG = [['', 'Ikke valgt'], ['enkeltmand', 'Enkeltmand'], ['entreprenor', 'Entreprenør'], ['offentlig', 'Offentlig'], ['butik', 'Butik / restaurant'], ['andet', 'Andet']];
+const SA_MAIL_ST = { queued: 'I kø', sent: 'Sendt', delivered: 'Leveret', opened: 'Åbnet', bounced: 'Kunne ikke leveres', complained: 'Markeret som spam', failed: 'Fejlede', received: 'Modtaget' };
+const SA_STAGE_CLS = { lead: 'bg-gray-800 text-gray-200', kontaktet: 'bg-sky-950 text-sky-300', tilbud: 'bg-violet-950 text-violet-300', proeve: 'bg-amber-950 text-amber-300', aktiv: 'bg-emerald-950 text-emerald-300', inaktiv: 'bg-red-950 text-red-300', tabt: 'bg-stone-800 text-stone-400' };
+S.sa = { fromLead: null, tab: 'kunder', view: 'list', filter: 'alle', list: [], companies: [], threads: [], sel: null, selThread: null, acct: null, msgs: [], keep: null, ch: null, busy: false };
+const saStage = k => (SA_STAGES.find(x => x[0] === k) || [k, k])[1];
+const saDT = t => t ? new Date(t).toLocaleString('da-DK', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+function saAgo(t) {
+    if (!t) return 'aldrig';
+    const d = Math.floor((Date.now() - new Date(t).getTime()) / 86400000);
+    return d <= 0 ? 'i dag' : d === 1 ? 'i går' : d + ' dage siden';
 }
-async function saReload() {
-    const r = await sb.rpc('sa_list_companies');
-    if (r.error) { $('sa-body').innerHTML = `<p class="text-xs text-red-300">${esc(r.error.message || 'Fejl')}</p>`; return; }
-    S.sa.list = r.data || []; saRender();
-}
-function saRender() {
-    const B = $('sa-body'), v = S.sa.view;
-    $('sa-title').textContent = v === 'new' ? 'Ny kunde' : v === 'edit' ? ((S.sa.list.find(c => c.id === S.sa.sel) || {}).name || 'Kunde') : 'Superadmin – kunder';
-    const mods = m => SA_MODULES.map(([k, t]) => `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 cursor-pointer"><span class="text-sm font-bold text-white">${t}</span><input type="checkbox" data-sa-mod="${k}" ${(m || {})[k] === false ? '' : 'checked'} class="w-6 h-6 accent-orange-500"></label>`).join('');
-    const labs = l => SA_LABELS.map(([k, t]) => `<div><label class="lbl">${t}</label><input data-sa-lbl="${k}" maxlength="40" class="inp" value="${esc((l || {})[k] || '')}" placeholder="Standard"></div>`).join('');
-    if (v === 'list') {
-        B.innerHTML = `<button type="button" data-act="sa-new" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Ny kunde</button>` +
-            `<div class="space-y-2">` + (S.sa.list.map(c => `<button type="button" data-act="sa-edit" data-id="${c.id}" class="w-full text-left bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 active:scale-[.99]"><div class="flex justify-between gap-2"><span class="font-black text-white text-sm truncate">${esc(c.name)}</span><span class="text-[10px] text-gray-400 shrink-0">${c.industry === 'butik' ? 'Butik' : 'Håndværk'}</span></div><p class="text-[11px] text-gray-400 mt-0.5">${c.n_interne}/${c.max_interne} brugere · ${c.n_gaest}/${c.max_gaest} gæster · ${(c.admins || []).map(a => esc(a.name)).join(', ') || 'ingen admin'}</p></button>`).join('') || '<p class="text-xs text-gray-500">Ingen kunder.</p>') + `</div>`;
-    } else if (v === 'new') {
-        B.innerHTML = `<button type="button" data-act="sa-back" class="text-xs text-sky-300 font-bold"><i class="fa-solid fa-chevron-left mr-1"></i>Tilbage</button>` +
-            `<div><label class="lbl">Virksomhed / organisation</label><input data-sa-f="name" class="inp" maxlength="120" placeholder="F.eks. Vejdirektoratet"></div>` +
-            `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Branche</label><select data-sa-f="industry" class="inp"><option value="haandvaerk">Håndværk &amp; Byggeri</option><option value="butik">Butik &amp; Restaurant</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="lbl">Brugere</label><input data-sa-f="max_int" type="number" min="1" class="inp" value="25"></div><div><label class="lbl">Gæster</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="10"></div></div></div>` +
-            `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Første admin – navn</label><input data-sa-f="admin_name" class="inp" maxlength="120"></div><div><label class="lbl">Første admin – e-mail</label><input data-sa-f="admin_email" type="email" class="inp"></div></div>` +
-            `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${mods({})}</div><span class="lbl">Egne navne (valgfrit)</span><div class="grid grid-cols-2 gap-2">${labs({})}</div>` +
-            `<button type="button" data-act="sa-create" class="w-full brand-orange text-white py-4 rounded-xl font-black">Opret kunde og send invitation</button>`;
-    } else {
-        const c = S.sa.list.find(x => x.id === S.sa.sel); if (!c) { S.sa.view = 'list'; return saRender(); }
-        B.innerHTML = `<button type="button" data-act="sa-back" class="text-xs text-sky-300 font-bold"><i class="fa-solid fa-chevron-left mr-1"></i>Alle kunder</button>` +
-            `<div><label class="lbl">Navn</label><input data-sa-f="name" class="inp" maxlength="120" value="${esc(c.name)}"></div>` +
-            `<div class="grid grid-cols-3 gap-2"><div><label class="lbl">Brugere (nu ${c.n_interne})</label><input data-sa-f="max_int" type="number" min="0" class="inp" value="${c.max_interne}"></div><div><label class="lbl">Gæster (nu ${c.n_gaest})</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="${c.max_gaest}"></div><div><label class="lbl">Prøve til</label><input data-sa-f="trial" type="date" class="inp" value="${esc(String(c.trial_ends_at || '').slice(0, 10))}"></div></div>` +
-            `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${mods(c.modules)}</div><span class="lbl">Egne navne (tomt = standard)</span><div class="grid grid-cols-2 gap-2">${labs(c.labels)}</div>` +
-            `<button type="button" data-act="sa-save" class="w-full brand-orange text-white py-4 rounded-xl font-black">Gem</button>` +
-            `<div class="border-t border-gray-800 pt-3 space-y-2"><span class="lbl">Admins</span>` + ((c.admins || []).map(a => `<p class="text-xs text-gray-300">${esc(a.name)} <span class="text-gray-500">${esc(a.email || '')}${a.draft ? ' · afventer' : ''}</span></p>`).join('') || '<p class="text-xs text-gray-500">Ingen endnu.</p>') +
-            `<div class="grid grid-cols-2 gap-2"><input data-sa-f="inv_name" class="inp" maxlength="120" placeholder="Navn"><input data-sa-f="inv_email" type="email" class="inp" placeholder="E-mail"></div><button type="button" data-act="sa-invite" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-sm font-bold">Inviter admin</button></div>`;
+// Signaler pr. kunde (kun tal og tidspunkter – aldrig kundens indhold)
+function saSignals(a) {
+    const s = [];
+    if (a.company_id) {
+        if (a.max_interne > 0 && a.n_interne / a.max_interne >= 0.8) s.push(['loft', 'Tæt på brugerloft', 'bg-amber-950 text-amber-300']);
+        const old = Date.now() - new Date(a.created_at).getTime() > 3 * 86400000;
+        if (['aktiv', 'proeve'].includes(a.stage) && old && (!a.last_active || Date.now() - new Date(a.last_active).getTime() > 14 * 86400000)) s.push(['inaktiv', 'Ingen aktivitet i 14 dage', 'bg-red-950 text-red-300']);
+        if (a.stage === 'proeve' && a.trial_ends_at) {
+            const left = Math.ceil((new Date(a.trial_ends_at).getTime() - Date.now()) / 86400000);
+            if (left <= 3) s.push(['proeve', left < 0 ? 'Prøven er udløbet' : 'Prøven udløber om ' + left + ' d.', 'bg-orange-950 text-orange-300']);
+        }
     }
+    if (a.next_followup && a.next_followup <= fmtDate(new Date())) s.push(['opf', 'Opfølgning i dag', 'bg-sky-950 text-sky-300']);
+    if (a.unread > 0) s.push(['mail', a.unread + ' ulæst' + (a.unread > 1 ? 'e' : ''), 'bg-violet-950 text-violet-300']);
+    return s;
 }
+const saChip = (cls, txt) => `<span class="text-[10px] font-black px-2 py-0.5 rounded-full ${cls}">${esc(txt)}</span>`;
+
+async function saEnter() {
+    if (!S.profile || S.profile.is_superadmin !== true) return;
+    S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.sel = null; S.sa.selThread = null;
+    S.saMode = true; showScreen('sa'); saRender();
+    await saReload();
+    saSubscribe();
+}
+const saOpen = saEnter;
+function saExit() { if (S.started) showScreen('app'); }
+async function saReload() {
+    const [o, c, t] = await Promise.all([sb.rpc('sa_crm_overview'), sb.rpc('sa_list_companies'), sb.from('mail_threads').select('*').order('last_at', { ascending: false }).limit(300)]);
+    if (o.error) { $('sa-main').innerHTML = `<p class="text-xs text-red-300">${esc(o.error.message || 'Fejl')}</p>`; return; }
+    S.sa.list = o.data || []; S.sa.companies = c.data || []; S.sa.threads = t.data || [];
+    if (S.sa.view === 'acct' && S.sa.sel) await saLoadAcct(); else if (S.sa.view === 'thread' && S.sa.selThread) await saLoadThread(true);
+    saRender();
+}
+let saTimer;
+function saRefresh() { clearTimeout(saTimer); saTimer = setTimeout(() => { if (S.saMode) saReload().catch(console.error); }, 350); }
+function saSubscribe() {
+    if (S.sa.ch) return;
+    const ch = sb.channel('unisjak-sa');
+    ['crm_accounts', 'crm_events', 'mail_threads', 'mail_messages'].forEach(table => ch.on('postgres_changes', { event: '*', schema: 'public', table }, saRefresh));
+    ch.subscribe(st => { const d = $('sa-live'); if (d) d.className = 'w-2.5 h-2.5 rounded-full ' + (st === 'SUBSCRIBED' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'); });
+    S.sa.ch = ch;
+}
+function saStop() { if (S.sa.ch) { try { sb.removeChannel(S.sa.ch); } catch (e) {} S.sa.ch = null; } S.saMode = false; }
+
+async function saLoadAcct() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a) { S.sa.view = 'list'; return; }
+    const [k, e, t, act] = await Promise.all([
+        sb.from('crm_contacts').select('*').eq('account_id', a.id).order('created_at'),
+        sb.from('crm_events').select('*').eq('account_id', a.id).order('created_at', { ascending: false }).limit(100),
+        sb.from('mail_threads').select('*').eq('account_id', a.id).order('last_at', { ascending: false }),
+        a.company_id ? sb.rpc('sa_company_activity', { p_company: a.company_id }) : Promise.resolve({ data: null })
+    ]);
+    S.sa.acct = { contacts: k.data || [], events: e.data || [], threads: t.data || [], act: act.data || null };
+}
+async function saLoadThread(quiet) {
+    const th = S.sa.threads.find(x => x.id === S.sa.selThread); if (!th) { S.sa.view = 'list'; return; }
+    const r = await sb.from('mail_messages').select('*').eq('thread_id', th.id).order('created_at');
+    S.sa.msgs = r.data || [];
+    if (th.unread && !quiet) { th.unread = false; await sb.from('mail_threads').update({ unread: false }).eq('id', th.id); }
+    else if (th.unread && quiet && S.sa.view === 'thread') { th.unread = false; sb.from('mail_threads').update({ unread: false }).eq('id', th.id).then(() => {}); }
+}
+
+function saKeepIn() { const m = {}; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { m[e.dataset.saF] = e.value; }); return { view: S.sa.view, m }; }
+function saKeepOut(k) { if (!k || k.view !== S.sa.view) return; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { if (k.m[e.dataset.saF] != null && !e.value) e.value = k.m[e.dataset.saF]; }); }
+
+function saRender() {
+    const B = $('sa-main'); if (!B) return;
+    const keep = saKeepIn(), v = S.sa.view;
+    const unread = S.sa.threads.filter(t => t.unread).length;
+    $('sa-tabs').innerHTML = [['kunder', 'Kunder', 'fa-building'], ['indbakke', 'Indbakke', 'fa-inbox']].map(([k, t, ic]) =>
+        `<button type="button" data-act="sa-tab" data-tab="${k}" class="flex-1 py-3 rounded-xl font-black text-sm ${S.sa.tab === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}"><i class="fa-solid ${ic} mr-1.5"></i>${t}${k === 'indbakke' && unread ? ` <span class="ml-1 bg-white text-orange-600 rounded-full px-1.5 text-[11px]">${unread}</span>` : ''}</button>`).join('');
+    $('sa-close-btn').classList.toggle('hidden', !S.started);
+    if (v === 'new') B.innerHTML = saNewHtml();
+    else if (v === 'lead') B.innerHTML = saLeadHtml();
+    else if (v === 'acct') B.innerHTML = saAcctHtml();
+    else if (v === 'cust') B.innerHTML = saCustHtml();
+    else if (v === 'compose') B.innerHTML = saComposeHtml();
+    else if (v === 'thread') B.innerHTML = saThreadHtml();
+    else B.innerHTML = S.sa.tab === 'indbakke' ? saInboxHtml() : saListHtml();
+    saKeepOut(keep);
+}
+
+const saBack = (act, txt) => `<button type="button" data-act="${act}" class="text-sm text-sky-300 font-bold py-1"><i class="fa-solid fa-chevron-left mr-1"></i>${txt}</button>`;
+
+/* ---- Kundeliste / pipeline ---- */
+function saListHtml() {
+    const L = S.sa.list, f = S.sa.filter;
+    const need = a => saSignals(a).length > 0;
+    const cnt = k => k === 'alle' ? L.length : k === 'handling' ? L.filter(need).length : L.filter(a => a.stage === k).length;
+    const chips = [['alle', 'Alle'], ['handling', 'Kræver handling'], ...SA_STAGES.filter(s => s[0] !== 'inaktiv' || L.some(a => a.stage === 'inaktiv'))].map(([k, t]) =>
+        `<button type="button" data-act="sa-filter" data-f="${k}" class="shrink-0 px-3.5 py-2.5 rounded-xl text-xs font-black ${f === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}">${t} <span class="opacity-70">${cnt(k)}</span></button>`).join('');
+    let rows = L.filter(a => f === 'alle' ? true : f === 'handling' ? need(a) : a.stage === f);
+    rows = rows.slice().sort((a, b) => (need(b) ? 1 : 0) - (need(a) ? 1 : 0) || String(a.name).localeCompare(String(b.name), 'da'));
+    return `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-new-lead" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-user-plus mr-1.5"></i>Nyt lead</button><button type="button" data-act="sa-new" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Ny kunde</button></div>` +
+        `<div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">${chips}</div>` +
+        `<div class="space-y-2">` + (rows.map(a => {
+            const sig = saSignals(a);
+            return `<button type="button" data-act="sa-acct" data-id="${a.id}" class="w-full text-left bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 active:scale-[.99]">` +
+                `<div class="flex justify-between items-start gap-2"><span class="font-black text-white text-sm truncate">${esc(a.name)}</span>${saChip(SA_STAGE_CLS[a.stage] || 'bg-gray-800 text-gray-300', saStage(a.stage))}</div>` +
+                `<p class="text-[11px] text-gray-400 mt-1">${a.company_id ? `${a.n_interne}/${a.max_interne} brugere · ${a.n_gaest}/${a.max_gaest} gæster · aktiv ${saAgo(a.last_active)}` : 'Lead – ikke oprettet som kunde' + (a.contact_name ? ' · ' + esc(a.contact_name) : '')}</p>` +
+                (sig.length ? `<div class="flex flex-wrap gap-1.5 mt-2">${sig.map(s => saChip(s[2], s[1])).join('')}</div>` : '') + `</button>`;
+        }).join('') || '<p class="text-xs text-gray-500 py-6 text-center">Ingen her.</p>') + `</div>`;
+}
+
+/* ---- Indbakke ---- */
+function saInboxHtml() {
+    const T = S.sa.threads;
+    return `<button type="button" data-act="sa-compose" data-acct="" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-pen mr-1.5"></i>Ny mail</button>` +
+        `<div class="space-y-2">` + (T.map(t => {
+            const a = S.sa.list.find(x => x.id === t.account_id);
+            return `<button type="button" data-act="sa-thread" data-id="${t.id}" class="w-full text-left bg-gray-900/80 border ${t.unread ? 'border-violet-500/60' : 'border-gray-800'} rounded-xl p-3.5 active:scale-[.99]">` +
+                `<div class="flex justify-between gap-2"><span class="text-sm ${t.unread ? 'font-black text-white' : 'font-bold text-gray-200'} truncate">${esc(t.subject || '(uden emne)')}</span><span class="text-[10px] text-gray-500 shrink-0">${saDT(t.last_at)}</span></div>` +
+                `<p class="text-[11px] text-gray-400 mt-0.5 truncate">${t.last_dir === 'in' ? '<i class="fa-solid fa-arrow-down text-violet-400 mr-1"></i>' : '<i class="fa-solid fa-arrow-up text-gray-500 mr-1"></i>'}${esc(t.contact_email || '')}${a ? ' · ' + esc(a.name) : ' · <span class="text-amber-300">ikke knyttet til en kunde</span>'}</p></button>`;
+        }).join('') || '<p class="text-xs text-gray-500 py-6 text-center">Ingen mails endnu.</p>') + `</div>`;
+}
+
+/* ---- Tråd ---- */
+function saThreadHtml() {
+    const th = S.sa.threads.find(x => x.id === S.sa.selThread); if (!th) return '';
+    const msgs = S.sa.msgs.map(m => {
+        const mine = m.direction === 'out';
+        return `<div class="${mine ? 'ml-6 bg-orange-950/40 border-orange-900/50' : 'mr-6 bg-gray-900 border-gray-800'} border rounded-xl p-3"><div class="flex justify-between gap-2 text-[10px] text-gray-400 mb-1"><span class="truncate">${esc(m.from_email)}</span><span class="shrink-0">${saDT(m.created_at)}</span></div>` +
+            `<div class="text-sm text-gray-100 whitespace-pre-wrap break-words">${esc(m.body_text)}</div>` +
+            ((m.attachments || []).length ? `<p class="text-[11px] text-gray-400 mt-2"><i class="fa-solid fa-paperclip mr-1"></i>${m.attachments.map(a => esc(a.filename)).join(', ')} <span class="text-gray-600">(åbnes i Resend)</span></p>` : '') +
+            (mine ? `<p class="text-[10px] mt-1.5 ${['bounced', 'complained', 'failed'].includes(m.status) ? 'text-red-300 font-bold' : 'text-gray-400'}">${SA_MAIL_ST[m.status] || m.status}${m.error ? ' – ' + esc(m.error) : ''}</p>` : '') + `</div>`;
+    }).join('');
+    const acc = S.sa.list.find(x => x.id === th.account_id);
+    const link = th.account_id ? `<p class="text-xs text-gray-400">Kunde: <button type="button" data-act="sa-acct" data-id="${th.account_id}" class="text-sky-300 font-bold">${esc(acc ? acc.name : 'åbn')}</button></p>`
+        : `<div><label class="lbl">Knyt til kunde</label><select data-chg="sa-thread-link" class="inp"><option value="">Vælg…</option>${S.sa.list.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select></div>`;
+    return saBack('sa-back', 'Tilbage') + `<h3 class="font-black text-white text-base">${esc(th.subject || '(uden emne)')}</h3><p class="text-xs text-gray-400">${esc(th.contact_email || '')}</p>` + link +
+        `<div class="space-y-2">${msgs}</div>` +
+        `<div><label class="lbl">Svar</label><textarea data-sa-f="reply" rows="5" maxlength="20000" class="inp" placeholder="Skriv dit svar…"></textarea></div>` +
+        `<button type="button" data-act="sa-reply" class="w-full brand-orange text-white py-4 rounded-xl font-black">Send svar</button>`;
+}
+
+/* ---- Skriv mail ---- */
+function saComposeHtml() {
+    const c = S.sa.compose || {}, a = S.sa.list.find(x => x.id === c.account);
+    const contacts = (S.sa.acct && S.sa.acct.contacts || []).filter(k => k.email);
+    return saBack('sa-back', 'Tilbage') + `<h3 class="font-black text-white text-base">Ny mail${a ? ' til ' + esc(a.name) : ''}</h3>` +
+        `<div><label class="lbl">Til</label><input data-sa-f="to" type="email" class="inp" maxlength="320" value="${esc(c.to || (contacts[0] && contacts[0].email) || '')}" placeholder="navn@firma.dk"></div>` +
+        (contacts.length > 1 ? `<div class="flex flex-wrap gap-1.5">${contacts.map(k => `<button type="button" data-act="sa-pick-to" data-email="${esc(k.email)}" class="text-[11px] font-bold bg-gray-800 text-gray-200 rounded-lg px-2.5 py-1.5">${esc(k.name)}</button>`).join('')}</div>` : '') +
+        `<div><label class="lbl">Emne</label><input data-sa-f="subject" class="inp" maxlength="300" value="${esc(c.subject || '')}"></div>` +
+        `<div><label class="lbl">Besked</label><textarea data-sa-f="message" rows="9" maxlength="20000" class="inp"></textarea></div>` +
+        `<button type="button" data-act="sa-send" class="w-full brand-orange text-white py-4 rounded-xl font-black"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send</button>` +
+        `<p class="text-[11px] text-gray-500">Svar kommer tilbage i din indbakke her. Hvis modtageren svarer "afmeld", får hun ikke flere mails.</p>`;
+}
+
+/* ---- Kundekort ---- */
+function saAcctHtml() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel), X = S.sa.acct; if (!a) return '';
+    if (!X) return '<p class="text-xs text-gray-500">Henter…</p>';
+    const act = X.act, sig = saSignals(a);
+    const stageBtns = SA_STAGES.map(([k, t]) => `<button type="button" data-act="sa-stage" data-stage="${k}" class="px-3 py-2.5 rounded-xl text-xs font-black ${a.stage === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}">${t}</button>`).join('');
+    const bar = (n, m) => `<div class="h-2 rounded-full bg-gray-800 overflow-hidden"><div class="h-full ${m && n / m >= 0.8 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width:${m ? Math.min(100, Math.round(n / m * 100)) : 0}%"></div></div>`;
+    let h = saBack('sa-back', 'Alle kunder') +
+        `<div class="flex items-start justify-between gap-2"><h3 class="font-black text-white text-lg break-words">${esc(a.name)}</h3>${saChip(SA_STAGE_CLS[a.stage] || '', saStage(a.stage))}</div>` +
+        (sig.length ? `<div class="flex flex-wrap gap-1.5">${sig.map(s => saChip(s[2], s[1])).join('')}</div>` : '') +
+        `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-compose" data-acct="${a.id}" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-envelope mr-1.5"></i>Skriv mail</button>` +
+        (a.company_id ? `<button type="button" data-act="sa-cust" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-sliders mr-1.5"></i>Indstillinger</button>` : `<button type="button" data-act="sa-make-customer" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-building mr-1.5"></i>Opret som kunde</button>`) + `</div>` +
+        `<div><span class="lbl">Fase</span><div class="flex flex-wrap gap-1.5">${stageBtns}</div></div>`;
+    if (a.company_id) {
+        h += `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 space-y-2.5"><span class="lbl">Aktivitet</span>` +
+            `<div><div class="flex justify-between text-xs text-gray-300 mb-1"><span>Brugere</span><span>${a.n_interne}/${a.max_interne}</span></div>${bar(a.n_interne, a.max_interne)}</div>` +
+            `<div><div class="flex justify-between text-xs text-gray-300 mb-1"><span>Gæster</span><span>${a.n_gaest}/${a.max_gaest}</span></div>${bar(a.n_gaest, a.max_gaest)}</div>` +
+            `<p class="text-xs text-gray-300">Sidst aktiv: <b class="text-white">${saAgo(a.last_active)}</b>${act ? ` · første aktivitet ${act.first_activity ? saDT(act.first_activity) : '–'}` : ''}</p>` +
+            (act ? `<div class="grid grid-cols-3 gap-2 text-center">${[['Timer 7 d.', act.time_7d], ['KS 7 d.', act.ks_7d], ['Aktive brugere 30 d.', act.users_active_30d], ['Timer 30 d.', act.time_30d], ['KS 30 d.', act.ks_30d], ['KS i alt', act.ks_total]].map(([t, n]) => `<div class="bg-gray-950/60 rounded-lg py-2"><div class="text-base font-black text-white">${n}</div><div class="text-[10px] text-gray-400 leading-tight px-1">${t}</div></div>`).join('')}</div><p class="text-[10px] text-gray-500">Kun antal – du ser aldrig kundens indhold her.</p>` : '') + `</div>`;
+    }
+    h += `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Næste opfølgning</label><input data-sa-f="followup" type="date" class="inp" value="${esc(a.next_followup || '')}"></div>` +
+        `<div><label class="lbl">Type</label><select data-sa-f="segment" class="inp">${SA_SEG.map(([k, t]) => `<option value="${k}" ${(a.segment || '') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>` +
+        `<div><label class="lbl">CVR</label><input data-sa-f="cvr" class="inp" maxlength="8" inputmode="numeric" value="${esc(a.cvr || '')}" placeholder="8 cifre"></div>` +
+        `<div class="flex items-end"><button type="button" data-act="sa-acct-save" class="w-full bg-gray-800 border border-gray-700 text-white py-3 rounded-xl font-black text-sm">Gem</button></div></div>`;
+    // Kontakter
+    h += `<div class="space-y-2"><span class="lbl">Kontakter</span>` + (X.contacts.map(k => `<div class="flex items-center justify-between gap-2 bg-gray-900/80 border border-gray-800 rounded-xl px-3 py-2.5"><div class="min-w-0"><p class="text-sm font-bold text-white truncate">${esc(k.name)}${k.title ? ` <span class="text-gray-500 font-normal">· ${esc(k.title)}</span>` : ''}</p><p class="text-[11px] text-gray-400 truncate">${esc(k.email || '')}${k.phone ? ' · ' + esc(k.phone) : ''}</p></div><button type="button" data-act="sa-contact-del" data-id="${k.id}" class="text-gray-500 p-2" aria-label="Fjern"><i class="fa-solid fa-trash"></i></button></div>`).join('') || '<p class="text-xs text-gray-500">Ingen kontakter endnu – tilføj én, så svar kan kobles til kunden.</p>') +
+        `<div class="grid grid-cols-2 gap-2"><input data-sa-f="c_name" class="inp" maxlength="120" placeholder="Navn"><input data-sa-f="c_email" type="email" class="inp" maxlength="320" placeholder="E-mail"><input data-sa-f="c_phone" class="inp" maxlength="40" placeholder="Telefon"><input data-sa-f="c_title" class="inp" maxlength="80" placeholder="Stilling"></div>` +
+        `<button type="button" data-act="sa-contact-add" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-sm font-bold">Tilføj kontakt</button></div>`;
+    // Mail på kunden
+    h += `<div class="space-y-2"><span class="lbl">Mail</span>` + (X.threads.map(t => `<button type="button" data-act="sa-thread" data-id="${t.id}" class="w-full text-left bg-gray-900/80 border ${t.unread ? 'border-violet-500/60' : 'border-gray-800'} rounded-xl px-3 py-2.5"><div class="flex justify-between gap-2"><span class="text-sm ${t.unread ? 'font-black text-white' : 'font-bold text-gray-200'} truncate">${esc(t.subject || '(uden emne)')}</span><span class="text-[10px] text-gray-500 shrink-0">${saDT(t.last_at)}</span></div></button>`).join('') || '<p class="text-xs text-gray-500">Ingen mails endnu.</p>') + `</div>`;
+    // Tidslinje + noter
+    const ic = { note: 'fa-note-sticky text-amber-300', stage: 'fa-arrow-right-arrow-left text-sky-300', mail_in: 'fa-arrow-down text-violet-300', mail_out: 'fa-arrow-up text-gray-400', system: 'fa-gear text-gray-400', agent: 'fa-robot text-emerald-300' };
+    h += `<div class="space-y-2"><span class="lbl">Noter og historik</span><textarea data-sa-f="note" rows="3" maxlength="4000" class="inp" placeholder="Skriv en note (fx hvad I aftalte på telefonen)…"></textarea>` +
+        `<button type="button" data-act="sa-note-add" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-sm font-bold">Gem note</button>` +
+        X.events.map(e => `<div class="flex gap-2.5 items-start"><i class="fa-solid ${ic[e.kind] || 'fa-circle'} mt-1 text-xs w-4 text-center"></i><div class="min-w-0 flex-1"><p class="text-sm text-gray-100 whitespace-pre-wrap break-words">${esc(e.text)}</p><p class="text-[10px] text-gray-500">${saDT(e.created_at)}</p></div>${e.kind === 'note' ? `<button type="button" data-act="sa-note-del" data-id="${e.id}" class="text-gray-600 p-1" aria-label="Slet note"><i class="fa-solid fa-xmark"></i></button>` : ''}</div>`).join('') + `</div>`;
+    return h;
+}
+
+/* ---- Nyt lead / ny kunde ---- */
+function saLeadHtml() {
+    return saBack('sa-back', 'Tilbage') + `<h3 class="font-black text-white text-base">Nyt lead</h3>` +
+        `<div><label class="lbl">Virksomhed / organisation</label><input data-sa-f="name" class="inp" maxlength="160" placeholder="F.eks. Hedensted Kommune"></div>` +
+        `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Type</label><select data-sa-f="segment" class="inp">${SA_SEG.map(([k, t]) => `<option value="${k}">${t}</option>`).join('')}</select></div><div><label class="lbl">CVR (valgfri)</label><input data-sa-f="cvr" class="inp" maxlength="8" inputmode="numeric"></div></div>` +
+        `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Kontakt – navn</label><input data-sa-f="c_name" class="inp" maxlength="120"></div><div><label class="lbl">Kontakt – e-mail</label><input data-sa-f="c_email" type="email" class="inp" maxlength="320"></div></div>` +
+        `<div><label class="lbl">Hvor kom de fra? (valgfri)</label><input data-sa-f="source" class="inp" maxlength="120" placeholder="Fx anbefaling, messe, hjemmeside"></div>` +
+        `<button type="button" data-act="sa-lead-create" class="w-full brand-orange text-white py-4 rounded-xl font-black">Gem lead</button>`;
+}
+const saModsHtml = m => SA_MODULES.map(([k, t]) => `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 cursor-pointer"><span class="text-sm font-bold text-white">${t}</span><input type="checkbox" data-sa-mod="${k}" ${(m || {})[k] === false ? '' : 'checked'} class="w-6 h-6 accent-orange-500"></label>`).join('');
+const saLabsHtml = l => SA_LABELS.map(([k, t]) => `<div><label class="lbl">${t}</label><input data-sa-lbl="${k}" maxlength="40" class="inp" value="${esc((l || {})[k] || '')}" placeholder="Standard"></div>`).join('');
+function saNewHtml() {
+    return saBack('sa-back', 'Tilbage') + `<h3 class="font-black text-white text-base">Ny kunde</h3>` +
+        `<div><label class="lbl">Virksomhed / organisation</label><input data-sa-f="name" class="inp" maxlength="120" placeholder="F.eks. Vejdirektoratet"></div>` +
+        `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Branche</label><select data-sa-f="industry" class="inp"><option value="haandvaerk">Håndværk &amp; Byggeri</option><option value="butik">Butik &amp; Restaurant</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="lbl">Brugere</label><input data-sa-f="max_int" type="number" min="1" class="inp" value="25"></div><div><label class="lbl">Gæster</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="10"></div></div></div>` +
+        `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Første admin – navn</label><input data-sa-f="admin_name" class="inp" maxlength="120"></div><div><label class="lbl">Første admin – e-mail</label><input data-sa-f="admin_email" type="email" class="inp"></div></div>` +
+        `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${saModsHtml({})}</div><span class="lbl">Egne navne (valgfrit)</span><div class="grid grid-cols-2 gap-2">${saLabsHtml({})}</div>` +
+        `<button type="button" data-act="sa-create" class="w-full brand-orange text-white py-4 rounded-xl font-black">Opret kunde og send invitation</button>`;
+}
+function saCustHtml() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel), c = a && S.sa.companies.find(x => x.id === a.company_id); if (!c) return saBack('sa-back', 'Tilbage');
+    return saBack('sa-acct-back', a.name) + `<h3 class="font-black text-white text-base">Kundeindstillinger</h3>` +
+        `<div><label class="lbl">Navn</label><input data-sa-f="name" class="inp" maxlength="120" value="${esc(c.name)}"></div>` +
+        `<div class="grid grid-cols-3 gap-2"><div><label class="lbl">Brugere (nu ${c.n_interne})</label><input data-sa-f="max_int" type="number" min="0" class="inp" value="${c.max_interne}"></div><div><label class="lbl">Gæster (nu ${c.n_gaest})</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="${c.max_gaest}"></div><div><label class="lbl">Prøve til</label><input data-sa-f="trial" type="date" class="inp" value="${esc(String(c.trial_ends_at || '').slice(0, 10))}"></div></div>` +
+        `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${saModsHtml(c.modules)}</div><span class="lbl">Egne navne (tomt = standard)</span><div class="grid grid-cols-2 gap-2">${saLabsHtml(c.labels)}</div>` +
+        `<button type="button" data-act="sa-save" class="w-full brand-orange text-white py-4 rounded-xl font-black">Gem</button>` +
+        `<div class="border-t border-gray-800 pt-3 space-y-2"><span class="lbl">Admins</span>` + ((c.admins || []).map(x => `<p class="text-xs text-gray-300">${esc(x.name)} <span class="text-gray-500">${esc(x.email || '')}${x.draft ? ' · afventer' : ''}</span></p>`).join('') || '<p class="text-xs text-gray-500">Ingen endnu.</p>') +
+        `<div class="grid grid-cols-2 gap-2"><input data-sa-f="inv_name" class="inp" maxlength="120" placeholder="Navn"><input data-sa-f="inv_email" type="email" class="inp" placeholder="E-mail"></div><button type="button" data-act="sa-invite" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-sm font-bold">Inviter admin</button></div>`;
+}
+
+/* ---- Handlinger ---- */
 function saVals() {
-    const B = $('sa-body'), f = n => { const e = B.querySelector('[data-sa-f="' + n + '"]'); return e ? e.value.trim() : ''; };
+    const B = $('sa-main'), f = n => { const e = B.querySelector('[data-sa-f="' + n + '"]'); return e ? e.value.trim() : ''; };
     const modules = {}; B.querySelectorAll('[data-sa-mod]').forEach(e => { if (!e.checked) modules[e.dataset.saMod] = false; });
     const labels = {}; B.querySelectorAll('[data-sa-lbl]').forEach(e => { const v = e.value.trim(); if (v) labels[e.dataset.saLbl] = v.slice(0, 40); });
     return { f, modules, labels };
 }
+const saEmailOk = e => /^[^@\s<>",;]+@[^@\s<>",;]+\.[^@\s<>",;]+$/.test(e);
+async function saGo(view, extra) { Object.assign(S.sa, { view }, extra || {}); saRender(); }
+async function saOpenAcct(id) { S.sa.sel = id; S.sa.acct = null; S.sa.tab = 'kunder'; S.sa.view = 'acct'; saRender(); await saLoadAcct(); saRender(); window.scrollTo(0, 0); }
+async function saOpenThread(id) { S.sa.selThread = id; S.sa.msgs = []; S.sa.view = 'thread'; saRender(); await saLoadThread(); saRender(); window.scrollTo(0, 0); }
 async function saCreate() {
     const { f, modules, labels } = saVals(), email = f('admin_email').toLowerCase();
-    if (f('name').length < 2 || f('admin_name').length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Udfyld navn, første admin og en gyldig e-mail.');
+    if (f('name').length < 2 || f('admin_name').length < 2 || !saEmailOk(email)) return toast('Udfyld navn, første admin og en gyldig e-mail.');
     const r = await sb.rpc('sa_create_company', { p_name: f('name'), p_industry: f('industry'), p_admin_name: f('admin_name'), p_admin_email: email, p_max_int: parseInt(f('max_int'), 10) || 25, p_max_guest: parseInt(f('max_guest'), 10) || 0, p_modules: modules, p_labels: labels });
     if (r.error) return fail(r.error);
+    const nid = r.data;
+    if (S.sa.fromLead && nid) {          // leadet bliver til kunden (samme kort, med historik og kontakter)
+        const del = await sb.from('crm_accounts').delete().eq('company_id', nid);
+        if (!del.error) { const up = await sb.from('crm_accounts').update({ company_id: nid, stage: 'proeve' }).eq('id', S.sa.fromLead); if (up.error) fail(up.error); }
+    }
+    S.sa.fromLead = null;
     await sendInviteMail(email, 'da');
     S.sa.view = 'list'; await saReload();
 }
 async function saSave() {
-    const c = S.sa.list.find(x => x.id === S.sa.sel); if (!c) return;
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a || !a.company_id) return;
     const { f, modules, labels } = saVals();
-    const r = await sb.rpc('sa_update_company', { p_id: c.id, p_name: f('name') || null, p_max_int: parseInt(f('max_int'), 10), p_max_guest: parseInt(f('max_guest'), 10), p_modules: modules, p_labels: labels, p_trial_ends: f('trial') ? new Date(f('trial') + 'T23:59:00').toISOString() : null });
+    const r = await sb.rpc('sa_update_company', { p_id: a.company_id, p_name: f('name') || null, p_max_int: parseInt(f('max_int'), 10), p_max_guest: parseInt(f('max_guest'), 10), p_modules: modules, p_labels: labels, p_trial_ends: f('trial') ? new Date(f('trial') + 'T23:59:00').toISOString() : null });
     if (r.error) return fail(r.error);
-    toast('Gemt.', 'ok'); S.sa.view = 'list'; await saReload();
+    toast('Gemt.', 'ok'); S.sa.view = 'acct'; await saReload();
 }
 async function saInvite() {
-    const c = S.sa.list.find(x => x.id === S.sa.sel); if (!c) return;
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a || !a.company_id) return;
     const { f } = saVals(), email = f('inv_email').toLowerCase();
-    if (f('inv_name').length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Skriv navn og en gyldig e-mail.');
-    const r = await sb.rpc('sa_invite_admin', { p_company: c.id, p_name: f('inv_name'), p_email: email });
+    if (f('inv_name').length < 2 || !saEmailOk(email)) return toast('Skriv navn og en gyldig e-mail.');
+    const r = await sb.rpc('sa_invite_admin', { p_company: a.company_id, p_name: f('inv_name'), p_email: email });
     if (r.error) return fail(r.error);
-    await sendInviteMail(email, 'da'); await saReload(); S.sa.view = 'edit'; saRender();
+    await sendInviteMail(email, 'da'); await saReload(); S.sa.view = 'cust'; saRender();
 }
+async function saLeadCreate() {
+    const { f } = saVals(), email = f('c_email').toLowerCase();
+    if (f('name').length < 1) return toast('Skriv navnet på virksomheden.');
+    if (email && !saEmailOk(email)) return toast('E-mailen ser ikke rigtig ud.');
+    if (f('cvr') && !/^[0-9]{8}$/.test(f('cvr'))) return toast('CVR skal være 8 cifre.');
+    const r = await sb.from('crm_accounts').insert({ name: f('name'), stage: 'lead', segment: f('segment') || null, cvr: f('cvr') || null, source: f('source') || null }).select().single();
+    if (r.error) return fail(r.error);
+    if (f('c_name') || email) { const k = await sb.from('crm_contacts').insert({ account_id: r.data.id, name: f('c_name') || email, email: email || null }); if (k.error) fail(k.error); }
+    await saReload(); await saOpenAcct(r.data.id);
+}
+async function saAcctSave() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a) return;
+    const { f } = saVals();
+    if (f('cvr') && !/^[0-9]{8}$/.test(f('cvr'))) return toast('CVR skal være 8 cifre.');
+    const r = await sb.from('crm_accounts').update({ next_followup: f('followup') || null, segment: f('segment') || null, cvr: f('cvr') || null }).eq('id', a.id);
+    if (r.error) return fail(r.error);
+    toast('Gemt.', 'ok'); await saReload();
+}
+async function saSetStage(stage) {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a || a.stage === stage) return;
+    const r = await sb.from('crm_accounts').update({ stage }).eq('id', a.id);
+    if (r.error) return fail(r.error);
+    await saReload();
+}
+async function saContactAdd() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a) return;
+    const { f } = saVals(), email = f('c_email').toLowerCase();
+    if (!f('c_name') && !email) return toast('Skriv et navn eller en e-mail.');
+    if (email && !saEmailOk(email)) return toast('E-mailen ser ikke rigtig ud.');
+    const r = await sb.from('crm_contacts').insert({ account_id: a.id, name: f('c_name') || email, email: email || null, phone: f('c_phone') || null, title: f('c_title') || null });
+    if (r.error) return fail(/duplicate|unique/i.test(r.error.message || '') ? { message: 'Den e-mail er allerede tilføjet.' } : r.error);
+    await saLoadAcct(); S.sa.keep = null; saRender();
+    $('sa-main').querySelectorAll('[data-sa-f^="c_"]').forEach(e => { e.value = ''; });
+}
+async function saNoteAdd() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a) return;
+    const t = saVals().f('note'); if (!t) return;
+    const r = await sb.from('crm_events').insert({ account_id: a.id, kind: 'note', text: t });
+    if (r.error) return fail(r.error);
+    await saLoadAcct(); saRender(); const n = $('sa-main').querySelector('[data-sa-f="note"]'); if (n) n.value = '';
+}
+async function crmSend(p) {
+    try {
+        const ses = await sb.auth.getSession(), tok = ses && ses.data && ses.data.session && ses.data.session.access_token;
+        if (!tok) return { ok: false, status: 401 };
+        const r = await fetch('/.netlify/functions/crm-mail-send', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify(p) });
+        let j = {}; try { j = await r.json(); } catch (e) { /* funktionen findes ikke */ }
+        return { ok: r.ok && j.ok === true, status: r.ok && j.ok !== true ? 404 : r.status, error: j.error, thread: j.thread_id };
+    } catch (e) { return { ok: false, status: 0 }; }
+}
+function crmSendErr(r) {
+    if (!r || r.status === 404 || r.status === 0) return 'Mailfunktionen (crm-mail-send) er ikke installeret på Netlify endnu.';
+    if (r.status === 409) return 'Modtageren har frameldt sig eller kan ikke modtage mail.';
+    if (r.status === 500) return 'Mailopsætningen mangler i Netlify (fx SUPABASE_SERVICE_ROLE_KEY).';
+    if (r.status === 429) return 'For mange mails lige nu – prøv igen om lidt.';
+    if (r.status === 401 || r.status === 403) return 'Du har ikke ret til at sende mails.';
+    return 'Mailen kunne ikke sendes.';
+}
+async function saSend(reply) {
+    if (S.sa.busy) return; const { f } = saVals(); let p;
+    if (reply) { const th = S.sa.threads.find(x => x.id === S.sa.selThread); if (!th) return; if (!f('reply')) return toast('Skriv et svar først.'); p = { to: th.contact_email, subject: /^re:/i.test(th.subject || '') ? th.subject : 'Re: ' + (th.subject || ''), message: f('reply'), thread_id: th.id, account_id: th.account_id }; }
+    else { const to = f('to').toLowerCase(); if (!saEmailOk(to)) return toast('Skriv en gyldig e-mail til modtageren.'); if (!f('subject')) return toast('Skriv et emne.'); if (!f('message')) return toast('Skriv en besked.'); p = { to, subject: f('subject'), message: f('message'), account_id: (S.sa.compose || {}).account || null }; }
+    S.sa.busy = true;
+    try {
+        const r = await crmSend(p);
+        if (!r.ok) return toast(crmSendErr(r));
+        toast('Mail sendt.', 'ok');
+        await saReload(); if (r.thread) await saOpenThread(r.thread);
+    } finally { S.sa.busy = false; }
+}
+
+async function saAct(act, el) {
+    const d = el.dataset;
+    switch (act) {
+        case 'sa-open': return saEnter();
+        case 'sa-close': return saExit();
+        case 'sa-tab': S.sa.tab = d.tab; S.sa.view = 'list'; return saRender();
+        case 'sa-filter': S.sa.filter = d.f; return saRender();
+        case 'sa-new': return saGo('new');
+        case 'sa-new-lead': return saGo('lead');
+        case 'sa-back': S.sa.view = S.sa.fromLead ? 'acct' : 'list'; S.sa.fromLead = null; S.sa.selThread = null; return saRender();
+        case 'sa-acct-back': S.sa.view = 'acct'; return saRender();
+        case 'sa-acct': return saOpenAcct(d.id);
+        case 'sa-cust': return saGo('cust');
+        case 'sa-create': return saCreate();
+        case 'sa-save': return saSave();
+        case 'sa-invite': return saInvite();
+        case 'sa-lead-create': return saLeadCreate();
+        case 'sa-acct-save': return saAcctSave();
+        case 'sa-stage': return saSetStage(d.stage);
+        case 'sa-make-customer': { const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a) return; const k = (S.sa.acct && S.sa.acct.contacts || []).find(x => x.email); S.sa.fromLead = a.id; S.sa.view = 'new'; saRender(); const set = (n, v) => { const e = $('sa-main').querySelector('[data-sa-f="' + n + '"]'); if (e && v) e.value = v; }; set('name', a.name); if (k) { set('admin_name', k.name); set('admin_email', k.email); } return; }
+        case 'sa-contact-add': return saContactAdd();
+        case 'sa-contact-del': { const r = await sb.from('crm_contacts').delete().eq('id', d.id); if (r.error) return fail(r.error); await saLoadAcct(); return saRender(); }
+        case 'sa-note-add': return saNoteAdd();
+        case 'sa-note-del': { const r = await sb.from('crm_events').delete().eq('id', d.id); if (r.error) return fail(r.error); await saLoadAcct(); return saRender(); }
+        case 'sa-compose': S.sa.compose = { account: d.acct || null }; if (d.acct && (!S.sa.acct || S.sa.sel !== d.acct)) { S.sa.sel = d.acct; await saLoadAcct(); } else if (!d.acct) S.sa.acct = null; return saGo('compose');
+        case 'sa-pick-to': { const e = $('sa-main').querySelector('[data-sa-f="to"]'); if (e) e.value = d.email; return; }
+        case 'sa-send': return saSend(false);
+        case 'sa-reply': return saSend(true);
+        case 'sa-thread': return saOpenThread(d.id);
+        case 'sa-logout': return doLogout();
+    }
+}
+async function saChg(chg, el) {
+    if (chg === 'sa-thread-link') {
+        const th = S.sa.threads.find(x => x.id === S.sa.selThread); if (!th || !el.value) return;
+        const r = await sb.from('mail_threads').update({ account_id: el.value }).eq('id', th.id);
+        if (r.error) return fail(r.error);
+        th.account_id = el.value; toast('Tråden er knyttet til kunden.', 'ok'); saRender();
+    }
+}
+
 function empModalHtml(id) {
     const p = S.profiles.find(x => x.id === id); if (!p) return '';
     const admin = isAdmin(), self = p.id === S.profile.id, g = p.role === 'gaest', mgrRole = p.role === 'admin' || p.role === 'formand';
@@ -7770,17 +8094,11 @@ async function payAgain(id) {
 /* ------------------------------ EVENTS ------------------------------ */
 async function handleAct(act, el) {
     const d = el.dataset;
+    if (act.startsWith('sa-')) return saAct(act, el);
     if (['open-photo', 'extra-time', 'extra-mat', 'place-task'].includes(act) && el.closest('#modal-task')) { closeModal('modal-task'); S.editTask = null; }
     switch (act) {
         case 'draft-create': return draftCreate(el);
         case 'emp-new': return openEmpNew();
-        case 'sa-open': return saOpen();
-        case 'sa-new': S.sa.view = 'new'; return saRender();
-        case 'sa-back': S.sa.view = 'list'; return saRender();
-        case 'sa-edit': S.sa.sel = d.id; S.sa.view = 'edit'; return saRender();
-        case 'sa-create': return saCreate();
-        case 'sa-save': return saSave();
-        case 'sa-invite': return saInvite();
         case 'emp-n-role': return empNewRole(d.r);
         case 'emp-create': return empCreate();
         case 'emp-open': return openEmp(d.user);
@@ -7951,6 +8269,7 @@ async function handleAct(act, el) {
     }
 }
 async function handleChg(act, el) {
+    if (act === 'sa-thread-link') return saChg(act, el);
     switch (act) {
         case 'uk-task': { if (!U.edit) return; ugSync(); const b = ukState(U.edit).b[el.dataset.t]; if (!b) return; b.taskId = el.value; const t = S.tasks.find(x => x.id === el.value); b.set = new Set(t ? taskAssignees(t) : []); b.dirty = false; return renderUgCell(); }
         case 'toggle-task': return toggleTask(el.dataset.id, el.checked);
