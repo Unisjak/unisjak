@@ -3,39 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniSjak – timer, KS og vagtplan med tale</title>
-    <meta name="description" content="Timer, kvalitetssikring, opgaver og vagtplan til håndværkere og butikker. Indtal det på mobilen. 14 dages gratis prøveperiode.">
+    <title>UniSjak – timer og KS til håndværkere</title>
+    <meta name="description" content="Timeregistrering og kvalitetssikring (KS) til håndværkere og entreprenører. Foto med GPS, diæter og løn-eksport. Fra 49 kr. pr. medarbejder. 14 dages gratis prøveperiode.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        /* Betongrå tema: hele gray-skalaen afbildes på varme stone-nuancer (ingen ren sort) */
-        if (window.tailwind) tailwind.config = { theme: { extend: { colors: { gray: {
-            50: '#fafaf9', 100: '#f5f5f4', 200: '#ebe8e5', 300: '#dedad6', 400: '#c7c2bd', 500: '#a8a29e',
-            600: '#7a746e', 700: '#5f5a55', 800: '#4a4541', 900: '#34302d', 950: '#292524' } } } } };
+        /* Lyst tema: gray-skalaen og de farvede nuancer er vendt, så eksisterende klasser får lys baggrund og mørk tekst */
+        (function () {
+            var P = {
+                amber:   {50:'#fffbeb',100:'#fef3c7',200:'#fde68a',300:'#fcd34d',400:'#fbbf24',500:'#f59e0b',600:'#d97706',700:'#b45309',800:'#92400e',900:'#78350f',950:'#451a03'},
+                emerald: {50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b',950:'#022c22'},
+                red:     {50:'#fef2f2',100:'#fee2e2',200:'#fecaca',300:'#fca5a5',400:'#f87171',500:'#ef4444',600:'#dc2626',700:'#b91c1c',800:'#991b1b',900:'#7f1d1d',950:'#450a0a'},
+                orange:  {50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c',800:'#9a3412',900:'#7c2d12',950:'#431407'},
+                sky:     {50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e',950:'#082f49'},
+                violet:  {50:'#f5f3ff',100:'#ede9fe',200:'#ddd6fe',300:'#c4b5fd',400:'#a78bfa',500:'#8b5cf6',600:'#7c3aed',700:'#6d28d9',800:'#5b21b6',900:'#4c1d95',950:'#2e1065'},
+                purple:  {50:'#faf5ff',100:'#f3e8ff',200:'#e9d5ff',300:'#d8b4fe',400:'#c084fc',500:'#a855f7',600:'#9333ea',700:'#7e22ce',800:'#6b21a8',900:'#581c87',950:'#3b0764'},
+                blue:    {50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a',950:'#172554'},
+                yellow:  {50:'#fefce8',100:'#fef9c3',200:'#fef08a',300:'#fde047',400:'#facc15',500:'#eab308',600:'#ca8a04',700:'#a16207',800:'#854d0e',900:'#713f12',950:'#422006'},
+                green:   {50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16'}
+            };
+            var flip = {50:950,100:900,200:800,300:700,400:600,500:500,600:400,700:300,800:200,900:100,950:50};
+            var colors = {
+                gray: { 50:'#0B1830', 100:'#12233F', 200:'#26354D', 300:'#3F4B5E', 400:'#566070', 500:'#8A93A1',
+                        600:'#D6D1C7', 700:'#E7E3DA', 800:'#FFFFFF', 900:'#F1EEE8', 950:'#F7F5F1' }
+            };
+            /* farvede nuancer: tekst (300/400) bliver mørk, tinted baggrunde (900/950) bliver lyse, 500/600 (knapper) uændret */
+            var map = {50:'#',100:'#',200:'#'};
+            Object.keys(P).forEach(function (n) {
+                var o = {};
+                [50,100,200,300,400,500,600,700,800,900,950].forEach(function (k) {
+                    var f = flip[k];
+                    if (k === 500 || k === 600) o[k] = P[n][k];
+                    else if (k === 300 || k === 400) o[k] = P[n][k === 300 ? 800 : 700];
+                    else if (k === 200 || k === 100) o[k] = P[n][k === 200 ? 900 : 800];
+                    else if (k === 700) o[k] = P[n][300];
+                    else if (k === 800) o[k] = P[n][200];
+                    else if (k === 900) o[k] = P[n][100];
+                    else if (k === 950) o[k] = P[n][50];
+                    else o[k] = P[n][f];
+                });
+                colors[n] = o;
+            });
+            if (window.tailwind) tailwind.config = { theme: { extend: { colors: colors } } };
+        })();
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background-color: #292524; color: #F3F4F6; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-        .bg-card { background-color: #3a3633; }
+        body { background-color: #F7F5F1; color: #12233F; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .bg-card { background-color: #FFFFFF; box-shadow: 0 1px 2px rgba(18,35,63,.06); }
         @keyframes lpin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
         .lp-in { animation: lpin .35s ease both; }
         @media (prefers-reduced-motion: reduce) { .lp-in { animation: none; } }
-        .border-card { border-color: #57534e; }
-        .brand-orange { background-color: #FF5500; }
-        .brand-orange-text { color: #FF5500; }
-        .active-tab { color: #FF5500; }
-        .inactive-tab { color: #a8a29e; }
-        .sidebar-active { background-color: rgba(255, 85, 0, 0.15); color: #FF5500; border-color: rgba(255, 85, 0, 0.4); }
+        .border-card { border-color: #E7E3DA; }
+        .brand-orange { background-color: #FF5500; color: #fff; }
+        .brand-orange-text { color: #E04A00; }
+        .active-tab { color: #12233F; background-color: #12233F; color: #fff; border-radius: 14px; }
+        .inactive-tab { color: #566070; }
+        .sidebar-active { background-color: #12233F; color: #fff; border-color: #12233F; }
         iframe#netlify-badge, a[href*="netlify.com"] { display: none !important; }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #292524; }
-        ::-webkit-scrollbar-thumb { background: #57534e; border-radius: 4px; }
-        .inp { width: 100%; background: #292524; border: 1px solid #6b645e; border-radius: 0.75rem; padding: 0.85rem; color: #fff; font-weight: 700; font-size: 0.875rem; }
-        .inp:focus { outline: none; border-color: #FF5500; }
-        .chip { padding: 0.55rem 0.85rem; border-radius: 0.75rem; border: 1px solid #6b645e; background: #292524; color: #c7c2bd; font-weight: 800; font-size: 0.8rem; }
-        .chip-on { background: #7c2d12; border-color: #FF5500; color: #fed7aa; }
+        ::-webkit-scrollbar-track { background: #F7F5F1; }
+        ::-webkit-scrollbar-thumb { background: #D6D1C7; border-radius: 4px; }
+        .inp { width: 100%; background: #FFFFFF; border: 1px solid #D6D1C7; border-radius: 0.75rem; padding: 0.85rem; color: #12233F; font-weight: 700; font-size: 0.875rem; }
+        .inp:focus { outline: none; border-color: #12233F; }
+        .chip { padding: 0.55rem 0.85rem; border-radius: 0.75rem; border: 1px solid #D6D1C7; background: #FFFFFF; color: #566070; font-weight: 800; font-size: 0.8rem; }
+        .chip-on { background: #12233F; border-color: #12233F; color: #fff; }
+        /* Lyst tema: hvid tekst bliver mørk, med undtagelse af tekst på fyldte knapper/mærker og fotos */
+        body .text-white, body .hover\:text-white:hover { color: #12233F; }
+        body .text-gray-950 { color: #12233F; }
+        body .bg-emerald-500, body .bg-emerald-600, body .bg-red-600, body .bg-red-500, body .bg-orange-600, body .bg-orange-500,
+        body .bg-blue-600, body .bg-violet-600, body .bg-purple-600, body .bg-sky-600, body .bg-gray-700.text-white, body .brand-orange,
+        body .bg-\[\#FF5500\], body .bg-\[\#12233F\], body .sidebar-active, body .active-tab, body .chip-on { color: #fff; }
+        body .bg-emerald-500 .text-white, body .bg-emerald-600 .text-white, body .bg-red-600 .text-white, body .bg-red-500 .text-white,
+        body .bg-orange-600 .text-white, body .bg-orange-500 .text-white, body .bg-blue-600 .text-white, body .bg-violet-600 .text-white,
+        body .bg-\[\#FF5500\] .text-white, body .bg-\[\#12233F\] .text-white, body .brand-orange .text-white,
+        body .bg-black\/45 .text-white, body .bg-black\/50 .text-white, body .bg-black\/60 .text-white, body .bg-black\/70 .text-white,
+        body .text-white.bg-emerald-500, body .text-white.bg-emerald-600, body .text-white.bg-red-600, body .text-white.bg-red-500,
+        body .text-white.bg-orange-600, body .text-white.bg-orange-500, body .text-white.bg-blue-600, body .text-white.bg-violet-600,
+        body .text-white.bg-black\/45, body .text-white.bg-black\/60, body #lightbox .text-white, body #lightbox button, body [data-lb] { color: #fff; }
+        body .bg-gray-700.text-white, body .bg-gray-700 .text-white { color: #12233F; }
+        body .bg-emerald-500.text-gray-950, body .bg-amber-500.text-gray-950, body .bg-emerald-400.text-gray-950 { color: #12233F; }
+        body .hover\:bg-gray-700:hover { background-color: #EEEAE2; }
         .vstat:empty { display: none; }
         .lbl { display: block; font-size: 10px; font-weight: 700; color: #c7c2bd; text-transform: uppercase; margin-bottom: 0.25rem; }
         @media (max-width: 767px) { input, select, textarea { font-size: 16px !important; } }
@@ -44,10 +94,10 @@
         .active\:scale-98:active { transform: scale(0.98); }
     </style>
 </head>
-<body class="h-screen overflow-hidden bg-[#292524] text-gray-100">
+<body class="h-screen overflow-hidden bg-[#F7F5F1] text-gray-100">
 
     <!-- INDLÆSNING -->
-    <div id="boot-screen" class="fixed inset-0 z-[60] bg-[#292524] flex items-center justify-center">
+    <div id="boot-screen" class="fixed inset-0 z-[60] bg-[#F7F5F1] flex items-center justify-center">
         <div class="text-center space-y-3">
             <div class="w-14 h-14 brand-orange rounded-2xl flex items-center justify-center font-black text-2xl text-white mx-auto animate-pulse">U</div>
             <p class="text-sm text-gray-400">Indlæser…</p>
@@ -58,122 +108,145 @@
     <div id="toast" class="hidden"></div>
 
     <!-- LANDINGSSIDE (når man ikke er logget ind) -->
-    <div id="landing-screen" class="hidden fixed inset-0 bg-[#292524] z-50 overflow-y-auto">
-        <header class="sticky top-0 z-20 bg-[#292524]/90 backdrop-blur border-b border-gray-800">
+    <div id="landing-screen" class="hidden fixed inset-0 bg-[#F7F5F1] text-[#12233F] z-50 overflow-y-auto">
+        <header class="sticky top-0 z-20 bg-[#F7F5F1]/90 backdrop-blur border-b border-[#E7E3DA]">
             <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-                <div class="flex items-center space-x-2.5"><div class="w-9 h-9 brand-orange rounded-xl flex items-center justify-center font-black text-lg text-white">U</div><span class="font-black text-white text-lg">UniSjak</span></div>
-                <nav class="hidden md:flex items-center space-x-6 text-sm font-bold text-gray-400">
-                    <a href="#lp-funktioner" onclick="lpScroll(event,'lp-funktioner')" class="hover:text-white">Funktioner</a>
-                    <a href="#lp-priser" onclick="lpScroll(event,'lp-priser')" class="hover:text-white">Priser</a>
+                <div class="flex items-center space-x-2.5"><div class="w-9 h-9 brand-orange rounded-xl flex items-center justify-center font-black text-lg text-white">U</div><span class="font-black text-[#12233F] text-lg tracking-tight">UniSjak</span></div>
+                <nav class="hidden md:flex items-center space-x-6 text-sm font-bold text-[#566070]">
+                    <a href="#lp-funktioner" onclick="lpScroll(event,'lp-funktioner')" class="hover:text-[#12233F]">Funktioner</a>
+                    <a href="#lp-sadan" onclick="lpScroll(event,'lp-sadan')" class="hover:text-[#12233F]">Sådan virker det</a>
+                    <a href="#lp-priser" onclick="lpScroll(event,'lp-priser')" class="hover:text-[#12233F]">Priser</a>
                 </nav>
                 <div class="flex items-center gap-2">
-                    <button onclick="lpGo('login')" id="lp-btn-login" class="px-4 py-2.5 rounded-xl border border-gray-700 text-gray-100 text-sm font-black hover:bg-gray-800 transition">Log ind</button>
-                    <button onclick="lpGo('signup')" id="lp-btn-trial" class="px-4 py-2.5 rounded-xl brand-orange text-white text-sm font-black shadow-lg shadow-orange-950/40 hover:brightness-110 transition"><span class="hidden sm:inline">Start gratis prøveperiode</span><span class="sm:hidden">Prøv gratis</span></button>
+                    <button onclick="lpGo('login')" id="lp-btn-login" class="px-4 py-2.5 rounded-xl border-2 border-[#12233F] text-[#12233F] text-sm font-black hover:bg-[#12233F] hover:text-white transition">Log ind</button>
+                    <button onclick="lpGo('signup')" id="lp-btn-trial" class="px-4 py-2.5 rounded-xl bg-[#12233F] text-white text-sm font-black hover:brightness-125 transition"><span class="hidden sm:inline">Start gratis prøveperiode</span><span class="sm:hidden">Prøv gratis</span></button>
                 </div>
             </div>
         </header>
 
-        <section class="max-w-6xl mx-auto px-4 pt-10 pb-12 md:pt-16 grid md:grid-cols-2 gap-10 items-center">
+        <section class="max-w-6xl mx-auto px-4 pt-10 pb-14 md:pt-20 grid md:grid-cols-2 gap-12 items-center">
             <div class="space-y-6">
-                <span class="inline-flex items-center text-xs font-black text-emerald-300 bg-emerald-950/50 border border-emerald-600/40 rounded-full px-3 py-1.5"><i class="fa-solid fa-gift mr-2"></i>14 dages gratis prøveperiode</span>
-                <h1 class="text-4xl md:text-5xl font-black text-white leading-[1.05]">Sig det.<br><span class="brand-orange-text">Så er det gjort.</span></h1>
-                <p class="text-lg text-gray-300 max-w-md">Timer, planlægning, kvalitetssikring, opgaver og vagtplan – bygget til håndværkere og butiksfolk på mobilen. Store knapper, nul støj. Og alt kan indtales.</p>
+                <span class="inline-flex items-center text-xs font-black text-[#12233F] bg-white border border-[#E7E3DA] rounded-full px-3.5 py-1.5">Til håndværkere og entreprenører</span>
+                <h1 class="text-4xl md:text-6xl font-black text-[#12233F] leading-[1.03] tracking-tight">Timer og KS.<br><span class="brand-orange-text">Færdigt på sekunder.</span></h1>
+                <p class="text-lg text-[#566070] max-w-md leading-relaxed">Medarbejderne registrerer timer og dokumenterer kvalitetssikring med foto og GPS direkte fra telefonen. Du får timesedler, diæter og KS-rapporter klar til løn og bygherre.</p>
                 <div class="flex flex-wrap gap-3">
-                    <button onclick="lpGo('signup')" class="px-6 py-4 rounded-2xl brand-orange text-white font-black text-base shadow-xl shadow-orange-950/50 active:scale-95 transition"><i class="fa-solid fa-rocket mr-2"></i>Start gratis i 14 dage</button>
-                    <button onclick="lpGo('login')" class="px-6 py-4 rounded-2xl border border-gray-700 text-white font-black text-base hover:bg-gray-800 transition">Log ind</button>
+                    <button onclick="lpGo('signup')" class="px-7 py-4 rounded-2xl bg-[#12233F] text-white font-black text-base active:scale-95 hover:brightness-125 transition">Start gratis i 14 dage</button>
+                    <button onclick="lpScroll(event,'lp-priser')" class="px-7 py-4 rounded-2xl border-2 border-[#12233F] text-[#12233F] font-black text-base hover:bg-[#12233F] hover:text-white transition">Se priser</button>
                 </div>
-                <p class="text-xs text-gray-500">Fra 249 kr./md. for 1 medarbejder · +49 kr./md. pr. ekstra medarbejder</p>
+                <p class="text-sm text-[#566070]">Fra 49 kr. pr. medarbejder pr. måned.</p>
             </div>
 
             <div class="flex flex-col items-center">
-                <div class="flex bg-gray-900 p-1 rounded-xl border border-gray-800 mb-5 w-full max-w-sm">
-                    <button id="lp-tab-haandvaerk" onclick="lpDemoStart('haandvaerk')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg bg-orange-600 text-white transition">Håndværk</button>
-                    <button id="lp-tab-butik" onclick="lpDemoStart('butik')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-gray-400 hover:text-white transition">Butik</button>
-                    <button id="lp-tab-plan" onclick="lpDemoStart('plan')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-gray-400 hover:text-white transition">Planlægning</button>
+                <div class="flex bg-white p-1 rounded-xl border border-[#E7E3DA] mb-5 w-full max-w-sm">
+                    <button id="lp-tab-ks" onclick="lpDemoStart('ks')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg bg-[#12233F] text-white transition">KS med foto</button>
+                    <button id="lp-tab-timer" onclick="lpDemoStart('timer')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-[#566070] hover:text-[#12233F] transition">Timer</button>
                 </div>
                 <div class="relative" style="width:272px">
-                    <div class="rounded-[2.4rem] border-[7px] border-gray-700 bg-[#1c1917] shadow-2xl shadow-black/60 overflow-hidden" style="height:540px">
+                    <div class="rounded-[2.4rem] border-[7px] border-[#12233F] bg-[#1c1917] shadow-2xl shadow-[#12233F]/30 overflow-hidden" style="height:540px">
                         <div class="flex justify-between items-center px-5 pt-3 pb-1 text-[10px] text-gray-400 font-bold"><span>9:41</span><span class="w-16 h-4 bg-gray-800 rounded-full"></span><span><i class="fa-solid fa-signal"></i> <i class="fa-solid fa-battery-full"></i></span></div>
-                        <div class="px-4 pt-2 pb-2 flex items-center justify-between"><div class="flex items-center space-x-2"><div class="w-6 h-6 brand-orange rounded-lg flex items-center justify-center font-black text-xs text-white">U</div><span id="lp-ph-title" class="text-xs font-black text-white">Opgave</span></div><span class="text-[9px] text-emerald-400 font-black"><i class="fa-solid fa-circle text-[6px] mr-1"></i>Live</span></div>
+                        <div class="px-4 pt-2 pb-2 flex items-center justify-between"><div class="flex items-center space-x-2"><div class="w-6 h-6 brand-orange rounded-lg flex items-center justify-center font-black text-xs text-white">U</div><span id="lp-ph-title" class="text-xs font-black text-white">KS / Foto</span></div><span class="text-[9px] text-emerald-400 font-black"><i class="fa-solid fa-circle text-[6px] mr-1"></i>Live</span></div>
                         <div class="px-4">
-                            <button id="lp-mic" class="w-full rounded-2xl py-3.5 font-black text-xs text-white bg-red-600 flex items-center justify-center space-x-2 transition" tabindex="-1" aria-hidden="true"><i class="fa-solid fa-microphone text-base"></i><span id="lp-mic-label">Indtal opgave</span></button>
+                            <button id="lp-mic" class="w-full rounded-2xl py-3.5 font-black text-xs text-white bg-red-600 flex items-center justify-center space-x-2 transition" tabindex="-1" aria-hidden="true"><i class="fa-solid fa-microphone text-base"></i><span id="lp-mic-label">Indtal KS-punkt</span></button>
                             <p id="lp-say" class="text-[11px] text-gray-300 mt-2.5 min-h-[58px] leading-snug italic"></p>
                         </div>
                         <div id="lp-result" class="px-4 pt-1 space-y-2"></div>
                     </div>
                 </div>
-                <p class="text-[11px] text-gray-500 mt-4 text-center max-w-xs">Selvkørende demo: en talt sætning bliver til et færdigt opgavekort, udfyldte vagter eller en ændret plan – og medarbejderen ser dagens opgave på sit eget sprog.</p>
+                <p class="text-xs text-[#566070] mt-4 text-center max-w-xs">Selvkørende demo: en talt sætning bliver til et færdigt KS-punkt eller en udfyldt timeseddel.</p>
             </div>
         </section>
 
-        <section id="lp-funktioner" class="max-w-6xl mx-auto px-4 py-12 space-y-8">
-            <div class="text-center space-y-2"><h2 class="text-3xl font-black text-white">To brancher. To skræddersyede apps.</h2><p class="text-gray-400 text-sm">Du vælger branche, når du opretter virksomheden – og får kun det, der giver mening for jer. Alt opdateres live hos hele holdet, og kun to roller: Admin og Medarbejder.</p></div>
-            <div class="grid md:grid-cols-2 gap-5">
-                <div class="bg-card border border-card rounded-3xl p-6 space-y-4">
-                    <div class="flex items-center space-x-3"><div class="w-12 h-12 bg-orange-950/60 border border-orange-600/40 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-helmet-safety text-xl text-orange-400"></i></div><div><h3 class="text-xl font-black text-white">Håndværk &amp; Byggeri</h3><p class="text-xs text-gray-400">Sager, sjak og dokumentation</p></div></div>
-                    <ul class="space-y-2.5 text-sm text-gray-200">
-                        <li><i class="fa-solid fa-chart-gantt text-amber-400 w-6"></i><strong>Planlægning</strong> – etaper × dage × fag på én tavle, ⚠ ved dobbeltbookning, 1-klik: kopiér uge, skub en dag, “regn i morgen”. Tryk på et felt og åbn opgaven med huskeliste (3/5), “Er arbejdet færdigt?” og genbrugelige huskelister</li>
-                        <li><i class="fa-solid fa-language text-teal-300 w-6"></i><strong>Udenlandske sjak</strong> – hver medarbejder ser “I dag”-kortet på dansk, engelsk, tjekkisk eller polsk</li>
-                        <li><i class="fa-solid fa-clock text-blue-400 w-6"></i><strong>Timer</strong> – registrér dagen på sekunder (også direkte fra dagens opgave), ugegodkendelse, delvis ugelås og lønperiode-diagram</li>
-                        <li><i class="fa-solid fa-camera text-orange-400 w-6"></i><strong>KS med foto &amp; GPS</strong> – præcis position på hvert punkt, knyttet til etapen, og link til Google Maps</li>
-                        <li><i class="fa-solid fa-boxes-stacked text-purple-400 w-6"></i><strong>Materialer</strong> – modtag og dokumentér med foto og oplagssted</li>
-                        <li><i class="fa-solid fa-list-check text-emerald-400 w-6"></i><strong>Opgaver</strong> – til flere medarbejdere, med underpunkter på samme kort</li>
-                        <li><i class="fa-solid fa-microphone text-red-400 w-6"></i><strong>Tale-til-tekst</strong> overalt – sig fx “dagens timer 7 til 15 og opret KS-punkt”, så får du et kort at godkende</li>
-                        <li><i class="fa-solid fa-file-pdf text-gray-300 w-6"></i><strong>Professionel eksport</strong> – PDF og CSV på mail, skurvognsplan på flere sprog og bygherre-ugerapport</li>
-                    </ul>
-                </div>
-                <div class="bg-card border border-card rounded-3xl p-6 space-y-4">
-                    <div class="flex items-center space-x-3"><div class="w-12 h-12 bg-sky-950/60 border border-sky-600/40 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-store text-xl text-sky-400"></i></div><div><h3 class="text-xl font-black text-white">Butik &amp; Restaurant</h3><p class="text-xs text-gray-400">Vagter, hold og daglig drift</p></div></div>
-                    <ul class="space-y-2.5 text-sm text-gray-200">
-                        <li><i class="fa-solid fa-calendar-week text-sky-400 w-6"></i><strong>Vagtplan-overblik</strong> – uge-matrix med timer, bemanding og åbne vagter, og delvis ugelås dag for dag</li>
-                        <li><i class="fa-solid fa-people-group text-orange-400 w-6"></i><strong>Roller</strong> – Bar, Køkken, Sal, Kasse med farver og behov pr. dag</li>
-                        <li><i class="fa-solid fa-calendar-xmark text-cyan-300 w-6"></i><strong>Friønsker &amp; ferie</strong> – vises direkte i skemaet</li>
-                        <li><i class="fa-solid fa-wand-magic-sparkles text-yellow-300 w-6"></i><strong>Auto-plan</strong> – fair fordeling, kladde og udgiv</li>
-                        <li><i class="fa-solid fa-right-left text-pink-300 w-6"></i><strong>Vagtbytte i appen</strong> – kollegaen tager vagten, lederen godkender med ét tryk</li>
-                        <li><i class="fa-solid fa-kit-medical text-red-300 w-6"></i><strong>Sygemelding</strong> – sig “Jeppe er syg i morgen”, og få forslag til afløser</li>
-                        <li><i class="fa-solid fa-stopwatch text-emerald-400 w-6"></i><strong>Ind- og udstempling</strong> – “På vagt nu” live for lederen</li>
-                        <li><i class="fa-solid fa-list-check text-emerald-400 w-6"></i><strong>Opgaver &amp; tjeklister</strong> – og <i class="fa-solid fa-microphone text-red-400"></i> tale til det hele</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <section id="lp-priser" class="max-w-4xl mx-auto px-4 py-12 space-y-6">
-            <div class="text-center space-y-3"><span class="inline-flex items-center text-sm font-black text-emerald-300 bg-emerald-950/50 border border-emerald-600/40 rounded-full px-4 py-2"><i class="fa-solid fa-gift mr-2"></i>Første 14 dage er gratis</span><h2 class="text-3xl font-black text-white">Enkel pris. Ingen overraskelser.</h2></div>
-            <div class="bg-card border-2 border-orange-600/60 rounded-3xl p-6 md:p-8 grid md:grid-cols-2 gap-8">
-                <div class="space-y-3">
-                    <p class="text-xs font-black uppercase text-gray-400">Basis · 1 medarbejder</p>
-                    <p><span class="text-5xl font-black text-white">249</span><span class="text-gray-400 font-bold"> kr./md.</span></p>
-                    <p class="text-lg text-gray-200 font-bold">+ 49 kr./md. <span class="text-gray-400 font-normal">pr. efterfølgende medarbejder</span></p>
-                    <button onclick="lpGo('signup')" class="w-full brand-orange text-white py-4 rounded-2xl font-black shadow-xl active:scale-95 transition">Start 14 dages gratis prøve</button>
-                </div>
-                <div class="space-y-4">
-                    <p class="text-xs font-black uppercase text-gray-400">Prisberegner</p>
-                    <div><div class="flex justify-between text-sm"><span class="text-gray-300 font-bold">Antal medarbejdere</span><strong id="lp-n" class="text-white">5</strong></div><input id="lp-range" type="range" min="1" max="50" value="5" oninput="lpPrice(this.value)" class="w-full accent-orange-500 mt-2"></div>
-                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 text-center"><span id="lp-total" class="text-4xl font-black brand-orange-text">445</span><span class="text-gray-400 font-bold"> kr./md.</span><p id="lp-calc" class="text-[11px] text-gray-500 mt-1">249 + 4 × 49</p></div>
-                    <div class="grid grid-cols-4 gap-2 text-center">
-                        <div class="bg-gray-900 rounded-xl p-2"><p class="text-[10px] text-gray-500">1 pers.</p><p class="font-black text-white text-sm">249 kr.</p></div>
-                        <div class="bg-gray-900 rounded-xl p-2"><p class="text-[10px] text-gray-500">3 pers.</p><p class="font-black text-white text-sm">347 kr.</p></div>
-                        <div class="bg-gray-900 rounded-xl p-2"><p class="text-[10px] text-gray-500">5 pers.</p><p class="font-black text-white text-sm">445 kr.</p></div>
-                        <div class="bg-gray-900 rounded-xl p-2"><p class="text-[10px] text-gray-500">10 pers.</p><p class="font-black text-white text-sm">690 kr.</p></div>
+        <section id="lp-funktioner" class="bg-white border-y border-[#E7E3DA]">
+            <div class="max-w-6xl mx-auto px-4 py-16 space-y-10">
+                <div class="max-w-2xl space-y-3"><h2 class="text-3xl md:text-4xl font-black tracking-tight">To ting, I gør hver dag. Gjort rigtigt.</h2><p class="text-[#566070] text-lg">Timer og kvalitetssikring er kernen. Resten er bygget omkring dem.</p></div>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-[#F7F5F1] rounded-3xl p-7 space-y-5">
+                        <div class="w-14 h-14 rounded-2xl bg-[#E3ECFD] flex items-center justify-center"><i class="fa-solid fa-clock text-2xl text-[#1D4ED8]"></i></div>
+                        <h3 class="text-2xl font-black tracking-tight">Timer</h3>
+                        <ul class="space-y-3 text-[15px] text-[#12233F]">
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>Registrér dagen på sekunder</strong> – også direkte fra dagens opgave</li>
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>Diæt og kørsel</strong> sættes op pr. virksomhed og følger med til lønnen</li>
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>Ugegodkendelse</strong> med delvis ugelås dag for dag</li>
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>Løn-eksport</strong> som CSV og PDF – og markering, hvis noget rettes efter eksport</li>
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>Fravær</strong> og overblik pr. medarbejder</li>
+                        </ul>
+                    </div>
+                    <div class="bg-[#F7F5F1] rounded-3xl p-7 space-y-5">
+                        <div class="w-14 h-14 rounded-2xl bg-[#FDEBD9] flex items-center justify-center"><i class="fa-solid fa-camera text-2xl text-[#C2570C]"></i></div>
+                        <h3 class="text-2xl font-black tracking-tight">Kvalitetssikring (KS)</h3>
+                        <ul class="space-y-3 text-[15px] text-[#12233F]">
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>Foto med GPS</strong> på hvert punkt – præcis position og link til Google Maps</li>
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>Sikkerhed</strong> i grøn, gul og rød med fast nummer og lukning</li>
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>Fejl og mangler</strong> med ansvarlig, status og alder</li>
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>Ekstraarbejde</strong> dokumenteret, så det kan faktureres</li>
+                            <li><i class="fa-solid fa-check text-[#047857] w-6"></i><strong>KS-rapport</strong> som PDF til bygherre med ét tryk</li>
+                        </ul>
                     </div>
                 </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="rounded-2xl border border-[#E7E3DA] p-5 space-y-2"><i class="fa-solid fa-list-check text-xl text-[#047857]"></i><p class="font-black">Opgaver og pakkelister</p><p class="text-sm text-[#566070]">Tjeklister til dig eller sjak, med underpunkter.</p></div>
+                    <div class="rounded-2xl border border-[#E7E3DA] p-5 space-y-2"><i class="fa-solid fa-truck-ramp-box text-xl text-[#6D28D9]"></i><p class="font-black">Materialemodtagelse</p><p class="text-sm text-[#566070]">Foto og oplagssted, når varerne leveres.</p></div>
+                    <div class="rounded-2xl border border-[#E7E3DA] p-5 space-y-2"><i class="fa-solid fa-microphone text-xl text-[#B91C1C]"></i><p class="font-black">Tale-til-tekst</p><p class="text-sm text-[#566070]">Sig “dagens timer 7 til 15 og opret KS-punkt”.</p></div>
+                    <div class="rounded-2xl border border-[#E7E3DA] p-5 space-y-2"><i class="fa-solid fa-language text-xl text-[#0F766E]"></i><p class="font-black">Udenlandske sjak</p><p class="text-sm text-[#566070]">Dansk, engelsk, tjekkisk og polsk i telefonen.</p></div>
+                </div>
             </div>
         </section>
 
-        <footer class="border-t border-gray-800 mt-8"><div class="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center space-x-2.5"><div class="w-8 h-8 brand-orange rounded-lg flex items-center justify-center font-black text-white">U</div><span class="font-black text-white">UniSjak</span><span class="text-xs text-gray-500">· unisjak.dk</span></div>
-            <div class="flex gap-2"><button onclick="lpGo('login')" class="px-4 py-2.5 rounded-xl border border-gray-700 text-gray-100 text-sm font-black hover:bg-gray-800">Log ind</button><button onclick="lpGo('signup')" class="px-4 py-2.5 rounded-xl brand-orange text-white text-sm font-black">Start gratis prøveperiode</button></div>
+        <section id="lp-sadan" class="max-w-6xl mx-auto px-4 py-16 space-y-10">
+            <div class="max-w-2xl space-y-3"><h2 class="text-3xl md:text-4xl font-black tracking-tight">Sådan kommer I i gang</h2></div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="space-y-3"><span class="w-11 h-11 rounded-full bg-[#12233F] text-white font-black flex items-center justify-center">1</span><p class="text-xl font-black">Opret virksomheden</p><p class="text-[#566070]">Det tager få minutter. Prøven er gratis i 14 dage.</p></div>
+                <div class="space-y-3"><span class="w-11 h-11 rounded-full bg-[#12233F] text-white font-black flex items-center justify-center">2</span><p class="text-xl font-black">Inviter medarbejderne</p><p class="text-[#566070]">De får en mail og er i gang med det samme. Admin sætter diæter og tillæg op.</p></div>
+                <div class="space-y-3"><span class="w-11 h-11 rounded-full bg-[#12233F] text-white font-black flex items-center justify-center">3</span><p class="text-xl font-black">Registrér, godkend, eksportér</p><p class="text-[#566070]">Medarbejderne bruger fire store knapper. Du godkender og sender løn og KS-rapport fra kontoret.</p></div>
+            </div>
+        </section>
+
+        <section id="lp-priser" class="bg-white border-y border-[#E7E3DA]">
+            <div class="max-w-5xl mx-auto px-4 py-16 space-y-8">
+                <div class="text-center space-y-3"><h2 class="text-3xl md:text-4xl font-black tracking-tight">Enkel pris pr. medarbejder</h2><p class="text-[#566070] text-lg">Første 14 dage er gratis. Vælg pakke og se, hvad det koster for jer.</p></div>
+                <div class="grid sm:grid-cols-3 gap-3" id="lp-packs">
+                    <button type="button" id="lp-pk-timer" onclick="lpPack('timer')" class="text-left rounded-2xl border-2 p-5 transition"><span class="block text-sm font-bold text-[#566070]">Timer</span><span class="block text-3xl font-black mt-1">49 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 499 kr.</span></button>
+                    <button type="button" id="lp-pk-ks" onclick="lpPack('ks')" class="text-left rounded-2xl border-2 p-5 transition relative"><span class="absolute -top-3 left-5 bg-[#FF5500] text-white text-[11px] font-black rounded-full px-3 py-1">Anbefalet</span><span class="block text-sm font-bold text-[#566070]">Timer + KS</span><span class="block text-3xl font-black mt-1">69 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 699 kr.</span></button>
+                    <button type="button" id="lp-pk-fuld" onclick="lpPack('fuld')" class="text-left rounded-2xl border-2 p-5 transition"><span class="block text-sm font-bold text-[#566070]">Fuld pakke</span><span class="block text-3xl font-black mt-1">89 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 999 kr.</span></button>
+                </div>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-[#F7F5F1] rounded-3xl p-7 space-y-4">
+                        <p id="lp-pack-name" class="text-xl font-black">Timer + KS</p>
+                        <ul id="lp-pack-list" class="space-y-2 text-[15px]"></ul>
+                    </div>
+                    <div class="bg-[#12233F] text-white rounded-3xl p-7 space-y-5">
+                        <div><div class="flex justify-between text-sm"><span class="font-bold text-[#D5DCE8]">Antal medarbejdere</span><strong id="lp-n" class="text-white text-lg">10</strong></div><input id="lp-range" type="range" min="1" max="100" value="10" oninput="lpPrice(this.value)" aria-label="Antal medarbejdere" class="w-full accent-orange-500 mt-2"></div>
+                        <div class="text-center"><span id="lp-total" class="text-5xl font-black">699</span><span class="text-[#D5DCE8] font-bold"> kr./md.</span><p id="lp-calc" class="text-xs text-[#D5DCE8] mt-1"></p></div>
+                        <div id="lp-ex" class="grid grid-cols-4 gap-2 text-center"></div>
+                        <button onclick="lpGo('signup')" class="w-full bg-[#FF5500] text-white py-4 rounded-2xl font-black active:scale-95 hover:brightness-110 transition">Start 14 dages gratis prøve</button>
+                    </div>
+                </div>
+                <div class="rounded-3xl border border-[#E7E3DA] p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div><p class="text-lg font-black">Større virksomhed med mange medarbejdere?</p><p class="text-[#566070]">Vi laver en aftale til hele virksomheden med fast pris, mængderabat og hjælp til opsætning af overenskomst, diæter og tillæg.</p></div>
+                    <a href="mailto:morten@unisjak.dk?subject=Aftale%20til%20hele%20virksomheden" class="shrink-0 px-6 py-3.5 rounded-2xl border-2 border-[#12233F] text-[#12233F] font-black hover:bg-[#12233F] hover:text-white transition text-center">Kontakt os</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-4xl mx-auto px-4 py-16 text-center space-y-6">
+            <h2 class="text-3xl md:text-4xl font-black tracking-tight">Prøv det på jeres næste projekt</h2>
+            <p class="text-[#566070] text-lg">De første 14 dage er gratis.</p>
+            <button onclick="lpGo('signup')" class="px-8 py-4 rounded-2xl bg-[#12233F] text-white font-black text-base active:scale-95 hover:brightness-125 transition">Start gratis prøveperiode</button>
+        </section>
+
+        <footer class="border-t border-[#E7E3DA]"><div class="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-2.5"><div class="w-8 h-8 brand-orange rounded-lg flex items-center justify-center font-black text-white">U</div><span class="font-black text-[#12233F]">UniSjak</span><span class="text-xs text-[#566070]">· unisjak.dk · <a href="mailto:morten@unisjak.dk" class="underline">morten@unisjak.dk</a></span></div>
+            <div class="flex gap-2"><button onclick="lpGo('login')" class="px-4 py-2.5 rounded-xl border-2 border-[#12233F] text-[#12233F] text-sm font-black hover:bg-[#12233F] hover:text-white transition">Log ind</button><button onclick="lpGo('signup')" class="px-4 py-2.5 rounded-xl bg-[#12233F] text-white text-sm font-black">Start gratis prøveperiode</button></div>
         </div></footer>
     </div>
 
     <!-- LOGIN / OPRET KONTO -->
-    <div id="auth-screen" class="hidden fixed inset-0 bg-[#292524] z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div id="auth-screen" class="hidden fixed inset-0 bg-[#F7F5F1] z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-card w-full max-w-md rounded-2xl border border-card p-6 space-y-5 shadow-2xl">
             <div class="text-center space-y-2">
                 <div class="w-14 h-14 brand-orange rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-xl shadow-orange-950/50 mx-auto">U</div>
                 <h1 class="text-2xl font-black text-white">UniSjak</h1>
-                <p class="text-xs text-gray-400">Timer, opgaver, vagtplan og KS – med tale.</p>
+                <p class="text-xs text-gray-400">Timer og KS – med tale.</p>
                 <button onclick="showScreen('landing')" class="text-[11px] text-gray-500 hover:text-white underline">← Tilbage til forsiden</button>
             </div>
 
@@ -203,7 +276,7 @@
     </div>
 
     <!-- SUPERADMIN-KONTROLCENTER -->
-    <div id="sa-screen" class="hidden fixed inset-0 bg-[#292524] z-50 overflow-y-auto">
+    <div id="sa-screen" class="hidden fixed inset-0 bg-[#F7F5F1] z-50 overflow-y-auto">
         <div class="max-w-3xl mx-auto p-4 pb-24 space-y-3">
             <div class="flex items-center justify-between gap-2 pt-1">
                 <h1 class="font-black text-lg text-white flex items-center"><i class="fa-solid fa-crown text-violet-400 mr-2"></i>Kontrolcenter <span id="sa-live" class="ml-2 w-2.5 h-2.5 rounded-full bg-amber-500"></span></h1>
@@ -235,7 +308,7 @@
     </div>
 
     <!-- FØRSTE GANG: OPRET VIRKSOMHED -->
-    <div id="onboard-screen" class="hidden fixed inset-0 bg-[#292524] z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div id="onboard-screen" class="hidden fixed inset-0 bg-[#F7F5F1] z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-card w-full max-w-md rounded-2xl border border-card p-6 space-y-5 shadow-2xl">
             <div class="text-center space-y-2">
                 <div class="w-14 h-14 brand-orange rounded-2xl flex items-center justify-center font-black text-2xl text-white mx-auto">U</div>
@@ -363,6 +436,7 @@
                 <!-- OVERBLIK -->
                 <div id="pc-view-overview" class="grid grid-cols-12 gap-6">
                     <div id="pc-overview-butik" class="hidden col-span-12"></div>
+                    <div id="pc-ov-ks" class="hidden col-span-12"></div>
                     <div id="ug-ov" class="hidden col-span-12 bg-card border border-card rounded-2xl p-5 space-y-3"></div>
                     <div class="col-span-7 bg-card border border-card rounded-2xl p-5 space-y-4">
                         <div class="flex justify-between items-center border-b border-gray-800 pb-3">
@@ -502,42 +576,45 @@
                 <div id="m-clock-home" class="hidden"></div>
                 <div id="m-extra-home" class="hidden bg-violet-950/30 border border-violet-700/50 rounded-2xl p-3"></div>
                 <div id="ug-today" class="hidden bg-card border border-card rounded-2xl p-3"></div>
-                <button onclick="triggerCamera('ks')" class="flex-1 w-full bg-card border border-card rounded-2xl p-4 text-left flex items-center justify-between shadow-md hover:border-orange-500/50 active:scale-98 transition group">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-14 h-14 bg-orange-950/60 border border-orange-600/40 rounded-2xl flex items-center justify-center shrink-0"><i class="fa-solid fa-camera text-2xl brand-orange-text"></i></div>
-                        <div><h2 class="text-xl font-black text-white leading-tight">KS / Foto</h2><p class="text-xs text-gray-400">Tag foto med kort, tale eller tast</p></div>
+                <button onclick="triggerCamera('ks')" class="flex-1 w-full bg-card border border-card rounded-3xl p-5 text-left flex items-center justify-between shadow-md hover:border-orange-500/50 active:scale-98 transition group">
+                    <div class="flex items-center space-x-5">
+                        <div class="w-[76px] h-[76px] bg-orange-950/60 border border-orange-600/40 rounded-[22px] flex items-center justify-center shrink-0"><i class="fa-solid fa-camera text-4xl brand-orange-text"></i></div>
+                        <div><h2 class="text-[25px] font-black text-white leading-tight tracking-tight">KS / Foto</h2><p class="text-sm text-gray-400">Tag foto med kort, tale eller tast</p></div>
                     </div>
                     <i class="fa-solid fa-chevron-right text-gray-500"></i>
                 </button>
-                <button onclick="openTimerModal()" class="flex-1 w-full bg-card border border-card rounded-2xl p-4 text-left flex items-center justify-between shadow-md hover:border-blue-500/50 active:scale-98 transition group">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-14 h-14 bg-blue-950/60 border border-blue-600/40 rounded-2xl flex items-center justify-center shrink-0"><i class="fa-solid fa-stopwatch text-2xl text-blue-500"></i></div>
-                        <div><h2 class="text-xl font-black text-white leading-tight">Registrér Timer</h2><p class="text-xs text-gray-400">Dagens arbejdstid</p></div>
+                <button onclick="openTimerModal()" class="flex-1 w-full bg-card border border-card rounded-3xl p-5 text-left flex items-center justify-between shadow-md hover:border-blue-500/50 active:scale-98 transition group">
+                    <div class="flex items-center space-x-5">
+                        <div class="w-[76px] h-[76px] bg-blue-950/60 border border-blue-600/40 rounded-[22px] flex items-center justify-center shrink-0"><i class="fa-solid fa-stopwatch text-4xl text-blue-500"></i></div>
+                        <div><h2 class="text-[25px] font-black text-white leading-tight tracking-tight">Registrér Timer</h2><p class="text-sm text-gray-400">Dagens arbejdstid</p></div>
                     </div>
                     <i class="fa-solid fa-chevron-right text-gray-500"></i>
                 </button>
-                <button onclick="switchTab('shifts')" class="flex-1 w-full bg-card border border-card rounded-2xl p-4 text-left flex items-center justify-between shadow-md hover:border-sky-500/50 active:scale-98 transition group">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-14 h-14 bg-sky-950/60 border border-sky-600/40 rounded-2xl flex items-center justify-center shrink-0"><i class="fa-solid fa-calendar-week text-2xl text-sky-400"></i></div>
-                        <div><h2 class="text-xl font-black text-white leading-tight">Vagtplan</h2><p class="text-xs text-gray-400">Hvem skal hvor</p></div>
+                <button onclick="switchTab('shifts')" class="flex-1 w-full bg-card border border-card rounded-3xl p-5 text-left flex items-center justify-between shadow-md hover:border-sky-500/50 active:scale-98 transition group">
+                    <div class="flex items-center space-x-5">
+                        <div class="w-[76px] h-[76px] bg-sky-950/60 border border-sky-600/40 rounded-[22px] flex items-center justify-center shrink-0"><i class="fa-solid fa-calendar-week text-4xl text-sky-400"></i></div>
+                        <div><h2 class="text-[25px] font-black text-white leading-tight tracking-tight">Vagtplan</h2><p class="text-sm text-gray-400">Hvem skal hvor</p></div>
                     </div>
                     <i class="fa-solid fa-chevron-right text-gray-500"></i>
                 </button>
-                <button onclick="switchTab('tasks')" class="flex-1 w-full bg-card border border-card rounded-2xl p-4 text-left flex items-center justify-between shadow-md hover:border-emerald-500/50 active:scale-98 transition group">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-14 h-14 bg-emerald-950/60 border border-emerald-600/40 rounded-2xl flex items-center justify-center shrink-0"><i class="fa-solid fa-list-check text-2xl text-emerald-400"></i></div>
-                        <div><h2 class="text-xl font-black text-white leading-tight">Opgave / Pakkeliste</h2><p class="text-xs text-gray-400">Tjekliste til dig eller sjak</p></div>
+                <button onclick="switchTab('tasks')" class="flex-1 w-full bg-card border border-card rounded-3xl p-5 text-left flex items-center justify-between shadow-md hover:border-emerald-500/50 active:scale-98 transition group">
+                    <div class="flex items-center space-x-5">
+                        <div class="w-[76px] h-[76px] bg-emerald-950/60 border border-emerald-600/40 rounded-[22px] flex items-center justify-center shrink-0"><i class="fa-solid fa-list-check text-4xl text-emerald-400"></i></div>
+                        <div><h2 class="text-[25px] font-black text-white leading-tight tracking-tight">Opgave / Pakkeliste</h2><p class="text-sm text-gray-400">Tjekliste til dig eller sjak</p></div>
                     </div>
                     <i class="fa-solid fa-chevron-right text-gray-500"></i>
                 </button>
-                <button onclick="triggerCamera('materiale')" class="flex-1 w-full bg-card border border-card rounded-2xl p-4 text-left flex items-center justify-between shadow-md hover:border-purple-500/50 active:scale-98 transition group">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-14 h-14 bg-purple-950/60 border border-purple-600/40 rounded-2xl flex items-center justify-center shrink-0"><i class="fa-solid fa-truck-ramp-box text-2xl text-purple-400"></i></div>
-                        <div><h2 class="text-xl font-black text-white leading-tight">Modtag Materiale</h2><p class="text-xs text-gray-400">Foto &amp; oplagssted</p></div>
+                <button onclick="triggerCamera('materiale')" class="flex-1 w-full bg-card border border-card rounded-3xl p-5 text-left flex items-center justify-between shadow-md hover:border-purple-500/50 active:scale-98 transition group">
+                    <div class="flex items-center space-x-5">
+                        <div class="w-[76px] h-[76px] bg-purple-950/60 border border-purple-600/40 rounded-[22px] flex items-center justify-center shrink-0"><i class="fa-solid fa-truck-ramp-box text-4xl text-purple-400"></i></div>
+                        <div><h2 class="text-[25px] font-black text-white leading-tight tracking-tight">Modtag Materiale</h2><p class="text-sm text-gray-400">Foto &amp; oplagssted</p></div>
                     </div>
                     <i class="fa-solid fa-plus text-gray-500"></i>
                 </button>
             </div>
+
+            <!-- OVERBLIK (ledere) -->
+            <div id="tab-overview" class="hidden space-y-3"></div>
 
             <!-- KS -->
             <div id="tab-ks" class="hidden space-y-3">
@@ -650,6 +727,7 @@
 
         <nav class="bg-card border-t border-card p-1.5 flex justify-around items-center shrink-0 z-10">
             <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center p-1.5 active-tab min-w-[48px]"><i class="fa-solid fa-house text-lg"></i><span class="text-[9px] font-bold mt-1">Hjem</span></button>
+            <button onclick="switchTab('overview')" id="nav-overview" style="display:none" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-chart-column text-lg"></i><span class="text-[9px] font-bold mt-1">Overblik</span></button>
             <button onclick="switchTab('ks')" id="nav-ks" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-camera text-lg"></i><span class="text-[9px] font-bold mt-1">KS</span></button>
             <button onclick="switchTab('timer')" id="nav-timer" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-clock text-lg"></i><span class="text-[9px] font-bold mt-1">Timer</span></button>
             <button onclick="switchTab('shifts')" id="nav-shifts" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-calendar-week text-lg"></i><span class="text-[9px] font-bold mt-1">Vagter</span></button>
@@ -1248,7 +1326,7 @@ function showScreen(which) {
     show('boot-screen', which === 'boot');
     show('auth-screen', which === 'auth');
     show('landing-screen', which === 'landing');
-    if (which === 'landing') { if (!LP.timers.length) lpDemoStart(LP.mode || 'haandvaerk'); } else if (typeof lpDemoStop === 'function') lpDemoStop();
+    if (which === 'landing') { if (!LP.timers.length) lpDemoStart(LP.mode || 'ks'); } else if (typeof lpDemoStop === 'function') lpDemoStop();
     show('onboard-screen', which === 'onboard');
     show('app-root', which === 'app');
     show('sa-screen', which === 'sa');
@@ -1683,7 +1761,7 @@ function scheduleRender() {
     requestAnimationFrame(() => { renderQueued = false; if (S.started) renderAll(); });
 }
 function renderAll() {
-    [renderChrome, renderProjectSelectors, renderKpis, renderPcOverview, renderPcTimersList, renderTimerTab, renderPayroll, renderPhotos, renderTasks, renderShifts, renderClock, renderQuick, renderTeam, renderPlanUi, renderUgeplan, updateMaps]
+    [renderChrome, renderProjectSelectors, renderKpis, renderMobOverview, renderPcOvKs, renderPcOverview, renderPcTimersList, renderTimerTab, renderPayroll, renderPhotos, renderTasks, renderShifts, renderClock, renderQuick, renderTeam, renderPlanUi, renderUgeplan, updateMaps]
         .forEach(f => { try { f(); } catch (e) { console.error(f.name, e); } });
 }
 
@@ -2103,7 +2181,7 @@ function renderShifts() {
         else if (wk.length) html += `<p class="mb-3 text-[11px] text-emerald-400 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Hele ugen er udgivet til personalet.</p>`;
         if (S.planReady && S.roles.length) html += `<div class="flex flex-wrap gap-1.5 mb-3">${S.roles.map(r => `<span class="text-[10px] font-black px-2 py-1 rounded-md border" style="${roleStyle(r.id)}">${esc(r.name)}</span>`).join('')}<span class="text-[10px] font-black px-2 py-1 rounded-md border border-dashed border-red-500/70 text-red-300">Åben vagt</span><span class="text-[10px] font-black px-2 py-1 rounded-md border border-sky-800 text-sky-300 bg-sky-950/40">Fri / ferie</span></div>`;
         const todayCol = ds => ds === todayStr ? 'bg-orange-500/5' : '';
-        html += `<div class="overflow-x-auto"><table class="border-separate w-full" style="border-spacing:3px;min-width:760px"><thead><tr><th class="sticky left-0 z-10 bg-[#3a3633] text-left text-[10px] uppercase text-gray-400 px-2 py-2" style="min-width:96px">Medarbejder</th>` +
+        html += `<div class="overflow-x-auto"><table class="border-separate w-full" style="border-spacing:3px;min-width:760px"><thead><tr><th class="sticky left-0 z-10 bg-white text-left text-[10px] uppercase text-gray-400 px-2 py-2" style="min-width:96px">Medarbejder</th>` +
             days.map((d, i) => { const t = fmtDate(d) === todayStr; return `<th class="${th} ${t ? 'text-orange-400 bg-orange-500/10 rounded-t-lg border-t-2 border-orange-500' : 'text-gray-400'}">${DAYS_SHORT[i]}<br><span class="font-normal">${dkDate(d)}</span>${t ? '<span class="block text-[8px] font-black">I DAG</span>' : ''}</th>`; }).join('') +
             `<th class="${th} text-gray-400" style="min-width:56px">Timer</th></tr></thead><tbody>` +
             people.map(pr => {
@@ -2123,15 +2201,15 @@ function renderShifts() {
                     else { inner = '+'; st = 'background:rgba(17,24,39,.7);border-color:#4a4541;color:#7a746e'; }
                     return `<td class="${todayCol(ds)}"><button data-act="edit-shift" data-user="${pr.id}" data-date="${ds}" class="w-full min-h-[58px] rounded-lg px-1 border text-[11px] font-bold active:scale-95 transition" style="${st}">${inner}</button></td>`;
                 }).join('');
-                return `<tr><td class="sticky left-0 z-10 bg-[#3a3633] text-sm font-bold text-white px-2 py-1 truncate" style="max-width:110px">${esc(pr.full_name)}</td>${cells}<td class="text-center text-sm font-black ${tot ? 'text-white' : 'text-gray-600'}">${tot ? hoursOf(tot) + ' t' : '–'}</td></tr>`;
+                return `<tr><td class="sticky left-0 z-10 bg-white text-sm font-bold text-white px-2 py-1 truncate" style="max-width:110px">${esc(pr.full_name)}</td>${cells}<td class="text-center text-sm font-black ${tot ? 'text-white' : 'text-gray-600'}">${tot ? hoursOf(tot) + ' t' : '–'}</td></tr>`;
             }).join('') +
             // åbne vagter
-            (S.planReady && S.roles.length ? `<tr><td class="sticky left-0 z-10 bg-[#3a3633] text-[10px] font-black text-red-300 uppercase px-2 py-1">Åbne vagter</td>` + days.map(d => {
+            (S.planReady && S.roles.length ? `<tr><td class="sticky left-0 z-10 bg-white text-[10px] font-black text-red-300 uppercase px-2 py-1">Åbne vagter</td>` + days.map(d => {
                 const ds = fmtDate(d), open = openRolesOn(ds);
                 return `<td class="${todayCol(ds)} align-top">` + (open.length ? open.map(o => `<button data-act="plan-open" class="w-full mb-1 rounded-lg border-2 border-dashed border-red-500/70 bg-red-950/20 text-red-300 text-[10px] font-black px-1 py-1.5 leading-tight">${esc(o.role.name)}<span class="block text-[9px] opacity-80">${o.miss} mangler</span></button>`).join('') : '<span class="block text-center text-emerald-500 text-xs">✓</span>') + '</td>';
             }).join('') + '<td></td></tr>' : '') +
             // totaler pr. dag
-            `<tr><td class="sticky left-0 z-10 bg-[#3a3633] text-[10px] font-black text-gray-400 uppercase px-2 py-2">Total</td>` + days.map(d => {
+            `<tr><td class="sticky left-0 z-10 bg-white text-[10px] font-black text-gray-400 uppercase px-2 py-2">Total</td>` + days.map(d => {
                 const ds = fmtDate(d), ss = S.shifts.filter(s => s.shift_date === ds), min = ss.reduce((a, s) => a + shiftMinutes(s), 0);
                 return `<td class="${todayCol(ds)} text-center py-1"><span class="block text-xs font-black text-white">${min ? hoursOf(min) + ' t' : '–'}</span><span class="block text-[10px] text-gray-400">${ss.length} vagt${ss.length === 1 ? '' : 'er'}</span></td>`;
             }).join('') + `<td class="text-center text-xs font-black text-orange-300">${hoursOf(wk.reduce((a, s) => a + shiftMinutes(s), 0))} t</td></tr>` +
@@ -5281,14 +5359,87 @@ function updateMaps() {
     pcMarkers = draw(pcMap, pcMarkers);
 }
 
+/* ------------------------------ OVERBLIK (mobil, ledere) ------------------------------ */
+/* KS i fokus: åbne punkter fordelt på sikkerhed, afvigelser og ekstraarbejde. Ingen løneksport her (den ligger på pc). */
+const mobOverviewOn = () => !!S.profile && isManager() && !isGuest();
+function ovOpenPoints() {
+    const ks = S.photos.filter(p => p.kind === 'ks');
+    const sik = ks.filter(p => p.safety_level && !p.safety_closed_at);
+    const afv = ks.filter(p => !p.is_extra && !p.safety_level && p.category === 'Afvigelse' && !p.dev_closed_at);
+    const eks = ks.filter(p => p.is_extra && !p.safety_level && extraStatus(p) !== 'done');
+    return { sik, afv, eks };
+}
+function renderMobOverview() {
+    const on = mobOverviewOn(), nav = $('nav-overview');
+    if (nav) nav.style.display = on ? '' : 'none';
+    if (!on) { if (S.mobTab === 'overview') switchTab('home'); return; }
+    const el = $('tab-overview'); if (!el || S.mobTab !== 'overview') return;
+    const ksOn = hasKs(), c = S.company || {};
+    let h = `<div class="px-1 pt-1"><p class="text-sm text-gray-400">${esc(c.name || '')}</p><h2 class="text-3xl font-black text-white tracking-tight">Overblik</h2></div>`;
+    if (ksOn) {
+        const o = ovOpenPoints(), n = o.sik.length + o.afv.length + o.eks.length;
+        const chip = (cnt, t, cls) => cnt ? `<span class="${cls} px-2.5 py-1.5 rounded-xl text-xs font-black">${cnt} ${t}</span>` : '';
+        h += `<div class="bg-card border border-card rounded-3xl p-5 space-y-3"><div class="flex items-baseline gap-3"><span class="text-6xl font-black text-white leading-none">${n}</span><span class="text-base text-gray-300 font-semibold">åbne KS-punkter</span></div>` +
+            (n ? `<div class="flex flex-wrap gap-2">${chip(o.sik.length, 'sikkerhed', 'bg-amber-500 text-gray-950')}${chip(o.afv.length, o.afv.length === 1 ? 'afvigelse' : 'afvigelser', 'bg-gray-700 text-gray-100')}${chip(o.eks.length, 'ekstraarbejde', 'bg-violet-900 text-violet-100')}</div>` : '<p class="text-sm text-gray-400">Ingen åbne punkter. Godt gået.</p>') + '</div>';
+        const rows = o.sik.concat(o.afv, o.eks).sort((a, b) => (b.safety_level ? 1 : 0) - (a.safety_level ? 1 : 0) || new Date(a.created_at) - new Date(b.created_at)).slice(0, 6);
+        if (rows.length) {
+            h += '<div class="space-y-2"><p class="text-xs text-gray-400 font-bold px-1">Åbne KS-punkter</p>' + rows.map(p => {
+                const tag = p.safety_level ? ['Sikkerhed', 'bg-amber-500 text-gray-950'] : (p.is_extra ? ['Ekstra', 'bg-violet-900 text-violet-100'] : ['Afvigelse', 'bg-gray-700 text-gray-100']);
+                const d = Math.max(0, Math.floor((Date.now() - new Date(p.created_at)) / 86400000)), age = d === 0 ? 'i dag' : d + (d === 1 ? ' dag' : ' dage');
+                return `<button type="button" onclick="openPhoto('${esc(p.id)}')" class="w-full bg-card border border-card rounded-2xl px-4 py-3 text-left flex items-center gap-3 active:scale-98 transition"><span class="${tag[1]} px-2 py-1 rounded-lg text-[11px] font-black shrink-0">${tag[0]}</span><span class="min-w-0 flex-1"><span class="block text-[15px] font-bold text-white truncate">${esc(photoHead(p, p.category || 'KS-punkt'))}</span><span class="block text-xs text-gray-400 truncate">${esc(projShort(proj(p.project_id)))} · ${age}</span></span></button>`;
+            }).join('') + '</div>';
+        }
+    }
+    if (modOn('time')) {
+        const mon = mondayOf(new Date()), wk = fmtDate(mon), sun = sundayOf(wk);
+        const users = new Set(S.time.filter(t => t.work_date >= wk && t.work_date <= sun).map(t => t.user_id));
+        let pend = 0; users.forEach(u => { if (!approvedFor(u, wk)) pend++; });
+        h += `<button type="button" onclick="switchTab('timer')" class="w-full bg-card border border-card rounded-2xl px-5 py-4 text-left flex items-center gap-3 active:scale-98 transition"><span class="flex-1 text-base font-bold text-white">Timesedler til godkendelse</span><span class="text-xl font-black text-white">${pend}</span><i class="fa-solid fa-chevron-right text-gray-500"></i></button>`;
+    }
+    el.innerHTML = h;
+}
+
+/* ---- pc-overblik: KS i fokus (åbne punkter, fordeling, pr. sag) ---- */
+function renderPcOvKs() {
+    const el = $('pc-ov-ks'); if (!el) return;
+    const on = !!S.profile && isManager() && !isGuest() && hasKs();
+    el.classList.toggle('hidden', !on);
+    if (!on) return;
+    const o = ovOpenPoints(), all = o.sik.concat(o.afv, o.eks), n = all.length;
+    const wkAgo = Date.now() - 7 * 86400000;
+    const closed7 = S.photos.filter(p => p.kind === 'ks' && !p.is_extra && closedAt(p) && new Date(closedAt(p)).getTime() >= wkAgo).length;
+    const card = (v, t, cls, big) => `<div class="${big ? 'bg-[#12233F]' : 'bg-card border border-card'} rounded-3xl p-5"><p class="text-5xl font-black leading-none ${cls}">${v}</p><p class="text-sm mt-2 ${big ? 'text-[#D5DCE8]' : 'text-gray-400'} font-semibold">${t}</p></div>`;
+    let h = '<div class="space-y-4"><div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="text-2xl font-black text-white tracking-tight">Kvalitetssikring</h3><p class="text-sm text-gray-400">Alle sager · åbne punkter lige nu</p></div>' +
+        '<div class="flex gap-2"><button onclick="openExport(\'ks\')" class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white px-5 py-3 rounded-xl text-sm font-black">Eksportér KS-rapport</button><button onclick="triggerCamera(\'ks\')" class="brand-orange text-white px-5 py-3 rounded-xl text-sm font-black">Ny KS-registrering</button></div></div>' +
+        '<div class="grid grid-cols-4 gap-4">' + card(n, 'åbne KS-punkter i alt', 'text-white', true) + card(o.sik.length, o.sik.length === 1 ? 'sikkerhedspunkt åbent' : 'sikkerhedspunkter åbne', o.sik.length ? 'text-amber-400' : 'text-white') + card(o.afv.length, o.afv.length === 1 ? 'afvigelse åben' : 'afvigelser åbne', 'text-white') + card(closed7, 'lukket de seneste 7 dage', 'text-emerald-400') + '</div>';
+    const rows = all.sort((a, b) => (b.safety_level ? 1 : 0) - (a.safety_level ? 1 : 0) || new Date(a.created_at) - new Date(b.created_at)).slice(0, 8);
+    const perProj = {}; all.forEach(p => { perProj[p.project_id] = (perProj[p.project_id] || 0) + 1; });
+    const projRows = Object.keys(perProj).sort((a, b) => perProj[b] - perProj[a]).slice(0, 6), mx = Math.max(1, ...Object.values(perProj));
+    h += '<div class="grid grid-cols-12 gap-4"><div class="col-span-8 bg-card border border-card rounded-3xl p-5"><p class="text-lg font-black text-white mb-2">Åbne KS-punkter</p>';
+    if (!rows.length) h += '<p class="text-sm text-gray-400 py-6">Ingen åbne punkter. Godt gået.</p>';
+    else {
+        h += '<table class="w-full text-left text-sm"><thead><tr class="text-gray-400 text-xs"><th class="py-2 font-bold">Type</th><th class="py-2 px-3 font-bold">Beskrivelse</th><th class="py-2 px-3 font-bold">Sag</th><th class="py-2 font-bold text-right">Alder</th></tr></thead><tbody class="divide-y divide-gray-800/70">' +
+            rows.map(p => {
+                const tag = p.safety_level ? ['Sikkerhed', 'bg-amber-500 text-gray-950'] : (p.is_extra ? ['Ekstra', 'bg-violet-900 text-violet-100'] : ['Afvigelse', 'bg-gray-700 text-gray-100']);
+                const d = Math.max(0, Math.floor((Date.now() - new Date(p.created_at)) / 86400000));
+                return `<tr class="cursor-pointer hover:bg-gray-800/40" onclick="openPhoto('${esc(p.id)}')"><td class="py-3"><span class="${tag[1]} px-2 py-1 rounded-lg text-[11px] font-black">${tag[0]}</span></td><td class="py-3 px-3 font-bold text-white">${esc(photoHead(p, p.category || 'KS-punkt'))}</td><td class="py-3 px-3 text-gray-400">${esc(projShort(proj(p.project_id)))}</td><td class="py-3 text-right ${d === 0 && p.safety_level ? 'text-amber-400 font-black' : 'text-gray-400'}">${d === 0 ? 'i dag' : d + (d === 1 ? ' dag' : ' dage')}</td></tr>`;
+            }).join('') + '</tbody></table>';
+    }
+    h += '</div><div class="col-span-4 bg-card border border-card rounded-3xl p-5 space-y-3"><p class="text-lg font-black text-white">Pr. sag</p>';
+    h += projRows.length ? projRows.map(id => { const pr = proj(id); return `<div><div class="flex justify-between text-sm"><span class="font-bold text-white truncate">${esc(projShort(pr))}</span><span class="text-gray-400">${perProj[id]} åbne</span></div><div class="h-2.5 rounded-full bg-gray-800 mt-1.5"><div class="h-2.5 rounded-full bg-orange-500" style="width:${Math.round(perProj[id] / mx * 100)}%"></div></div></div>`; }).join('') : '<p class="text-sm text-gray-400">Ingen åbne punkter på nogen sag.</p>';
+    h += '</div></div></div>';
+    el.innerHTML = h;
+}
+
 /* ------------------------------ NAVIGATION ------------------------------ */
 function switchTab(tab) {
     S.mobTab = tab;
-    ['home', 'ks', 'timer', 'shifts', 'plan', 'materials', 'tasks', 'admin'].forEach(t => {
+    ['home', 'overview', 'ks', 'timer', 'shifts', 'plan', 'materials', 'tasks', 'admin'].forEach(t => {
         const el = $('tab-' + t); if (el) el.classList.toggle('hidden', t !== tab);
         const nav = $('nav-' + t); if (nav) nav.className = 'flex flex-col items-center p-1.5 min-w-[48px] ' + (t === tab ? 'active-tab' : 'inactive-tab');
     });
     if (tab === 'ks') setTimeout(initMobileMap, 200);
+    if (tab === 'overview') renderMobOverview();
     if (tab === 'plan') { U.week = 0; U.day = null; ugEnsure().then(scheduleRender).catch(() => {}); }
     const c = $('app-content'); if (c) c.scrollTop = 0;
 }
@@ -7178,10 +7329,10 @@ function ugBoardHtml() {
         h += `<div class="bg-card border border-card rounded-2xl p-5 text-sm text-gray-400">${admin ? 'Der er ingen etaper på sagen endnu. Tryk "Etaper, fag &amp; sjak" og tilføj dem – en pr. linje.' : esc(tr('noplan'))}</div>`;
         return h;
     }
-    h += `<div class="overflow-x-auto bg-card border border-card rounded-2xl"><table class="w-full border-collapse text-xs"><thead><tr><th class="sticky left-0 z-10 bg-[#3a3633] text-left text-[10px] uppercase text-gray-400 px-2 py-2 w-28">Etape</th>` +
+    h += `<div class="overflow-x-auto bg-card border border-card rounded-2xl"><table class="w-full border-collapse text-xs"><thead><tr><th class="sticky left-0 z-10 bg-white text-left text-[10px] uppercase text-gray-400 px-2 py-2 w-28">Etape</th>` +
         days.map(i => { const ds = fmtDate(addDays(mon, i)); return `<th class="px-1 py-2 text-[10px] uppercase ${ds === todayS ? 'text-orange-400' : 'text-gray-400'}">${esc(tr('dow', lang)[i])} ${dkDate(addDays(mon, i))}</th>`; }).join('') + `</tr></thead><tbody>`;
     zones.forEach(z => {
-        h += `<tr class="border-t border-gray-800"><td class="sticky left-0 z-10 bg-[#3a3633] px-2 py-1.5 align-top"><div class="font-black text-white text-xs">${esc(z.name)}</div>${z.km_from != null ? `<div class="text-[10px] text-gray-500">km ${esc(z.km_from)}–${esc(z.km_to)}</div>` : ''}</td>`;
+        h += `<tr class="border-t border-gray-800"><td class="sticky left-0 z-10 bg-white px-2 py-1.5 align-top"><div class="font-black text-white text-xs">${esc(z.name)}</div>${z.km_from != null ? `<div class="text-[10px] text-gray-500">km ${esc(z.km_from)}–${esc(z.km_to)}</div>` : ''}</td>`;
         days.forEach(i => {
             const ds = fmtDate(addDays(mon, i));
             let cs = U.cells.filter(c => c.zone_id === z.id && c.work_date === ds).sort((a, b) => ((tradeOf(a.trade_id) || {}).sort || 0) - ((tradeOf(b.trade_id) || {}).sort || 0));
@@ -8813,10 +8964,25 @@ document.addEventListener('keydown', e => {
 /* ------------------------------ LANDINGSSIDE ------------------------------ */
 function lpGo(tab) { lpDemoStop(); showScreen('auth'); switchAuthTab(tab); }
 function lpScroll(e, id) { e.preventDefault(); const el = $(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+const LP_PACKS = {
+    timer: { name: 'Timer', p: 49, min: 499, list: ['Timeregistrering på sekunder', 'Diæt og kørsel pr. virksomhed', 'Ugegodkendelse og delvis ugelås', 'Løn-eksport som CSV og PDF', 'Fravær og overblik pr. medarbejder', 'Tale-til-tekst'] },
+    ks: { name: 'Timer + KS', p: 69, min: 699, list: ['Alt i Timer', 'KS med foto og GPS', 'Sikkerhed i grøn, gul og rød', 'Fejl og mangler med ansvarlig og status', 'Ekstraarbejde der kan faktureres', 'KS-rapport som PDF til bygherre'] },
+    fuld: { name: 'Fuld pakke', p: 89, min: 999, list: ['Alt i Timer + KS', 'Opgaver og pakkelister', 'Materialemodtagelse med foto og oplagssted', 'Udenlandske sjak på dansk, engelsk, tjekkisk og polsk'] }
+};
+const lpTotal = (k, n) => Math.max(LP_PACKS[k].min, LP_PACKS[k].p * n);
+function lpPack(k) {
+    if (!LP_PACKS[k]) k = 'ks';
+    LP.pack = k;
+    Object.keys(LP_PACKS).forEach(x => { const b = $('lp-pk-' + x); if (b) b.className = 'text-left rounded-2xl border-2 p-5 transition' + (x === 'ks' ? ' relative' : '') + (x === k ? ' border-[#12233F] bg-[#F7F5F1]' : ' border-[#E7E3DA] bg-white hover:border-[#12233F]'); });
+    const pk = LP_PACKS[k]; $('lp-pack-name').textContent = pk.name;
+    $('lp-pack-list').innerHTML = pk.list.map(t => `<li><i class="fa-solid fa-check text-[#047857] w-6"></i>${t}</li>`).join('');
+    lpPrice($('lp-range').value);
+}
 function lpPrice(v) {
-    const n = Math.max(1, Math.min(50, parseInt(v, 10) || 1));
-    $('lp-n').textContent = n; $('lp-total').textContent = 249 + 49 * (n - 1);
-    $('lp-calc').textContent = n === 1 ? 'Basis: 249 kr./md.' : '249 + ' + (n - 1) + ' × 49';
+    const k = LP.pack || 'ks', pk = LP_PACKS[k], n = Math.max(1, Math.min(100, parseInt(v, 10) || 1)), raw = pk.p * n, tot = lpTotal(k, n);
+    $('lp-n').textContent = n; $('lp-total').textContent = tot;
+    $('lp-calc').textContent = raw >= pk.min ? n + ' × ' + pk.p + ' kr.' : 'Mindstepris ' + pk.min + ' kr. (' + n + ' × ' + pk.p + ' = ' + raw + ' kr.)';
+    $('lp-ex').innerHTML = [5, 10, 25, 50].map(m => `<div class="bg-white/10 rounded-xl p-2"><p class="text-[10px] text-[#D5DCE8]">${m} pers.</p><p class="font-black text-white text-sm">${lpTotal(k, m)} kr.</p></div>`).join('');
 }
 const LP = { timers: [], mode: null };
 const lpAt = (ms, fn) => { LP.timers.push(setTimeout(fn, ms)); };
@@ -8832,16 +8998,17 @@ function lpMic(state, label) {
     $('lp-mic-label').textContent = label;
 }
 const LP_SCEN = {
-    haandvaerk: {
-        title: 'Opgave', idle: 'Indtal opgave',
-        say: 'Pak bilen til Jeppe og Maria med underpunkter hent stige, læs værktøj',
-        card: (done) => `<div class="lp-in rounded-xl border ${done ? 'border-emerald-600/60 bg-emerald-950/30' : 'border-gray-700 bg-gray-900'} p-3 space-y-2">` +
-            `<div class="flex items-center justify-between"><span class="text-xs font-black text-white">Pak bilen</span><span class="text-[9px] font-black ${done ? 'text-emerald-300' : 'text-gray-400'}">${done ? '2/2' : '0/2'}</span></div>` +
-            `<div class="flex gap-1.5"><span class="text-[9px] font-black bg-orange-600 text-white rounded-full px-2 py-0.5">Jeppe</span><span class="text-[9px] font-black bg-orange-600 text-white rounded-full px-2 py-0.5">Maria</span></div>` +
-            `<div class="h-1.5 bg-gray-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 transition-all duration-700" style="width:${done ? 100 : 0}%"></div></div>` +
-            ['Hent stige', 'Læs værktøj'].map(t => `<div class="flex items-center space-x-2 text-[11px] ${done ? 'text-gray-500 line-through' : 'text-gray-100'}"><span class="w-4 h-4 rounded border ${done ? 'bg-emerald-500 border-emerald-500 text-gray-950' : 'border-gray-600'} flex items-center justify-center text-[9px]">${done ? '✓' : ''}</span><span>${t}</span></div>`).join('') + `</div>`,
+    ks: {
+        title: 'KS / Foto', idle: 'Indtal KS-punkt',
+        say: 'Revne i væg ved køkkenet, sikkerhed rød, tag foto',
+        card: (done) => `<div class="lp-in rounded-xl border ${done ? 'border-red-600/60 bg-red-950/20' : 'border-gray-700 bg-gray-900'} p-3 space-y-2">` +
+            `<div class="flex items-center justify-between"><span class="text-[9px] font-black bg-red-600 text-white rounded px-1.5 py-0.5">${done ? 'SIK-001 · RØD' : 'Opretter…'}</span><span class="text-[9px] font-black ${done ? 'text-amber-300' : 'text-gray-400'}">${done ? 'Åbent i dag' : ''}</span></div>` +
+            `<div class="h-20 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-500"><i class="fa-solid fa-camera text-xl"></i></div>` +
+            `<div class="text-xs font-black text-white">Revne i væg ved køkkenet</div>` +
+            `<div class="text-[10px] text-gray-300"><i class="fa-solid fa-location-dot text-orange-400 mr-1"></i>${done ? 'Østergade 12, 8900 Randers' : 'Henter position…'}</div>` +
+            (done ? `<div class="text-[10px] font-black text-emerald-400">✓ Gemt og klar til KS-rapport</div>` : '') + `</div>`,
         run() {
-            const S0 = LP_SCEN.haandvaerk; const end = lpType(S0.say, 700, 230);
+            const S0 = LP_SCEN.ks; const end = lpType(S0.say, 700, 260);
             lpAt(300, () => lpMic('listen', 'Lytter… tryk når du er færdig'));
             lpAt(end + 500, () => lpMic('think', 'Udfylder…'));
             lpAt(end + 1300, () => { lpMic('idle', S0.idle); $('lp-result').innerHTML = S0.card(false); });
@@ -8849,64 +9016,30 @@ const LP_SCEN = {
             return end + 6200;
         }
     },
-    plan: {
-        title: 'Planlægning', idle: 'Sig en kommando',
-        say: 'Regn i morgen – stop de vejrfølsomme fag',
-        board(st) {
-            const T = { j: ['🚜', '#a16207'], a: ['💧', '#0e7490'], f: ['🧱', '#7c3aed'], b: ['🏗️', '#6b7280'] };
-            const rows = [['Etape 1', ['j', 'j', 'a', 'a', 'f']], ['Etape 2', ['a', 'j,a', 'b', 'b', 'f']], ['Etape 3', ['', 'j', 'j', 'b', 'f']]];
-            const bd = (k, d, r, c) => {
-                const t = T[k], stop = st >= 2 && c === 1 && k !== 'f', warn = st === 1 && ((r === 0 && c === 1 && k === 'j') || (r === 1 && c === 1 && k === 'j'));
-                return `<div class="rounded-md px-0.5 py-0.5 text-[10px] leading-none text-center ${stop ? 'opacity-40 line-through' : ''}" style="background:${t[1]}44;border:1px solid ${t[1]}aa">${t[0]}${stop ? '⛔' : ''}${warn ? '<span class="text-amber-300">⚠</span>' : ''}</div>`;
-            };
-            return `<div class="lp-in rounded-xl border border-gray-700 bg-gray-900 p-2 space-y-1"><div class="grid gap-1 text-[8px] font-black text-gray-400" style="grid-template-columns:34px repeat(5,1fr)"><span></span>${['Man', 'Tir', 'Ons', 'Tor', 'Fre'].map(x => `<span class="text-center ${x === 'Tir' ? 'text-orange-400' : ''}">${x}</span>`).join('')}</div>` +
-                rows.map(([n, cs], r) => `<div class="grid gap-1 items-start" style="grid-template-columns:34px repeat(5,1fr)"><span class="text-[8px] font-black text-white leading-tight">${n}</span>` + cs.map((c, ci) => `<div class="space-y-0.5">${c ? c.split(',').map(k => bd(k, 0, r, ci)).join('') : ''}</div>`).join('') + `</div>`).join('') +
-                `<p class="text-[9px] font-black pt-0.5 ${st === 1 ? 'text-amber-300' : st >= 2 ? 'text-sky-300' : 'text-gray-400'}">${st === 1 ? '⚠ Samme sjak to steder tirsdag' : st >= 2 ? '⛔ 4 vejrfølsomme felter stoppet – bekræftet' : 'Uge 48 · Tryk et felt for at ændre'}</p></div>`;
-        },
-        today(l) {
-            const D = { da: ['I dag', 'Jord & grav', 'Sjak: Polsk sjak · ×5 mand', 'Registrér 07–15 her', 'Tag KS-foto her'], en: ['Today', 'Earthworks', 'Crew: Polish crew · ×5 people', 'Log 07–15 here', 'Take QC photo here'], cs: ['Dnes', 'Zemní práce', 'Parta: Polská parta · ×5 osob', 'Zapsat 07–15 zde', 'Vyfotit kontrolu zde'], pl: ['Dziś', 'Roboty ziemne', 'Brygada: Polska brygada · ×5 osób', 'Zapisz 07–15 tutaj', 'Zrób zdjęcie kontroli tutaj'] }[l];
-            return `<div class="lp-in rounded-xl border border-gray-700 bg-gray-900 p-2.5 space-y-2"><div class="flex items-center justify-between"><span class="text-xs font-black text-white">${D[0]}</span><span class="flex gap-1">${['da', 'en', 'cs', 'pl'].map(x => `<span class="text-[8px] font-black rounded px-1 py-0.5 ${x === l ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-400'}">${x.toUpperCase()}</span>`).join('')}</span></div>` +
-                `<div class="rounded-xl p-2.5 space-y-1.5" style="background:#a1620722;border:1px solid #a1620788"><div class="flex items-center gap-2"><span class="text-2xl">🚜</span><div><div class="text-sm font-black text-white leading-tight">${D[1]}</div><div class="text-[9px] text-gray-300 font-bold">Etape 1 · km 0–1,2</div></div></div><div class="text-[9px] text-gray-200">${D[2]}</div>` +
-                `<div class="rounded-lg bg-blue-600 text-white text-[10px] font-black text-center py-2">${D[3]}</div><div class="rounded-lg bg-gray-800 border border-gray-600 text-white text-[10px] font-black text-center py-2">📷 ${D[4]}</div></div></div>`;
-        },
-        card(done) { return LP_SCEN.plan.board(done ? 2 : 0); },
+    timer: {
+        title: 'Registrér timer', idle: 'Indtal timer',
+        say: 'Dagens timer 7 til 15 på Østergade, ligger ude',
+        card: (done) => `<div class="lp-in rounded-xl border ${done ? 'border-emerald-600/60 bg-emerald-950/30' : 'border-gray-700 bg-gray-900'} p-3 space-y-2">` +
+            `<div class="flex items-center justify-between"><span class="text-xs font-black text-white">${done ? 'Fredag' : 'Opretter…'}</span><span class="text-lg font-black ${done ? 'text-emerald-300' : 'text-gray-500'}">${done ? '8,0 t' : '– t'}</span></div>` +
+            `<div class="text-[11px] text-gray-200 font-mono">07:00–15:00</div>` +
+            `<div class="flex flex-wrap gap-1.5"><span class="text-[9px] font-black bg-gray-800 text-orange-300 rounded px-1.5 py-0.5">Østergade 12</span>${done ? '<span class="text-[9px] font-black bg-blue-600 text-white rounded-full px-2 py-0.5">Diæt: ligger ude</span>' : ''}</div>` +
+            (done ? `<div class="text-[10px] font-black text-emerald-400">✓ Gemt – til godkendelse i ugen</div>` : '') + `</div>`,
         run() {
-            const S0 = LP_SCEN.plan; const end = lpType(S0.say, 700, 230);
-            lpAt(0, () => { $('lp-result').innerHTML = S0.board(0); });
-            lpAt(900, () => { $('lp-result').innerHTML = S0.board(1); });
-            lpAt(300, () => lpMic('listen', 'Lytter… tryk når du er færdig'));
-            lpAt(end + 500, () => lpMic('think', 'Udfylder…'));
-            lpAt(end + 1300, () => { lpMic('idle', S0.idle); $('lp-result').innerHTML = S0.board(2); });
-            ['da', 'cs', 'en', 'pl'].forEach((l, i) => lpAt(end + 3800 + i * 1900, () => { $('lp-say').textContent = ''; $('lp-result').innerHTML = S0.today(l); }));
-            return end + 3800 + 4 * 1900 + 1200;
-        }
-    },
-    butik: {
-        title: 'Vagtplan', idle: 'Indtal vagt',
-        say: 'Bar fra 16 til 23, to personer',
-        card(filled) {
-            const chip = n => `<div class="lp-in flex items-center justify-between rounded-lg border px-2 py-1.5 text-[10px] font-black" style="background:hsl(24 70% 45% / .2);border-color:hsl(24 75% 55% / .65);color:hsl(24 95% 80%)"><span>${n}</span><span>Man 16:00–23:00</span><span>Bar</span></div>`;
-            const open = `<div class="flex items-center justify-between rounded-lg border-2 border-dashed border-red-500/70 bg-red-950/20 px-2 py-1.5 text-[10px] font-black text-red-300"><span>Åben vagt</span><span>Man 16:00–23:00</span><span>Bar</span></div>`;
-            return `<div class="lp-in rounded-xl border border-gray-700 bg-gray-900 p-3 space-y-2"><div class="flex items-center justify-between"><span class="text-xs font-black text-white">Rolle: Bar</span><span class="text-[9px] font-black text-gray-300">16:00–23:00 · ×2</span></div>` +
-                (filled ? chip('Nathja') + chip('Maria') + `<p class="text-[10px] font-black text-emerald-400">✓ Ingen åbne vagter</p>` : open + open + `<p class="text-[10px] font-black text-red-300">2 åbne vagter</p>`) + `</div>`;
-        },
-        run() {
-            const S0 = LP_SCEN.butik; const end = lpType(S0.say, 700, 330);
+            const S0 = LP_SCEN.timer; const end = lpType(S0.say, 700, 260);
             lpAt(300, () => lpMic('listen', 'Lytter… tryk når du er færdig'));
             lpAt(end + 500, () => lpMic('think', 'Udfylder…'));
             lpAt(end + 1300, () => { lpMic('idle', S0.idle); $('lp-result').innerHTML = S0.card(false); });
-            lpAt(end + 2700, () => { $('lp-result').innerHTML = S0.card(true); });
-            return end + 6000;
+            lpAt(end + 2900, () => { $('lp-result').innerHTML = S0.card(true); });
+            return end + 6200;
         }
     }
 };
 function lpDemoStart(mode) {
     lpDemoStop(); LP.mode = mode;
     const sc = LP_SCEN[mode];
-    const on = 'flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg bg-orange-600 text-white transition', off = 'flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-gray-400 hover:text-white transition';
-    $('lp-tab-haandvaerk').className = mode === 'haandvaerk' ? on : off;
-    $('lp-tab-butik').className = mode === 'butik' ? on : off;
-    $('lp-tab-plan').className = mode === 'plan' ? on : off;
+    const on = 'flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg bg-[#12233F] text-white transition', off = 'flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-[#566070] hover:text-[#12233F] transition';
+    $('lp-tab-ks').className = mode === 'ks' ? on : off;
+    $('lp-tab-timer').className = mode === 'timer' ? on : off;
     $('lp-ph-title').textContent = sc.title;
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const cycle = () => {
@@ -8920,7 +9053,7 @@ function lpDemoStart(mode) {
 
 (function init() {
     switchAuthTab('login');
-    lpPrice(5);
+    lpPack('ks');
     $('timer-date-input').value = fmtDate(new Date());
     ['pf-cat', 'ef-cat'].forEach(id => { $(id).innerHTML = '<option value="">Vælg kategori…</option>' + KS_CATS.map(c => `<option value="${esc(c)}">${esc(catName(c))}</option>`).join(''); });
     $('pf-cat').addEventListener('change', safeFormRender); $('ef-cat').addEventListener('change', () => { S.editSafeLv = S.editSafeLv || ''; editSafeRender(); });
