@@ -142,7 +142,7 @@
                     <button id="lp-tab-timer" onclick="lpDemoStart('timer')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-[#566070] hover:text-[#12233F] transition">Timer</button>
                 </div>
                 <div class="relative" style="width:272px">
-                    <div class="rounded-[2.4rem] border-[7px] border-[#12233F] bg-[#1c1917] shadow-2xl shadow-[#12233F]/30 overflow-hidden" style="height:540px">
+                    <div class="rounded-[2.4rem] border-[7px] border-[#12233F] bg-[#F7F5F1] shadow-2xl shadow-[#12233F]/30 overflow-hidden" style="height:540px">
                         <div class="flex justify-between items-center px-5 pt-3 pb-1 text-[10px] text-gray-400 font-bold"><span>9:41</span><span class="w-16 h-4 bg-gray-800 rounded-full"></span><span><i class="fa-solid fa-signal"></i> <i class="fa-solid fa-battery-full"></i></span></div>
                         <div class="px-4 pt-2 pb-2 flex items-center justify-between"><div class="flex items-center space-x-2"><div class="w-6 h-6 brand-orange rounded-lg flex items-center justify-center font-black text-xs text-white">U</div><span id="lp-ph-title" class="text-xs font-black text-white">KS / Foto</span></div><span class="text-[9px] text-emerald-400 font-black"><i class="fa-solid fa-circle text-[6px] mr-1"></i>Live</span></div>
                         <div class="px-4">
@@ -205,9 +205,9 @@
             <div class="max-w-5xl mx-auto px-4 py-16 space-y-8">
                 <div class="text-center space-y-3"><h2 class="text-3xl md:text-4xl font-black tracking-tight">Enkel pris pr. medarbejder</h2><p class="text-[#566070] text-lg">Første 14 dage er gratis. Vælg pakke og se, hvad det koster for jer.</p></div>
                 <div class="grid sm:grid-cols-3 gap-3" id="lp-packs">
-                    <button type="button" id="lp-pk-timer" onclick="lpPack('timer')" class="text-left rounded-2xl border-2 p-5 transition"><span class="block text-sm font-bold text-[#566070]">Timer</span><span class="block text-3xl font-black mt-1">49 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 499 kr.</span></button>
-                    <button type="button" id="lp-pk-ks" onclick="lpPack('ks')" class="text-left rounded-2xl border-2 p-5 transition relative"><span class="absolute -top-3 left-5 bg-[#FF5500] text-white text-[11px] font-black rounded-full px-3 py-1">Anbefalet</span><span class="block text-sm font-bold text-[#566070]">Timer + KS</span><span class="block text-3xl font-black mt-1">69 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 699 kr.</span></button>
-                    <button type="button" id="lp-pk-fuld" onclick="lpPack('fuld')" class="text-left rounded-2xl border-2 p-5 transition"><span class="block text-sm font-bold text-[#566070]">Fuld pakke</span><span class="block text-3xl font-black mt-1">89 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 999 kr.</span></button>
+                    <button type="button" id="lp-pk-timer" onclick="lpPack('timer')" class="text-left rounded-2xl border-2 p-5 transition"><span class="block text-sm font-bold text-[#566070]">Timer</span><span class="block text-3xl font-black mt-1">49 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 5 medarbejdere</span></button>
+                    <button type="button" id="lp-pk-ks" onclick="lpPack('ks')" class="text-left rounded-2xl border-2 p-5 transition relative"><span class="absolute -top-3 left-5 bg-[#FF5500] text-white text-[11px] font-black rounded-full px-3 py-1">Anbefalet</span><span class="block text-sm font-bold text-[#566070]">Timer + KS</span><span class="block text-3xl font-black mt-1">69 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 5 medarbejdere</span></button>
+                    <button type="button" id="lp-pk-fuld" onclick="lpPack('fuld')" class="text-left rounded-2xl border-2 p-5 transition"><span class="block text-sm font-bold text-[#566070]">Fuld pakke</span><span class="block text-3xl font-black mt-1">89 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 5 medarbejdere</span></button>
                 </div>
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="bg-[#F7F5F1] rounded-3xl p-7 space-y-4">
@@ -216,7 +216,7 @@
                     </div>
                     <div class="bg-[#12233F] text-white rounded-3xl p-7 space-y-5">
                         <div><div class="flex justify-between text-sm"><span class="font-bold text-[#D5DCE8]">Antal medarbejdere</span><strong id="lp-n" class="text-white text-lg">10</strong></div><input id="lp-range" type="range" min="1" max="100" value="10" oninput="lpPrice(this.value)" aria-label="Antal medarbejdere" class="w-full accent-orange-500 mt-2"></div>
-                        <div class="text-center"><span id="lp-total" class="text-5xl font-black">699</span><span class="text-[#D5DCE8] font-bold"> kr./md.</span><p id="lp-calc" class="text-xs text-[#D5DCE8] mt-1"></p></div>
+                        <div class="text-center"><span id="lp-total" class="text-5xl font-black">690</span><span class="text-[#D5DCE8] font-bold"> kr./md.</span><p id="lp-calc" class="text-xs text-[#D5DCE8] mt-1"></p></div>
                         <div id="lp-ex" class="grid grid-cols-4 gap-2 text-center"></div>
                         <button onclick="lpGo('signup')" class="w-full bg-[#FF5500] text-white py-4 rounded-2xl font-black active:scale-95 hover:brightness-110 transition">Start 14 dages gratis prøve</button>
                     </div>
@@ -8965,11 +8965,11 @@ document.addEventListener('keydown', e => {
 function lpGo(tab) { lpDemoStop(); showScreen('auth'); switchAuthTab(tab); }
 function lpScroll(e, id) { e.preventDefault(); const el = $(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 const LP_PACKS = {
-    timer: { name: 'Timer', p: 49, min: 499, list: ['Timeregistrering på sekunder', 'Diæt og kørsel pr. virksomhed', 'Ugegodkendelse og delvis ugelås', 'Løn-eksport som CSV og PDF', 'Fravær og overblik pr. medarbejder', 'Tale-til-tekst'] },
-    ks: { name: 'Timer + KS', p: 69, min: 699, list: ['Alt i Timer', 'KS med foto og GPS', 'Sikkerhed i grøn, gul og rød', 'Fejl og mangler med ansvarlig og status', 'Ekstraarbejde der kan faktureres', 'KS-rapport som PDF til bygherre'] },
-    fuld: { name: 'Fuld pakke', p: 89, min: 999, list: ['Alt i Timer + KS', 'Opgaver og pakkelister', 'Materialemodtagelse med foto og oplagssted', 'Udenlandske sjak på dansk, engelsk, tjekkisk og polsk'] }
+    timer: { name: 'Timer', p: 49, min: 5, list: ['Timeregistrering på sekunder', 'Diæt og kørsel pr. virksomhed', 'Ugegodkendelse og delvis ugelås', 'Løn-eksport som CSV og PDF', 'Fravær og overblik pr. medarbejder', 'Tale-til-tekst'] },
+    ks: { name: 'Timer + KS', p: 69, min: 5, list: ['Alt i Timer', 'KS med foto og GPS', 'Sikkerhed i grøn, gul og rød', 'Fejl og mangler med ansvarlig og status', 'Ekstraarbejde der kan faktureres', 'KS-rapport som PDF til bygherre'] },
+    fuld: { name: 'Fuld pakke', p: 89, min: 5, list: ['Alt i Timer + KS', 'Opgaver og pakkelister', 'Materialemodtagelse med foto og oplagssted', 'Udenlandske sjak på dansk, engelsk, tjekkisk og polsk'] }
 };
-const lpTotal = (k, n) => Math.max(LP_PACKS[k].min, LP_PACKS[k].p * n);
+const lpTotal = (k, n) => LP_PACKS[k].p * Math.max(LP_PACKS[k].min, n);
 function lpPack(k) {
     if (!LP_PACKS[k]) k = 'ks';
     LP.pack = k;
@@ -8979,9 +8979,9 @@ function lpPack(k) {
     lpPrice($('lp-range').value);
 }
 function lpPrice(v) {
-    const k = LP.pack || 'ks', pk = LP_PACKS[k], n = Math.max(1, Math.min(100, parseInt(v, 10) || 1)), raw = pk.p * n, tot = lpTotal(k, n);
+    const k = LP.pack || 'ks', pk = LP_PACKS[k], n = Math.max(1, Math.min(100, parseInt(v, 10) || 1)), tot = lpTotal(k, n);
     $('lp-n').textContent = n; $('lp-total').textContent = tot;
-    $('lp-calc').textContent = raw >= pk.min ? n + ' × ' + pk.p + ' kr.' : 'Mindstepris ' + pk.min + ' kr. (' + n + ' × ' + pk.p + ' = ' + raw + ' kr.)';
+    $('lp-calc').textContent = n >= pk.min ? n + ' × ' + pk.p + ' kr.' : 'Minimum ' + pk.min + ' medarbejdere: ' + pk.min + ' × ' + pk.p + ' kr.';
     $('lp-ex').innerHTML = [5, 10, 25, 50].map(m => `<div class="bg-white/10 rounded-xl p-2"><p class="text-[10px] text-[#D5DCE8]">${m} pers.</p><p class="font-black text-white text-sm">${lpTotal(k, m)} kr.</p></div>`).join('');
 }
 const LP = { timers: [], mode: null };
