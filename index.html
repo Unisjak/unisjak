@@ -85,6 +85,8 @@
         body .text-white.bg-black\/45, body .text-white.bg-black\/60, body #lightbox .text-white, body #lightbox button, body [data-lb] { color: #fff; }
         body .bg-gray-700.text-white, body .bg-gray-700 .text-white { color: #12233F; }
         body .bg-emerald-500.text-gray-950, body .bg-amber-500.text-gray-950, body .bg-emerald-400.text-gray-950 { color: #12233F; }
+        #sa-screen .bg-gray-900\/80, #sa-screen main .bg-gray-900 { background-color: #FFFFFF; }
+        #sa-screen .bg-gray-900\/80 { border-color: #E7E3DA; box-shadow: 0 1px 2px rgba(18,35,63,.05); }
         body .hover\:bg-gray-700:hover { background-color: #EEEAE2; }
         .vstat:empty { display: none; }
         .lbl { display: block; font-size: 10px; font-weight: 700; color: #c7c2bd; text-transform: uppercase; margin-bottom: 0.25rem; }
@@ -272,16 +274,29 @@
 
     <!-- SUPERADMIN-KONTROLCENTER -->
     <div id="sa-screen" class="hidden fixed inset-0 bg-[#F7F5F1] z-50 overflow-y-auto">
-        <div class="max-w-3xl mx-auto p-4 pb-24 space-y-3">
-            <div class="flex items-center justify-between gap-2 pt-1">
-                <h1 class="font-black text-lg text-white flex items-center"><i class="fa-solid fa-crown text-violet-400 mr-2"></i>Kontrolcenter <span id="sa-live" class="ml-2 w-2.5 h-2.5 rounded-full bg-amber-500"></span></h1>
-                <div class="flex gap-2">
-                    <button id="sa-close-btn" type="button" data-act="sa-close" class="hidden bg-gray-800 text-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold">Til appen</button>
-                    <button type="button" data-act="sa-logout" class="bg-red-950/40 text-red-300 px-3.5 py-2 rounded-xl text-xs font-bold"><i class="fa-solid fa-right-from-bracket mr-1"></i>Log ud</button>
+        <div class="md:flex min-h-full">
+            <aside class="hidden md:flex flex-col w-64 shrink-0 bg-white border-r border-[#E7E3DA] p-4 sticky top-0 h-screen">
+                <div class="flex items-center gap-3 px-2 pt-1 pb-5"><div class="w-10 h-10 brand-orange rounded-xl flex items-center justify-center font-black text-white text-lg">U</div><div><p class="font-black text-[#12233F] leading-tight">UniSjak</p><p class="text-[11px] font-bold text-[#566070] flex items-center gap-1.5">Kontrolcenter <span class="sa-live-dot w-2 h-2 rounded-full bg-amber-500"></span></p></div></div>
+                <nav id="sa-nav" class="space-y-1 flex-1 overflow-y-auto"></nav>
+                <div class="space-y-2 pt-3 border-t border-[#E7E3DA]">
+                    <button id="sa-close-btn2" type="button" data-act="sa-close" class="hidden w-full bg-gray-800 text-gray-200 px-3.5 py-2.5 rounded-xl text-sm font-bold">Til appen</button>
+                    <button type="button" data-act="sa-logout" class="w-full bg-red-950/40 text-red-300 px-3.5 py-2.5 rounded-xl text-sm font-bold"><i class="fa-solid fa-right-from-bracket mr-1.5"></i>Log ud</button>
+                </div>
+            </aside>
+            <div class="flex-1 min-w-0">
+                <div class="max-w-7xl mx-auto p-4 md:p-8 pb-24 space-y-4">
+                    <div class="md:hidden flex items-center justify-between gap-2 pt-1">
+                        <h1 class="font-black text-lg text-white flex items-center">Kontrolcenter <span class="sa-live-dot ml-2 w-2.5 h-2.5 rounded-full bg-amber-500"></span></h1>
+                        <div class="flex gap-2">
+                            <button id="sa-close-btn" type="button" data-act="sa-close" class="hidden bg-gray-800 text-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold">Til appen</button>
+                            <button type="button" data-act="sa-logout" class="bg-red-950/40 text-red-300 px-3.5 py-2 rounded-xl text-xs font-bold"><i class="fa-solid fa-right-from-bracket mr-1"></i>Log ud</button>
+                        </div>
+                    </div>
+                    <div id="sa-tabs" class="flex gap-2 md:hidden"></div>
+                    <h2 id="sa-title" class="hidden md:block text-3xl font-black tracking-tight text-white"></h2>
+                    <div id="sa-main" class="space-y-3"></div>
                 </div>
             </div>
-            <div id="sa-tabs" class="flex gap-2"></div>
-            <div id="sa-main" class="space-y-3"></div>
         </div>
     </div>
 
@@ -2915,7 +2930,7 @@ function saSubscribe() {
     if (S.sa.ch) return;
     const ch = sb.channel('unisjak-sa');
     ['crm_accounts', 'crm_events', 'mail_threads', 'mail_messages', 'agent_queue', 'mail_campaigns'].forEach(table => ch.on('postgres_changes', { event: '*', schema: 'public', table }, saRefresh));
-    ch.subscribe(st => { const d = $('sa-live'); if (d) d.className = 'w-2.5 h-2.5 rounded-full ' + (st === 'SUBSCRIBED' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'); });
+    ch.subscribe(st => { document.querySelectorAll('.sa-live-dot').forEach(d => { d.className = 'sa-live-dot w-2.5 h-2.5 rounded-full ' + (st === 'SUBSCRIBED' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'); }); });
     S.sa.ch = ch;
 }
 function saStop() { if (S.sa.ch) { try { sb.removeChannel(S.sa.ch); } catch (e) {} S.sa.ch = null; } S.saMode = false; }
@@ -2941,35 +2956,59 @@ async function saLoadThread(quiet) {
 function saKeepIn() { const m = {}; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { m[e.dataset.saF] = e.value; }); return { view: S.sa.view, m }; }
 function saKeepOut(k) { if (!k || k.view !== S.sa.view) return; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { const n = e.dataset.saF, v = k.m[n]; if (v != null && (!e.value || (/^q[sb]-/.test(n) && v !== e.value))) e.value = v; }); }
 
+const SA_FULL = ['new', 'lead', 'cust', 'compose', 'tpls', 'tpl', 'rules', 'camps', 'camp-new', 'camp'];
+const SA_TITLES = { idag: 'I dag', kunder: 'Kunder', indbakke: 'Indbakke', godkend: 'Godkend', tpls: 'Skabeloner', camps: 'Udsendelser', rules: 'Regler' };
+function saNavKey() { const v = S.sa.view; return ['tpls', 'tpl'].includes(v) ? 'tpls' : ['camps', 'camp', 'camp-new'].includes(v) ? 'camps' : v === 'rules' ? 'rules' : S.sa.tab; }
 function saRender() {
     const B = $('sa-main'); if (!B) return;
     const keep = saKeepIn(), v = S.sa.view;
     const unread = S.sa.threads.filter(t => t.unread).length;
     const todayN = (S.sa.today || []).length;
-    $('sa-tabs').innerHTML = [['idag', 'I dag', 'fa-bolt', todayN], ['kunder', 'Kunder', 'fa-building', 0], ['indbakke', 'Indbakke', 'fa-inbox', unread], ['godkend', 'Godkend', 'fa-circle-check', (S.sa.queue || []).length]].map(([k, t, ic, n]) =>
+    const nav = [['idag', 'I dag', 'fa-bolt', todayN], ['kunder', 'Kunder', 'fa-building', 0], ['indbakke', 'Indbakke', 'fa-inbox', unread], ['godkend', 'Godkend', 'fa-circle-check', (S.sa.queue || []).length]];
+    $('sa-tabs').innerHTML = nav.map(([k, t, ic, n]) =>
         `<button type="button" data-act="sa-tab" data-tab="${k}" class="flex-1 py-3 rounded-xl font-black text-xs sm:text-sm ${S.sa.tab === k ? 'brand-orange text-white' : 'bg-gray-900 text-gray-300 border border-gray-800'}"><i class="fa-solid ${ic} mr-1"></i>${t}${n ? ` <span class="ml-1 bg-white text-orange-600 rounded-full text-[10px] px-1.5 py-0.5">${n}</span>` : ''}</button>`).join('');
-    $('sa-close-btn').classList.toggle('hidden', !S.started);
-    if (v === 'new') B.innerHTML = saNewHtml();
-    else if (v === 'lead') B.innerHTML = saLeadHtml();
-    else if (v === 'acct') B.innerHTML = saAcctHtml();
-    else if (v === 'cust') B.innerHTML = saCustHtml();
-    else if (v === 'compose') B.innerHTML = saComposeHtml();
-    else if (v === 'thread') B.innerHTML = saThreadHtml();
-    else if (v === 'tpls') B.innerHTML = saTplsHtml();
-    else if (v === 'tpl') B.innerHTML = saTplHtml();
-    else if (v === 'rules') B.innerHTML = saRulesHtml();
-    else if (v === 'camps') B.innerHTML = saCampsHtml();
-    else if (v === 'camp-new') B.innerHTML = saCampNewHtml();
-    else if (v === 'camp') B.innerHTML = saCampHtml();
-    else if (S.sa.tab === 'indbakke') B.innerHTML = saInboxHtml();
-    else if (S.sa.tab === 'godkend') B.innerHTML = saQueueHtml();
-    else if (S.sa.tab === 'idag') B.innerHTML = saTodayHtml();
-    else if (document.activeElement && document.activeElement.matches && document.activeElement.matches('[data-sa-q]') && $('sa-rows')) saRenderRows();
-    else B.innerHTML = saListHtml();
+    const key = saNavKey();
+    const item = (act, extra, on, ic, t, n) => `<button type="button" data-act="${act}" ${extra} class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left font-bold text-sm transition ${on ? 'bg-[#12233F] text-white' : 'text-[#566070] hover:bg-gray-900'}"><i class="fa-solid ${ic} w-5 text-center"></i><span class="flex-1">${t}</span>${n ? `<span class="${on ? 'bg-white text-[#12233F]' : 'bg-[#FF5500] text-white'} rounded-full text-[11px] font-black px-2 py-0.5">${n}</span>` : ''}</button>`;
+    const sideNav = $('sa-nav');
+    if (sideNav) sideNav.innerHTML = nav.map(([k, t, ic, n]) => item('sa-tab', `data-tab="${k}"`, key === k, ic, t, n)).join('') +
+        '<p class="text-[10px] font-black uppercase tracking-wider text-gray-500 px-3.5 pt-5 pb-1">Mail og automatik</p>' +
+        [['tpls', 'Skabeloner', 'fa-file-lines'], ['camps', 'Udsendelser', 'fa-bullhorn'], ['rules', 'Regler', 'fa-robot']].map(([k, t, ic]) => item('sa-go', `data-v="${k}"`, key === k, ic, t, 0)).join('');
+    const ttl = $('sa-title'); if (ttl) ttl.textContent = SA_TITLES[key] || 'Kontrolcenter';
+    ['sa-close-btn', 'sa-close-btn2'].forEach(id => { const e = $(id); if (e) e.classList.toggle('hidden', !S.started); });
+    const split = !SA_FULL.includes(v) && (S.sa.tab === 'kunder' || S.sa.tab === 'indbakke') && ['list', 'acct', 'thread'].includes(v);
+    if (split && document.activeElement && document.activeElement.matches && document.activeElement.matches('[data-sa-q]') && $('sa-rows')) { saRenderRows(); return; }
+    if (split) {
+        const detail = v === 'acct' || v === 'thread';
+        const left = S.sa.tab === 'indbakke' ? saInboxHtml() : saListHtml();
+        const right = v === 'acct' ? saAcctHtml() : v === 'thread' ? saThreadHtml() : '';
+        const ph = S.sa.tab === 'indbakke' ? ['fa-envelope-open-text', 'Vælg en mail'] : ['fa-building', 'Vælg en kunde'];
+        B.innerHTML = `<div class="md:grid md:grid-cols-[400px_minmax(0,1fr)] md:gap-6 md:items-start">` +
+            `<div class="${detail ? 'hidden md:block' : ''} space-y-3 md:sticky md:top-6 md:max-h-[calc(100vh-7rem)] md:overflow-y-auto md:pr-1">${left}</div>` +
+            `<div class="${detail ? '' : 'hidden md:flex md:items-center md:justify-center md:min-h-[55vh] text-center text-gray-500'} ${detail ? 'space-y-3 md:bg-white md:border md:border-[#E7E3DA] md:rounded-3xl md:p-6' : ''}">` +
+            (detail ? right : `<div><i class="fa-solid ${ph[0]} text-4xl mb-3 text-gray-600"></i><p class="font-black text-gray-400">${ph[1]}</p></div>`) + `</div></div>`;
+        saKeepOut(keep); return;
+    }
+    let html;
+    if (v === 'new') html = saNewHtml();
+    else if (v === 'lead') html = saLeadHtml();
+    else if (v === 'acct') html = saAcctHtml();
+    else if (v === 'cust') html = saCustHtml();
+    else if (v === 'compose') html = saComposeHtml();
+    else if (v === 'thread') html = saThreadHtml();
+    else if (v === 'tpls') html = saTplsHtml();
+    else if (v === 'tpl') html = saTplHtml();
+    else if (v === 'rules') html = saRulesHtml();
+    else if (v === 'camps') html = saCampsHtml();
+    else if (v === 'camp-new') html = saCampNewHtml();
+    else if (v === 'camp') html = saCampHtml();
+    else if (S.sa.tab === 'godkend') html = saQueueHtml();
+    else if (S.sa.tab === 'idag') html = saTodayHtml();
+    else html = saListHtml();
+    B.innerHTML = (S.sa.tab === 'idag' && !SA_FULL.includes(v) && v !== 'acct' && v !== 'thread') ? html : `<div class="md:max-w-3xl space-y-3">${html}</div>`;
     saKeepOut(keep);
 }
 
-const saBack = (act, txt) => `<button type="button" data-act="${act}" class="text-sm text-sky-300 font-bold py-1"><i class="fa-solid fa-chevron-left mr-1"></i>${txt}</button>`;
+const saBack = (act, txt) => `<button type="button" data-act="${act}" class="text-sm text-sky-300 font-bold py-1 ${(S.sa.tab === 'kunder' || S.sa.tab === 'indbakke') && ['acct', 'thread'].includes(S.sa.view) ? 'md:hidden' : ''}"><i class="fa-solid fa-chevron-left mr-1"></i>${txt}</button>`;
 
 /* ---- I dag ---- */
 function saPrimary(a) {
@@ -2980,28 +3019,36 @@ function saPrimary(a) {
     if (r.includes('loft')) return ['sa-today-mail', 'Foreslå opgradering', 'fa-arrow-up-right-dots', 'upsell'];
     return ['sa-acct', 'Åbn kunden', 'fa-folder-open'];
 }
+function saPipelineHtml() {
+    const st = (S.sa.counts || {}).stages || {}, flow = SA_STAGES.filter(x => !['inaktiv', 'tabt'].includes(x[0])), tot = flow.reduce((n, x) => n + (Number(st[x[0]]) || 0), 0);
+    if (!tot) return '';
+    const col = { lead: 'bg-stone-400', kontaktet: 'bg-sky-500', tilbud: 'bg-violet-500', proeve: 'bg-amber-500', aktiv: 'bg-emerald-500' };
+    return `<div class="bg-gray-900/80 border border-gray-800 rounded-xl md:rounded-2xl p-4 space-y-3"><p class="text-xs font-black text-gray-400 uppercase tracking-wider">Salgsforløb</p>` +
+        `<div class="flex h-3 rounded-full overflow-hidden bg-gray-800">${flow.map(([k]) => (Number(st[k]) || 0) ? `<div class="${col[k]}" style="width:${(Number(st[k]) / tot * 100).toFixed(1)}%"></div>` : '').join('')}</div>` +
+        `<div class="grid grid-cols-5 gap-2">${flow.map(([k, t]) => `<button type="button" data-act="sa-filter-go" data-f="${k}" class="text-left rounded-xl hover:bg-gray-800 p-2"><p class="text-xl md:text-2xl font-black text-white">${Number(st[k]) || 0}</p><p class="text-[10px] md:text-xs font-bold text-gray-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full ${col[k]}"></span>${t}</p></button>`).join('')}</div></div>`;
+}
 function saTodayHtml() {
     const c = S.sa.counts || {}, T = S.sa.today || [];
-    const tile = (n, t, cls, k) => `<button type="button" data-act="sa-kpi" data-k="${k}" class="bg-gray-900/80 border border-gray-800 rounded-xl p-3 text-left active:scale-[.98]"><p class="text-2xl font-black ${cls}">${Number(n) || 0}</p><p class="text-[10px] text-gray-400 font-bold leading-tight mt-0.5">${t}</p></button>`;
+    const tile = (n, t, cls, k) => `<button type="button" data-act="sa-kpi" data-k="${k}" class="bg-gray-900/80 border border-gray-800 rounded-xl md:rounded-2xl p-3 md:p-5 text-left active:scale-[.98]"><p class="text-2xl md:text-4xl font-black ${cls}">${Number(n) || 0}</p><p class="text-[10px] md:text-xs text-gray-400 font-bold leading-tight mt-0.5 md:mt-1">${t}</p></button>`;
     return `<div class="grid grid-cols-4 gap-2">${tile(c.new_30d, 'Nye<br>30 dage', 'text-white', 'nye')}${tile(c.active, 'Aktive<br>kunder', 'text-emerald-400', 'groen')}${tile(c.at_risk, 'I fare', 'text-red-400', 'roed')}${tile(c.churned_30d, 'Sprunget<br>fra', 'text-gray-300', 'inaktiv')}</div>` +
-        `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-new-lead" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-user-plus mr-1.5"></i>Nyt lead</button><button type="button" data-act="sa-new" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-building-circle-check mr-1.5"></i>Ny kunde</button></div>` +
+        `<div class="grid grid-cols-2 gap-2 md:max-w-md"><button type="button" data-act="sa-new-lead" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-user-plus mr-1.5"></i>Nyt lead</button><button type="button" data-act="sa-new" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-building-circle-check mr-1.5"></i>Ny kunde</button></div>` + saPipelineHtml() +
         ((S.sa.queue || []).length ? `<button type="button" data-act="sa-tab" data-tab="godkend" class="w-full bg-violet-950/60 border border-violet-700/50 text-violet-200 rounded-xl p-3.5 text-left font-black text-sm"><i class="fa-solid fa-circle-check mr-1.5"></i>${S.sa.queue.length} udkast venter på dit ok</button>` : '') +
         (T.length ? `<h3 class="font-black text-white text-sm pt-1">${T.length >= 40 ? '40+' : T.length} ting kræver dig</h3>` : '') +
-        `<div class="space-y-2">` + (T.map(a => {
+        `<div class="grid md:grid-cols-2 gap-3 items-start">` + (T.map(a => {
             const sig = saSignals(a), pr = saPrimary(a);
             return `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 space-y-2.5">` +
                 `<button type="button" data-act="sa-acct" data-id="${a.id}" class="w-full text-left"><div class="flex justify-between items-center gap-2"><span class="flex items-center gap-2 min-w-0">${saDot(a.health)}<span class="font-black text-white text-sm truncate">${esc(a.name)}</span></span>${saChip(SA_STAGE_CLS[a.stage] || 'bg-gray-800 text-gray-300', saStage(a.stage))}</div>` +
                 `<div class="flex flex-wrap gap-1.5 mt-2">${sig.map(x => saChip(x[2], x[1])).join('')}</div></button>` +
                 `<div class="grid grid-cols-[1fr_auto] gap-2"><button type="button" data-act="${pr[0]}" data-id="${a.id}" data-kind="${pr[3] || ''}" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm active:scale-95 transition"><i class="fa-solid ${pr[2]} mr-1.5"></i>${pr[1]}</button>` +
                 `<button type="button" data-act="sa-snooze" data-id="${a.id}" class="bg-gray-800 border border-gray-700 text-gray-200 px-4 rounded-xl font-bold text-xs">Udsæt 3 dage</button></div></div>`;
-        }).join('') || `<div class="text-center py-10"><p class="text-3xl mb-2">✓</p><p class="text-sm font-black text-white">Alt er under kontrol</p><p class="text-xs text-gray-400 mt-1">Ingen kunder kræver handling lige nu.</p></div>`) + `</div>` +
-        `<div class="grid grid-cols-3 gap-2 pt-3 border-t border-gray-800">${[['tpls', 'Skabeloner', 'fa-file-lines'], ['camps', 'Udsendelser', 'fa-bullhorn'], ['rules', 'Regler', 'fa-robot']].map(([v, t, ic]) => `<button type="button" data-act="sa-go" data-v="${v}" class="bg-gray-900 border border-gray-800 text-gray-200 py-3 rounded-xl font-bold text-xs"><i class="fa-solid ${ic} block text-base mb-1 text-gray-400"></i>${t}</button>`).join('')}</div>`;
+        }).join('') || `<div class="text-center py-10 md:col-span-2"><p class="text-3xl mb-2">✓</p><p class="text-sm font-black text-white">Alt er under kontrol</p><p class="text-xs text-gray-400 mt-1">Ingen kunder kræver handling lige nu.</p></div>`) + `</div>` +
+        `<div class="grid grid-cols-3 gap-2 pt-3 border-t border-gray-800 md:hidden">${[['tpls', 'Skabeloner', 'fa-file-lines'], ['camps', 'Udsendelser', 'fa-bullhorn'], ['rules', 'Regler', 'fa-robot']].map(([v, t, ic]) => `<button type="button" data-act="sa-go" data-v="${v}" class="bg-gray-900 border border-gray-800 text-gray-200 py-3 rounded-xl font-bold text-xs"><i class="fa-solid ${ic} block text-base mb-1 text-gray-400"></i>${t}</button>`).join('')}</div>`;
 }
 
 /* ---- Kundeliste ---- */
 function saRowHtml(a) {
     const sig = saSignals(a);
-    return `<button type="button" data-act="sa-acct" data-id="${a.id}" class="w-full text-left bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 active:scale-[.99]">` +
+    return `<button type="button" data-act="sa-acct" data-id="${a.id}" class="w-full text-left bg-gray-900/80 border ${S.sa.view === 'acct' && S.sa.sel === a.id ? '!border-[#12233F] ring-1 ring-[#12233F]' : 'border-gray-800'} rounded-xl p-3.5 active:scale-[.99]">` +
         `<div class="flex justify-between items-start gap-2"><span class="flex items-center gap-2 min-w-0">${saDot(a.health)}<span class="font-black text-white text-sm truncate">${esc(a.name)}</span></span>${saChip(SA_STAGE_CLS[a.stage] || 'bg-gray-800 text-gray-300', saStage(a.stage))}</div>` +
         `<p class="text-[11px] text-gray-400 mt-1">${a.company_id ? `${a.n_interne}/${a.max_interne} brugere · ${a.n_gaest}/${a.max_gaest} gæster · aktiv ${saAgo(a.last_active)}` : 'Lead – ikke oprettet som kunde' + (a.contact_name ? ' · ' + esc(a.contact_name) : '')}</p>` +
         (sig.length ? `<div class="flex flex-wrap gap-1.5 mt-2">${sig.map(s => saChip(s[2], s[1])).join('')}</div>` : '') + `</button>`;
@@ -3174,7 +3221,7 @@ function saInboxHtml() {
     return `<button type="button" data-act="sa-compose" data-acct="" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-pen mr-1.5"></i>Ny mail</button>` +
         `<div class="space-y-2">` + (T.map(t => {
             const a = S.sa.list.find(x => x.id === t.account_id);
-            return `<button type="button" data-act="sa-thread" data-id="${t.id}" class="w-full text-left bg-gray-900/80 border ${t.unread ? 'border-violet-500/60' : 'border-gray-800'} rounded-xl p-3.5 active:scale-[.99]">` +
+            return `<button type="button" data-act="sa-thread" data-id="${t.id}" class="w-full text-left bg-gray-900/80 border ${S.sa.view === 'thread' && S.sa.selThread === t.id ? '!border-[#12233F] ring-1 ring-[#12233F]' : t.unread ? 'border-violet-500/60' : 'border-gray-800'} rounded-xl p-3.5 active:scale-[.99]">` +
                 `<div class="flex justify-between gap-2"><span class="text-sm ${t.unread ? 'font-black text-white' : 'font-bold text-gray-200'} truncate">${esc(t.subject || '(uden emne)')}</span><span class="text-[10px] text-gray-500 shrink-0">${saDT(t.last_at)}</span></div>` +
                 `<p class="text-[11px] text-gray-400 mt-0.5 truncate">${t.last_dir === 'in' ? '<i class="fa-solid fa-arrow-down text-violet-400 mr-1"></i>' : '<i class="fa-solid fa-arrow-up text-gray-500 mr-1"></i>'}${esc(t.contact_email || '')}${a ? ' · ' + esc(a.name) : ' · <span class="text-amber-300">ikke knyttet til en kunde</span>'}</p></button>`;
         }).join('') || '<p class="text-xs text-gray-500 py-6 text-center">Ingen mails endnu.</p>') + `</div>`;
@@ -3313,7 +3360,7 @@ function saVals() {
 const saEmailOk = e => /^[^@\s<>",;]+@[^@\s<>",;]+\.[^@\s<>",;]+$/.test(e);
 async function saGo(view, extra) { Object.assign(S.sa, { view }, extra || {}); saRender(); }
 async function saOpenAcct(id) { S.sa.sel = id; S.sa.acct = null; S.sa.tab = 'kunder'; S.sa.view = 'acct'; saRender(); await saLoadAcct(); saRender(); window.scrollTo(0, 0); }
-async function saOpenThread(id) { S.sa.selThread = id; S.sa.msgs = []; S.sa.view = 'thread'; saRender(); await saLoadThread(); saRender(); window.scrollTo(0, 0); }
+async function saOpenThread(id) { S.sa.selThread = id; S.sa.tab = 'indbakke'; S.sa.msgs = []; S.sa.view = 'thread'; saRender(); await saLoadThread(); saRender(); window.scrollTo(0, 0); }
 async function saCreate() {
     const { f, modules, labels } = saVals(), email = f('admin_email').toLowerCase();
     if (f('name').length < 2 || f('admin_name').length < 2 || !saEmailOk(email)) return toast('Udfyld navn, første admin og en gyldig e-mail.');
@@ -3424,6 +3471,7 @@ async function saAct(act, el) {
         case 'sa-health': S.sa.health = S.sa.health === d.h ? '' : d.h; saRenderRows(); return saPageRefresh();
         case 'sa-more': try { await saFetchPage(true); } catch (e) { return fail(e); } return saRenderRows();
         case 'sa-kpi': S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.q = ''; S.sa.filter = d.k === 'inaktiv' ? 'inaktiv' : 'alle'; S.sa.health = ['groen', 'roed'].includes(d.k) ? d.k : ''; saRender(); return saPageRefresh();
+        case 'sa-filter-go': S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.q = ''; S.sa.health = ''; S.sa.filter = d.f; saRender(); return saPageRefresh();
         case 'sa-snooze': { const r = await sb.from('crm_accounts').update({ snoozed_until: fmtDate(addDays(new Date(), 3)) }).eq('id', d.id); if (r.error) return fail(r.error); toast('Udsat i 3 dage.', 'ok'); return saReload(); }
         case 'sa-go': { S.sa.view = d.v; if (d.v === 'camps') { await saLoadCamps(); } else if (d.v === 'rules') { await saLoadRules(); } else if (d.v === 'tpls') { await saLoadTpls(); } saRender(); return window.scrollTo(0, 0); }
         case 'sa-tpl-open': S.sa.tplSel = d.key || null; S.sa.view = 'tpl'; return saRender();
