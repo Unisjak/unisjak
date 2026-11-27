@@ -128,14 +128,14 @@
 
         <section class="max-w-6xl mx-auto px-4 pt-10 pb-14 md:pt-20 grid md:grid-cols-2 gap-12 items-center">
             <div class="space-y-6">
-                <span class="inline-flex items-center text-xs font-black text-[#12233F] bg-white border border-[#E7E3DA] rounded-full px-3.5 py-1.5">Til håndværkere i byggeriet</span>
-                <h1 class="text-4xl md:text-6xl font-black text-[#12233F] leading-[1.03] tracking-tight">Timer og KS.<br><span class="brand-orange-text">Færdigt på sekunder.</span></h1>
-                <p class="text-lg text-[#566070] max-w-md leading-relaxed">Medarbejderne registrerer timer og dokumenterer kvalitetssikring med foto og GPS direkte fra telefonen. Du får timesedler, diæter og KS-rapporter klar til løn og bygherre.</p>
+                <span id="lp-badge" class="inline-flex items-center text-xs font-black text-[#12233F] bg-white border border-[#E7E3DA] rounded-full px-3.5 py-1.5">Til håndværkere i byggeriet</span>
+                <h1 class="text-4xl md:text-6xl font-black text-[#12233F] leading-[1.03] tracking-tight"><span id="lp-h1a">Timer og KS.</span><br><span id="lp-h1b" class="brand-orange-text">Færdigt på sekunder.</span></h1>
+                <p id="lp-sub" class="text-lg text-[#566070] max-w-md leading-relaxed">Medarbejderne registrerer timer og dokumenterer kvalitetssikring med foto og GPS direkte fra telefonen. Du får timesedler, diæter og KS-rapporter klar til løn og bygherre.</p>
                 <div class="flex flex-wrap gap-3">
                     <button onclick="lpGo('signup')" class="px-7 py-4 rounded-2xl bg-[#12233F] text-white font-black text-base active:scale-95 hover:brightness-125 transition">Start gratis i 14 dage</button>
                     <button onclick="lpScroll(event,'lp-priser')" class="px-7 py-4 rounded-2xl border-2 border-[#12233F] text-[#12233F] font-black text-base hover:bg-[#12233F] hover:text-white transition">Se priser</button>
                 </div>
-                <p class="text-sm text-[#566070]">Fra 249 kr. pr. måned – derefter 89 kr. pr. ekstra medarbejder.</p>
+                <p id="lp-from-line" class="text-sm text-[#566070]">Fra 249 kr. pr. måned – derefter 89 kr. pr. ekstra medarbejder.</p>
             </div>
 
             <div class="flex flex-col items-center">
@@ -208,7 +208,7 @@
                 <div class="text-center space-y-3"><h2 class="text-3xl md:text-4xl font-black tracking-tight">Enkel pris pr. medarbejder</h2><p class="text-[#566070] text-lg">Én pakke med alt inkluderet. Første 14 dage er gratis – se, hvad det koster for jer.</p></div>
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="bg-[#F7F5F1] rounded-3xl p-7 space-y-4">
-                        <p id="lp-pack-name" class="text-xl font-black">Alt inkluderet</p><p class="text-sm text-[#566070] -mt-2">249 kr. for den første medarbejder, derefter 89 kr. pr. medarbejder pr. måned</p>
+                        <p id="lp-pack-name" class="text-xl font-black">Alt inkluderet</p><p id="lp-price-line" class="text-sm text-[#566070] -mt-2">249 kr. for den første medarbejder, derefter 89 kr. pr. medarbejder pr. måned</p>
                         <ul id="lp-pack-list" class="space-y-2 text-[15px]"></ul>
                     </div>
                     <div class="bg-[#12233F] text-white rounded-3xl p-7 space-y-5">
@@ -273,6 +273,10 @@
     </div>
 
     <!-- SUPERADMIN-KONTROLCENTER -->
+    <!-- BESKED TIL ALLE (styres fra Kontrolcenteret) -->
+    <div id="app-banner" class="hidden fixed top-0 inset-x-0 z-[70] px-4 py-2 text-xs font-bold flex items-center justify-center gap-3 bg-[#12233F] text-white"><span id="app-banner-text"></span><button type="button" onclick="dismissBanner()" class="shrink-0 opacity-80 hover:opacity-100 px-2" aria-label="Luk">✕</button></div>
+    <div id="maint-screen" class="hidden fixed inset-0 z-[65] bg-[#F7F5F1] flex items-center justify-center p-6"><div class="max-w-sm text-center space-y-4"><div class="w-16 h-16 mx-auto brand-orange rounded-2xl flex items-center justify-center font-black text-white text-3xl">U</div><h2 class="text-2xl font-black text-[#12233F]">Vi er straks tilbage</h2><p id="maint-text" class="text-[#566070]"></p><button type="button" onclick="location.reload()" class="px-6 py-3 rounded-2xl bg-[#12233F] text-white font-black">Prøv igen</button></div></div>
+
     <div id="sa-screen" class="hidden fixed inset-0 bg-[#F7F5F1] z-50 overflow-y-auto">
         <div class="md:flex min-h-full">
             <aside class="hidden md:flex flex-col w-64 shrink-0 bg-white border-r border-[#E7E3DA] p-4 sticky top-0 h-screen">
@@ -1603,7 +1607,7 @@ async function startApp() {
         ensureRange('shifts', addDays(mon, -14), addDays(mon, 62))
     ]);
     pickInitialProject();
-    S.started = true;
+    S.started = true; applyGlobalSettings();
     subscribeRealtime();
     renderAll();
     resolveUrls();
@@ -2881,6 +2885,7 @@ async function saEnter() {
     if (!S.profile || S.profile.is_superadmin !== true) return;
     S.sa.tab = 'idag'; S.sa.view = 'list'; S.sa.sel = null; S.sa.selThread = null;
     S.saMode = true; showScreen('sa'); saRender();
+    saLoadSettings().catch(() => {});
     await saReload();
     saSubscribe();
 }
@@ -2956,9 +2961,9 @@ async function saLoadThread(quiet) {
 function saKeepIn() { const m = {}; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { m[e.dataset.saF] = e.value; }); return { view: S.sa.view, m }; }
 function saKeepOut(k) { if (!k || k.view !== S.sa.view) return; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { const n = e.dataset.saF, v = k.m[n]; if (v != null && (!e.value || (/^q[sb]-/.test(n) && v !== e.value))) e.value = v; }); }
 
-const SA_FULL = ['new', 'lead', 'cust', 'compose', 'tpls', 'tpl', 'rules', 'camps', 'camp-new', 'camp'];
-const SA_TITLES = { idag: 'I dag', kunder: 'Kunder', indbakke: 'Indbakke', godkend: 'Godkend', tpls: 'Skabeloner', camps: 'Udsendelser', rules: 'Regler' };
-function saNavKey() { const v = S.sa.view; return ['tpls', 'tpl'].includes(v) ? 'tpls' : ['camps', 'camp', 'camp-new'].includes(v) ? 'camps' : v === 'rules' ? 'rules' : S.sa.tab; }
+const SA_FULL = ['new', 'lead', 'cust', 'compose', 'tpls', 'tpl', 'rules', 'camps', 'camp-new', 'camp', 'ov', 'mkt', 'set', 'log'];
+const SA_TITLES = { idag: 'I dag', kunder: 'Kunder', indbakke: 'Indbakke', godkend: 'Godkend', tpls: 'Skabeloner', camps: 'Udsendelser', rules: 'Regler', ov: 'Overblik', mkt: 'Markedsføring', set: 'Indstillinger', log: 'Log' };
+function saNavKey() { const v = S.sa.view; return ['tpls', 'tpl'].includes(v) ? 'tpls' : ['camps', 'camp', 'camp-new'].includes(v) ? 'camps' : v === 'rules' ? 'rules' : ['ov', 'mkt', 'set', 'log'].includes(v) ? v : S.sa.tab; }
 function saRender() {
     const B = $('sa-main'); if (!B) return;
     const keep = saKeepIn(), v = S.sa.view;
@@ -2972,7 +2977,9 @@ function saRender() {
     const sideNav = $('sa-nav');
     if (sideNav) sideNav.innerHTML = nav.map(([k, t, ic, n]) => item('sa-tab', `data-tab="${k}"`, key === k, ic, t, n)).join('') +
         '<p class="text-[10px] font-black uppercase tracking-wider text-gray-500 px-3.5 pt-5 pb-1">Mail og automatik</p>' +
-        [['tpls', 'Skabeloner', 'fa-file-lines'], ['camps', 'Udsendelser', 'fa-bullhorn'], ['rules', 'Regler', 'fa-robot']].map(([k, t, ic]) => item('sa-go', `data-v="${k}"`, key === k, ic, t, 0)).join('');
+        [['tpls', 'Skabeloner', 'fa-file-lines'], ['camps', 'Udsendelser', 'fa-bullhorn'], ['rules', 'Regler', 'fa-robot']].map(([k, t, ic]) => item('sa-go', `data-v="${k}"`, key === k, ic, t, 0)).join('') +
+        '<p class="text-[10px] font-black uppercase tracking-wider text-gray-500 px-3.5 pt-5 pb-1">Drift</p>' +
+        [['ov', 'Overblik', 'fa-chart-line'], ['mkt', 'Markedsføring', 'fa-wand-magic-sparkles'], ['set', 'Indstillinger', 'fa-sliders'], ['log', 'Log', 'fa-clock-rotate-left']].map(([k, t, ic]) => item('sa-go', `data-v="${k}"`, key === k, ic, t, 0)).join('');
     const ttl = $('sa-title'); if (ttl) ttl.textContent = SA_TITLES[key] || 'Kontrolcenter';
     ['sa-close-btn', 'sa-close-btn2'].forEach(id => { const e = $(id); if (e) e.classList.toggle('hidden', !S.started); });
     const split = !SA_FULL.includes(v) && (S.sa.tab === 'kunder' || S.sa.tab === 'indbakke') && ['list', 'acct', 'thread'].includes(v);
@@ -3001,10 +3008,14 @@ function saRender() {
     else if (v === 'camps') html = saCampsHtml();
     else if (v === 'camp-new') html = saCampNewHtml();
     else if (v === 'camp') html = saCampHtml();
+    else if (v === 'ov') html = saOvHtml();
+    else if (v === 'mkt') html = saMktHtml();
+    else if (v === 'set') html = saSetHtml();
+    else if (v === 'log') html = saLogHtml();
     else if (S.sa.tab === 'godkend') html = saQueueHtml();
     else if (S.sa.tab === 'idag') html = saTodayHtml();
     else html = saListHtml();
-    B.innerHTML = (S.sa.tab === 'idag' && !SA_FULL.includes(v) && v !== 'acct' && v !== 'thread') ? html : `<div class="md:max-w-3xl space-y-3">${html}</div>`;
+    B.innerHTML = (S.sa.tab === 'idag' && !SA_FULL.includes(v) && v !== 'acct' && v !== 'thread') ? html : `<div class="${SA_NEWV.includes(v) ? 'md:max-w-5xl' : 'md:max-w-3xl'} space-y-3">${html}</div>`;
     saKeepOut(keep);
 }
 
@@ -3042,7 +3053,7 @@ function saTodayHtml() {
                 `<div class="grid grid-cols-[1fr_auto] gap-2"><button type="button" data-act="${pr[0]}" data-id="${a.id}" data-kind="${pr[3] || ''}" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm active:scale-95 transition"><i class="fa-solid ${pr[2]} mr-1.5"></i>${pr[1]}</button>` +
                 `<button type="button" data-act="sa-snooze" data-id="${a.id}" class="bg-gray-800 border border-gray-700 text-gray-200 px-4 rounded-xl font-bold text-xs">Udsæt 3 dage</button></div></div>`;
         }).join('') || `<div class="text-center py-10 md:col-span-2"><p class="text-3xl mb-2">✓</p><p class="text-sm font-black text-white">Alt er under kontrol</p><p class="text-xs text-gray-400 mt-1">Ingen kunder kræver handling lige nu.</p></div>`) + `</div>` +
-        `<div class="grid grid-cols-3 gap-2 pt-3 border-t border-gray-800 md:hidden">${[['tpls', 'Skabeloner', 'fa-file-lines'], ['camps', 'Udsendelser', 'fa-bullhorn'], ['rules', 'Regler', 'fa-robot']].map(([v, t, ic]) => `<button type="button" data-act="sa-go" data-v="${v}" class="bg-gray-900 border border-gray-800 text-gray-200 py-3 rounded-xl font-bold text-xs"><i class="fa-solid ${ic} block text-base mb-1 text-gray-400"></i>${t}</button>`).join('')}</div>`;
+        `<div class="grid grid-cols-3 gap-2 pt-3 border-t border-gray-800 md:hidden">${[['tpls', 'Skabeloner', 'fa-file-lines'], ['camps', 'Udsendelser', 'fa-bullhorn'], ['rules', 'Regler', 'fa-robot'], ['ov', 'Overblik', 'fa-chart-line'], ['mkt', 'Markedsføring', 'fa-wand-magic-sparkles'], ['set', 'Indstillinger', 'fa-sliders'], ['log', 'Log', 'fa-clock-rotate-left']].map(([v, t, ic]) => `<button type="button" data-act="sa-go" data-v="${v}" class="bg-gray-900 border border-gray-800 text-gray-200 py-3 rounded-xl font-bold text-xs"><i class="fa-solid ${ic} block text-base mb-1 text-gray-400"></i>${t}</button>`).join('')}</div>`;
 }
 
 /* ---- Kundeliste ---- */
@@ -3210,7 +3221,7 @@ async function saCampRun(id) {
             try { j = await r.json(); } catch (e) { /* funktionen findes ikke */ }
             if (!r.ok || j.ok !== true) { toast(r.status === 404 || r.status === 0 ? 'Udsendelsesfunktionen er ikke installeret på Netlify endnu.' : r.status === 500 ? 'Mailopsætningen mangler i Netlify (fx SUPABASE_SERVICE_ROLE_KEY).' : r.status === 429 ? 'For mange mails lige nu – tryk Fortsæt om lidt.' : 'Udsendelsen blev afbrudt – tryk Fortsæt.'); break; }
             await saLoadCamps(); if (S.sa.view === 'camp') saRender();
-            if (j.status === 'done' || j.remaining === 0) { toast('Udsendelsen er færdig.', 'ok'); break; }
+            if (j.status === 'done' || j.remaining === 0) { toast('Udsendelsen er færdig.', 'ok'); saAudit('udsendelse sendt', String(id)); break; }
         }
     } finally { S.sa.campRun = null; await saLoadCamps(); saRender(); }
 }
@@ -3332,9 +3343,9 @@ const saLabsHtml = l => SA_LABELS.map(([k, t]) => `<div><label class="lbl">${t}<
 function saNewHtml() {
     return saBack('sa-back', 'Tilbage') + `<h3 class="font-black text-white text-base">Ny kunde</h3>` +
         `<div><label class="lbl">Virksomhed / organisation</label><input data-sa-f="name" class="inp" maxlength="120" placeholder="F.eks. Vejdirektoratet"></div>` +
-        `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Branche</label><select data-sa-f="industry" class="inp"><option value="haandvaerk">Håndværk &amp; Byggeri</option><option value="butik">Butik &amp; Restaurant</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="lbl">Brugere</label><input data-sa-f="max_int" type="number" min="1" class="inp" value="25"></div><div><label class="lbl">Gæster</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="10"></div></div></div>` +
+        `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Branche</label><select data-sa-f="industry" class="inp"><option value="haandvaerk">Håndværk &amp; Byggeri</option><option value="butik">Butik &amp; Restaurant</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="lbl">Brugere</label><input data-sa-f="max_int" type="number" min="1" class="inp" value="${esc(String(saSet('defaults').max_int || 25))}"></div><div><label class="lbl">Gæster</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="${esc(String(saSet('defaults').max_guest == null ? 10 : saSet('defaults').max_guest))}"></div></div></div>` +
         `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Første admin – navn</label><input data-sa-f="admin_name" class="inp" maxlength="120"></div><div><label class="lbl">Første admin – e-mail</label><input data-sa-f="admin_email" type="email" class="inp"></div></div>` +
-        `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${saModsHtml({})}</div><span class="lbl">Egne navne (valgfrit)</span><div class="grid grid-cols-2 gap-2">${saLabsHtml({})}</div>` +
+        `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${saModsHtml(saSet('defaults').modules || {})}</div><span class="lbl">Egne navne (valgfrit)</span><div class="grid grid-cols-2 gap-2">${saLabsHtml({})}</div>` +
         `<button type="button" data-act="sa-create" class="w-full brand-orange text-white py-4 rounded-xl font-black">Opret kunde og send invitation</button>`;
 }
 function saCustHtml() {
@@ -3371,7 +3382,7 @@ async function saCreate() {
         const del = await sb.from('crm_accounts').delete().eq('company_id', nid);
         if (!del.error) { const up = await sb.from('crm_accounts').update({ company_id: nid, stage: 'proeve' }).eq('id', S.sa.fromLead); if (up.error) fail(up.error); }
     }
-    S.sa.fromLead = null;
+    S.sa.fromLead = null; saAudit('kunde oprettet', f('name'), { admin: email });
     await sendInviteMail(email, 'da');
     S.sa.view = 'list'; await saReload();
 }
@@ -3380,6 +3391,7 @@ async function saSave() {
     const { f, modules, labels } = saVals();
     const r = await sb.rpc('sa_update_company', { p_id: a.company_id, p_name: f('name') || null, p_max_int: parseInt(f('max_int'), 10), p_max_guest: parseInt(f('max_guest'), 10), p_modules: modules, p_labels: labels, p_trial_ends: f('trial') ? new Date(f('trial') + 'T23:59:00').toISOString() : null });
     if (r.error) return fail(r.error);
+    saAudit('kunde opdateret', a.name, { max_int: parseInt(f('max_int'), 10), max_guest: parseInt(f('max_guest'), 10) });
     toast('Gemt.', 'ok'); S.sa.view = 'acct'; await saReload();
 }
 async function saInvite() {
@@ -3388,7 +3400,7 @@ async function saInvite() {
     if (f('inv_name').length < 2 || !saEmailOk(email)) return toast('Skriv navn og en gyldig e-mail.');
     const r = await sb.rpc('sa_invite_admin', { p_company: a.company_id, p_name: f('inv_name'), p_email: email });
     if (r.error) return fail(r.error);
-    await sendInviteMail(email, 'da'); await saReload(); S.sa.view = 'cust'; saRender();
+    saAudit('admin inviteret', a.name, { email }); await sendInviteMail(email, 'da'); await saReload(); S.sa.view = 'cust'; saRender();
 }
 async function saLeadCreate() {
     const { f } = saVals(), email = f('c_email').toLowerCase();
@@ -3472,8 +3484,9 @@ async function saAct(act, el) {
         case 'sa-more': try { await saFetchPage(true); } catch (e) { return fail(e); } return saRenderRows();
         case 'sa-kpi': S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.q = ''; S.sa.filter = d.k === 'inaktiv' ? 'inaktiv' : 'alle'; S.sa.health = ['groen', 'roed'].includes(d.k) ? d.k : ''; saRender(); return saPageRefresh();
         case 'sa-filter-go': S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.q = ''; S.sa.health = ''; S.sa.filter = d.f; saRender(); return saPageRefresh();
+        case 'sa-set-save': return saSetSave(d.k);
         case 'sa-snooze': { const r = await sb.from('crm_accounts').update({ snoozed_until: fmtDate(addDays(new Date(), 3)) }).eq('id', d.id); if (r.error) return fail(r.error); toast('Udsat i 3 dage.', 'ok'); return saReload(); }
-        case 'sa-go': { S.sa.view = d.v; if (d.v === 'camps') { await saLoadCamps(); } else if (d.v === 'rules') { await saLoadRules(); } else if (d.v === 'tpls') { await saLoadTpls(); } saRender(); return window.scrollTo(0, 0); }
+        case 'sa-go': { S.sa.view = d.v; if (d.v === 'camps') { await saLoadCamps(); } else if (d.v === 'rules') { await saLoadRules(); } else if (d.v === 'tpls') { await saLoadTpls(); } else if (d.v === 'ov') { await saLoadOverview(); } else if (d.v === 'mkt' || d.v === 'set') { await saLoadSettings(); } else if (d.v === 'log') { await saLoadAudit(); } saRender(); return window.scrollTo(0, 0); }
         case 'sa-tpl-open': S.sa.tplSel = d.key || null; S.sa.view = 'tpl'; return saRender();
         case 'sa-tpl-save': return saTplSave();
         case 'sa-tpl-del': { const cur = S.sa.tplSel; if (!cur || SA_SYS_TPL.includes(cur)) return; const r = await sb.from('mail_templates').delete().eq('key', cur); if (r.error) return fail(r.error); await saLoadTpls(); S.sa.view = 'tpls'; return saRender(); }
@@ -9090,9 +9103,113 @@ function lpDemoStart(mode) {
     cycle();
 }
 
+/* ---- Globale indstillinger (styres fra Kontrolcenteret → Markedsføring / Indstillinger) ---- */
+const GS = { pricing: null, landing: null, banner: null, maintenance: null };
+async function loadGlobalSettings() {
+    try { const r = await sb.from('app_settings').select('key,value').in('key', ['pricing', 'landing', 'banner', 'maintenance']); if (!r.error) (r.data || []).forEach(x => { GS[x.key] = x.value; }); } catch (e) { /* offline: standardværdier */ }
+    applyGlobalSettings();
+}
+function lpTexts() {
+    const pk = LP_PACKS.alt, a = $('lp-price-line'), b = $('lp-from-line');
+    if (a) a.textContent = pk.first + ' kr. for den første medarbejder, derefter ' + pk.p + ' kr. pr. medarbejder pr. måned';
+    if (b) b.textContent = 'Fra ' + pk.first + ' kr. pr. måned – derefter ' + pk.p + ' kr. pr. ekstra medarbejder.';
+}
+function dismissBanner() { try { sessionStorage.setItem('unisjak_bn', (GS.banner && GS.banner.text) || ''); } catch (e) { /* ignore */ } applyGlobalSettings(); }
+function applyGlobalSettings() {
+    const p = GS.pricing;
+    if (p && Number(p.first) > 0 && Number(p.extra) > 0) { LP_PACKS.alt.first = Math.round(Number(p.first)); LP_PACKS.alt.p = Math.round(Number(p.extra)); }
+    lpTexts(); if ($('lp-range')) lpPack();
+    const L = GS.landing || {};
+    [['lp-badge', 'badge'], ['lp-h1a', 'h1a'], ['lp-h1b', 'h1b'], ['lp-sub', 'sub']].forEach(([id, k]) => { const e = $(id); if (e && typeof L[k] === 'string' && L[k].trim()) e.textContent = L[k].trim(); });
+    const B = GS.banner, bn = $('app-banner');
+    let on = !!(B && B.on === true && String(B.text || '').trim());
+    try { if (on && sessionStorage.getItem('unisjak_bn') === B.text) on = false; } catch (e) { /* ignore */ }
+    if (bn) { bn.className = 'fixed top-0 inset-x-0 z-[70] px-4 py-2 text-xs font-bold flex items-center justify-center gap-3 ' + (B && B.level === 'warn' ? 'bg-amber-500 text-[#12233F]' : 'bg-[#12233F] text-white') + (on ? '' : ' hidden'); if (on) $('app-banner-text').textContent = B.text; }
+    const M = GS.maintenance, mo = $('maint-screen'), sup = !!(S.profile && S.profile.is_superadmin === true);
+    const show = !!(M && M.on === true && S.started && !sup);
+    if (mo) { mo.classList.toggle('hidden', !show); if (show) $('maint-text').textContent = M.message || 'Vi opdaterer UniSjak. Prøv igen om lidt.'; }
+}
+
+/* ---- Superadmin: overblik, markedsføring, indstillinger, log ---- */
+const SA_NEWV = ['ov', 'mkt', 'set', 'log'];
+async function saLoadSettings() {
+    const r = await sb.from('app_settings').select('key,value'); S.sa.set = {}; (r.data || []).forEach(x => { S.sa.set[x.key] = x.value; });
+    const s = await sb.from('crm_accounts').select('source,stage').limit(2000); S.sa.srcs = s.error ? [] : (s.data || []);
+}
+const saSet = k => (S.sa.set && S.sa.set[k]) || {};
+async function saLoadOverview() { S.sa.ov = null; const r = await sb.rpc('sa_overview'); S.sa.ov = r.error ? { error: r.error.message } : r.data; }
+async function saLoadAudit() { const r = await sb.rpc('sa_audit', { p_limit: 100 }); S.sa.audit = r.error ? [] : (r.data || []); }
+const saAudit = (action, target, detail) => { try { sb.rpc('sa_audit_add', { p_action: action, p_target: target, p_detail: detail || null }).then(() => {}, () => {}); } catch (e) { /* ignore */ } };
+async function saSaveSetting(key, value) {
+    const r = await sb.rpc('sa_set_setting', { p_key: key, p_value: value, p_public: key !== 'defaults' });
+    if (r.error) { fail(r.error); return false; }
+    S.sa.set = S.sa.set || {}; S.sa.set[key] = value; if (key !== 'defaults') { GS[key] = value; applyGlobalSettings(); }
+    toast('Gemt – virker med det samme.', 'ok'); return true;
+}
+const saKr = n => Math.round(Number(n) || 0).toLocaleString('da-DK') + ' kr.';
+const saCard = (title, inner, sub) => `<section class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 space-y-3"><div><h3 class="font-black text-white text-base">${title}</h3>${sub ? `<p class="text-xs text-gray-400 mt-0.5">${sub}</p>` : ''}</div>${inner}</section>`;
+const saTile = (n, t, cls) => `<div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-4 md:p-5"><p class="text-2xl md:text-3xl font-black ${cls || 'text-white'}">${n}</p><p class="text-[11px] md:text-xs text-gray-400 font-bold mt-1">${t}</p></div>`;
+const saFld = (name, label, val, ph, extra) => `<div><label class="lbl">${label}</label><input data-sa-f="${name}" class="inp" ${extra || ''} value="${esc(val == null ? '' : String(val))}" placeholder="${esc(ph || '')}"></div>`;
+const saOnOff = (name, label, on) => `<div><label class="lbl">${label}</label><select data-sa-f="${name}" class="inp"><option value="off" ${on ? '' : 'selected'}>Fra</option><option value="on" ${on ? 'selected' : ''}>Til</option></select></div>`;
+
+function saOvHtml() {
+    const o = S.sa.ov; if (!o) return '<p class="text-xs text-gray-500">Henter…</p>';
+    if (o.error) return `<p class="text-xs text-red-300">${esc(o.error)}</p>`;
+    const cs = o.customers || [], mrr = cs.reduce((n, c) => n + (Number(c.mrr) || 0), 0), paying = cs.filter(c => Number(c.mrr) > 0).length;
+    const mail = o.mail || {}, mailBad = (Number(mail.bounced) || 0) + (Number(mail.complained) || 0) + (Number(mail.failed) || 0), mailAll = Object.values(mail).reduce((n, x) => n + Number(x), 0);
+    return `<div class="grid grid-cols-2 md:grid-cols-4 gap-3">${saTile(saKr(mrr), 'Anslået pr. måned (aktive kunder)', 'text-emerald-400')}${saTile(saKr(mrr * 12), 'Anslået pr. år')}${saTile(paying, 'Betalende kunder')}${saTile(Number(o.users_total) || 0, 'Aktive brugere i alt')}</div>` +
+        `<div class="grid grid-cols-2 md:grid-cols-4 gap-3">${saTile(Number(o.ks_total) || 0, 'KS-punkter i alt')}${saTile(Number(o.time_total) || 0, 'Timeregistreringer i alt')}${saTile(mailAll, 'Mails sendt (30 dage)')}${saTile(mailBad, 'Mails med fejl (30 dage)', mailBad ? 'text-red-400' : 'text-emerald-400')}</div>` +
+        saCard('Kunder', `<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-[10px] uppercase tracking-wider text-gray-500"><th class="py-2 pr-3">Kunde</th><th class="py-2 pr-3">Fase</th><th class="py-2 pr-3 text-right">Brugere</th><th class="py-2 pr-3 text-right">KS 7 d.</th><th class="py-2 pr-3 text-right">Timer 7 d.</th><th class="py-2 text-right">Pr. måned</th></tr></thead><tbody>` +
+            (cs.map(c => `<tr class="border-t border-gray-800"><td class="py-2.5 pr-3 font-black text-white">${esc(c.name)}${(Number(c.ks_7d) + Number(c.time_7d)) === 0 ? ' <span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-950 text-red-300 ml-1">ingen brug</span>' : ''}</td><td class="py-2.5 pr-3">${saChip(SA_STAGE_CLS[c.stage] || 'bg-gray-800 text-gray-300', saStage(c.stage))}</td><td class="py-2.5 pr-3 text-right text-gray-200">${c.users}</td><td class="py-2.5 pr-3 text-right text-gray-200">${c.ks_7d}</td><td class="py-2.5 pr-3 text-right text-gray-200">${c.time_7d}</td><td class="py-2.5 text-right font-black text-white">${Number(c.mrr) ? saKr(c.mrr) : '–'}</td></tr>`).join('') || '<tr><td colspan="6" class="py-6 text-center text-xs text-gray-500">Ingen kunder endnu.</td></tr>') +
+            `</tbody></table></div>`, 'Beregnet ud fra priserne under Markedsføring: første medarbejder + resten.') +
+        saCard('Mailstatus (30 dage)', `<div class="flex flex-wrap gap-2">${Object.keys(mail).map(k => saChip(['bounced', 'complained', 'failed'].includes(k) ? 'bg-red-950 text-red-300' : 'bg-gray-800 text-gray-200', (SA_MAIL_ST[k] || k) + ': ' + mail[k])).join('') || '<span class="text-xs text-gray-500">Ingen udgående mails endnu.</span>'}</div>`);
+}
+function saMktHtml() {
+    const P = saSet('pricing'), L = saSet('landing'), first = Number(P.first) || 249, extra = Number(P.extra) || 89;
+    const st = (S.sa.counts || {}).stages || {}, flow = SA_STAGES.filter(x => !['inaktiv', 'tabt'].includes(x[0])), leads = flow.reduce((n, x) => n + (Number(st[x[0]]) || 0), 0), act = Number(st.aktiv) || 0;
+    const src = {}; (S.sa.srcs || []).forEach(a => { const k = (a.source || 'Ukendt').trim() || 'Ukendt'; src[k] = (src[k] || 0) + 1; });
+    return saCard('Priser', `<div class="grid grid-cols-2 gap-3">${saFld('p_first', 'Første medarbejder (kr./md.)', first, '', 'type="number" min="1" max="100000"')}${saFld('p_extra', 'Hver ekstra medarbejder (kr./md.)', extra, '', 'type="number" min="1" max="100000"')}</div>` +
+        `<p class="text-xs text-gray-400">Eksempel: 10 medarbejdere = <b class="text-white">${saKr(first + extra * 9)}</b> om måneden. Ændringen vises med det samme på forsiden og i prisberegneren.</p>` +
+        `<button type="button" data-act="sa-set-save" data-k="pricing" class="brand-orange text-white py-3.5 px-6 rounded-xl font-black text-sm">Gem priser</button>`) +
+        saCard('Tekster på forsiden', `<div class="grid md:grid-cols-2 gap-3">${saFld('l_badge', 'Lille tekst over overskriften', L.badge, 'Til håndværkere i byggeriet', 'maxlength="80"')}${saFld('l_h1a', 'Overskrift, linje 1', L.h1a, 'Timer og KS.', 'maxlength="60"')}${saFld('l_h1b', 'Overskrift, linje 2 (orange)', L.h1b, 'Færdigt på sekunder.', 'maxlength="60"')}</div>` +
+        `<div><label class="lbl">Underoverskrift</label><textarea data-sa-f="l_sub" rows="3" maxlength="400" class="inp" placeholder="Medarbejderne registrerer timer og dokumenterer…">${esc(L.sub || '')}</textarea></div><p class="text-xs text-gray-400">Tomme felter bruger standardteksten.</p>` +
+        `<div class="flex gap-2"><button type="button" data-act="sa-set-save" data-k="landing" class="brand-orange text-white py-3.5 px-6 rounded-xl font-black text-sm">Gem tekster</button><a href="/" target="_blank" rel="noopener" class="bg-gray-800 border border-gray-700 text-gray-100 py-3.5 px-6 rounded-xl font-black text-sm">Se forsiden</a></div>`) +
+        saCard('Salgstragt', `<div class="grid grid-cols-2 md:grid-cols-5 gap-2">${flow.map(([k, t]) => saTile(Number(st[k]) || 0, t)).join('')}</div><p class="text-xs text-gray-400">${leads ? Math.round(act / leads * 100) : 0}% af alle i tragten er aktive kunder.</p>` +
+            `<div class="flex flex-wrap gap-2">${Object.keys(src).sort((a, b) => src[b] - src[a]).map(k => saChip('bg-gray-800 text-gray-200', k + ': ' + src[k])).join('') || '<span class="text-xs text-gray-500">Ingen kilder registreret endnu.</span>'}</div>`, 'Leads og kunder fordelt på fase og kilde.') +
+        saCard('Kampagner', `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-go" data-v="camps" class="bg-gray-800 border border-gray-700 text-gray-100 py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-bullhorn mr-1.5"></i>Udsendelser</button><button type="button" data-act="sa-go" data-v="tpls" class="bg-gray-800 border border-gray-700 text-gray-100 py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-file-lines mr-1.5"></i>Skabeloner</button></div>`);
+}
+function saSetHtml() {
+    const B = saSet('banner'), M = saSet('maintenance'), D = saSet('defaults');
+    return saCard('Besked til alle', `<div class="grid md:grid-cols-3 gap-3">${saOnOff('b_on', 'Vis besked', B.on === true)}<div><label class="lbl">Type</label><select data-sa-f="b_level" class="inp"><option value="info" ${B.level === 'warn' ? '' : 'selected'}>Information</option><option value="warn" ${B.level === 'warn' ? 'selected' : ''}>Advarsel</option></select></div></div>` +
+        `${saFld('b_text', 'Tekst', B.text, 'F.eks. Vi opdaterer appen i aften kl. 22', 'maxlength="200"')}<p class="text-xs text-gray-400">Vises øverst på forsiden og i appen. Brugerne kan lukke den.</p>` +
+        `<button type="button" data-act="sa-set-save" data-k="banner" class="brand-orange text-white py-3.5 px-6 rounded-xl font-black text-sm">Gem besked</button>`) +
+        saCard('Nødafbryder', `<div class="grid md:grid-cols-3 gap-3">${saOnOff('m_on', 'Vedligehold', M.on === true)}</div>${saFld('m_text', 'Besked til brugerne', M.message, 'Vi opdaterer UniSjak. Prøv igen om lidt.', 'maxlength="300"')}` +
+        `<p class="text-xs text-amber-300 font-bold">Når den er Til, kan ingen anden end dig bruge appen. Forsiden og login virker stadig.</p>` +
+        `<button type="button" data-act="sa-set-save" data-k="maintenance" class="bg-red-600 text-white py-3.5 px-6 rounded-xl font-black text-sm">Gem</button>`) +
+        saCard('Standard for nye kunder', `<div class="grid grid-cols-2 gap-3">${saFld('d_int', 'Brugere', D.max_int || 25, '', 'type="number" min="1"')}${saFld('d_guest', 'Gæster', D.max_guest == null ? 10 : D.max_guest, '', 'type="number" min="0"')}</div>` +
+        `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${saModsHtml(D.modules || {})}</div><p class="text-xs text-gray-400">Bruges som udgangspunkt, når du opretter en ny kunde.</p>` +
+        `<button type="button" data-act="sa-set-save" data-k="defaults" class="brand-orange text-white py-3.5 px-6 rounded-xl font-black text-sm">Gem standard</button>`);
+}
+function saLogHtml() {
+    const L = S.sa.audit; if (!L) return '<p class="text-xs text-gray-500">Henter…</p>';
+    return saCard('Seneste ændringer', `<div class="divide-y divide-gray-800">${L.map(x => `<div class="py-2.5 flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-sm font-black text-white">${esc(x.action)} · ${esc(x.target || '')}</p><p class="text-[11px] text-gray-400 truncate">${esc(x.who)}${x.detail ? ' · ' + esc(JSON.stringify(x.detail).slice(0, 140)) : ''}</p></div><span class="text-[11px] text-gray-500 shrink-0">${saDT(x.at)}</span></div>`).join('') || '<p class="text-xs text-gray-500 py-4 text-center">Ingen ændringer endnu.</p>'}</div>`, 'Hvem ændrede hvad og hvornår.');
+}
+async function saSetSave(k) {
+    const B = $('sa-main'), g = n => { const e = B.querySelector('[data-sa-f="' + n + '"]'); return e ? e.value.trim() : ''; };
+    let v;
+    if (k === 'pricing') { const a = Math.round(Number(g('p_first'))), b = Math.round(Number(g('p_extra'))); if (!(a >= 1 && a <= 100000 && b >= 1 && b <= 100000)) return toast('Skriv gyldige priser.'); v = { first: a, extra: b }; }
+    else if (k === 'landing') v = { badge: g('l_badge'), h1a: g('l_h1a'), h1b: g('l_h1b'), sub: g('l_sub') };
+    else if (k === 'banner') v = { on: g('b_on') === 'on', level: g('b_level') === 'warn' ? 'warn' : 'info', text: g('b_text') };
+    else if (k === 'maintenance') { v = { on: g('m_on') === 'on', message: g('m_text') }; if (v.on && !confirm('Slå vedligehold til? Alle andre end dig bliver låst ude af appen.')) return; }
+    else if (k === 'defaults') { v = { max_int: parseInt(g('d_int'), 10) || 25, max_guest: Math.max(0, parseInt(g('d_guest'), 10) || 0), modules: saVals().modules }; }
+    else return;
+    if (await saSaveSetting(k, v)) { if (k === 'pricing') { saRender(); } }
+}
+
 (function init() {
     switchAuthTab('login');
     lpPack();
+    loadGlobalSettings(); setInterval(loadGlobalSettings, 300000);
     $('timer-date-input').value = fmtDate(new Date());
     ['pf-cat', 'ef-cat'].forEach(id => { $(id).innerHTML = '<option value="">Vælg kategori…</option>' + KS_CATS.map(c => `<option value="${esc(c)}">${esc(catName(c))}</option>`).join(''); });
     $('pf-cat').addEventListener('change', safeFormRender); $('ef-cat').addEventListener('change', () => { S.editSafeLv = S.editSafeLv || ''; editSafeRender(); });
