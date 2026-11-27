@@ -30,7 +30,7 @@ const T = {
 };
 
 function shell(inner, siteUrl) {
-  return `<!doctype html><html><body style="margin:0;background:#f4f4f2;font-family:Arial,Helvetica,sans-serif;color:#1c1917"><div style="max-width:520px;margin:0 auto;padding:24px"><div style="background:#fff;border-radius:14px;padding:28px;border:1px solid #e7e5e4"><div style="font-size:22px;font-weight:800;margin-bottom:18px">Uni<span style="color:#ea580c">Sjak</span></div>${inner}</div><p style="font-size:11px;color:#78716c;text-align:center;margin-top:14px">UniSjak · <a href="${esc(siteUrl)}" style="color:#78716c">${esc(siteUrl.replace(/^https?:\/\//, ''))}</a></p></div></body></html>`;
+  return `<!doctype html><html><body style="margin:0;background:#f4f4f2;font-family:Arial,Helvetica,sans-serif;color:#1c1917"><div style="max-width:520px;margin:0 auto;padding:24px"><div style="background:#fff;border-radius:14px;padding:28px;border:1px solid #e7e5e4"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px"><tr><td style="padding-right:10px"><img src="${esc(siteUrl)}/mail-logo.png" width="40" height="41" alt="UniSjak" style="display:block;border:0"></td><td style="font-size:22px;font-weight:800">Uni<span style="color:#ea580c">Sjak</span></td></tr></table>${inner}</div><p style="font-size:11px;color:#78716c;text-align:center;margin-top:14px">UniSjak · <a href="${esc(siteUrl)}" style="color:#78716c">${esc(siteUrl.replace(/^https?:\/\//, ''))}</a></p></div></body></html>`;
 }
 const btnHtml = (href, label) => `<p style="margin:22px 0"><a href="${esc(href)}" style="background:#ea580c;color:#fff;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:10px;display:inline-block">${esc(label)}</a></p>`;
 

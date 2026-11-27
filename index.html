@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UniSjak – timer og KS til håndværkere</title>
     <meta name="description" content="Timeregistrering og kvalitetssikring (KS) til håndværkere i byggeriet. Foto med GPS, diæter og løn-eksport. Fra 249 kr. pr. måned. 14 dages gratis prøveperiode.">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#F7F5F1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="UniSjak">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="UniSjak">
+    <meta property="og:title" content="UniSjak – timer og KS til håndværkere">
+    <meta property="og:description" content="Timer og KS. Færdigt på sekunder. Foto med GPS, diæter og løn-eksport.">
+    <meta property="og:url" content="https://unisjak.dk/">
+    <meta property="og:image" content="https://unisjak.dk/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         /* Lyst tema: gray-skalaen og de farvede nuancer er vendt, så eksisterende klasser får lys baggrund og mørk tekst */
@@ -101,7 +117,7 @@
     <!-- INDLÆSNING -->
     <div id="boot-screen" class="fixed inset-0 z-[60] bg-[#F7F5F1] flex items-center justify-center">
         <div class="text-center space-y-3">
-            <div class="w-14 h-14 brand-orange rounded-2xl flex items-center justify-center font-black text-2xl text-white mx-auto animate-pulse">U</div>
+            <img src="logo.png" alt="UniSjak" class="w-14 h-14 object-contain mx-auto animate-pulse">
             <p class="text-sm text-gray-400">Indlæser…</p>
         </div>
     </div>
@@ -113,7 +129,7 @@
     <div id="landing-screen" class="hidden fixed inset-0 bg-[#F7F5F1] text-[#12233F] z-50 overflow-y-auto">
         <header class="sticky top-0 z-20 bg-[#F7F5F1]/90 backdrop-blur border-b border-[#E7E3DA]">
             <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-                <div class="flex items-center space-x-2.5"><div class="w-9 h-9 brand-orange rounded-xl flex items-center justify-center font-black text-lg text-white">U</div><span class="font-black text-[#12233F] text-lg tracking-tight">UniSjak</span></div>
+                <div class="flex items-center space-x-2.5"><img src="logo.png" alt="UniSjak" class="w-9 h-9 object-contain "><span class="font-black text-[#12233F] text-lg tracking-tight">UniSjak</span></div>
                 <nav class="hidden md:flex items-center space-x-6 text-sm font-bold text-[#566070]">
                     <a href="#lp-funktioner" onclick="lpScroll(event,'lp-funktioner')" class="hover:text-[#12233F]">Funktioner</a>
                     <a href="#lp-sadan" onclick="lpScroll(event,'lp-sadan')" class="hover:text-[#12233F]">Sådan virker det</a>
@@ -146,7 +162,7 @@
                 <div class="relative" style="width:272px">
                     <div class="rounded-[2.4rem] border-[7px] border-[#12233F] bg-[#F7F5F1] shadow-2xl shadow-[#12233F]/30 overflow-hidden" style="height:540px">
                         <div class="flex justify-between items-center px-5 pt-3 pb-1 text-[10px] text-gray-400 font-bold"><span>9:41</span><span class="w-16 h-4 bg-gray-800 rounded-full"></span><span><i class="fa-solid fa-signal"></i> <i class="fa-solid fa-battery-full"></i></span></div>
-                        <div class="px-4 pt-2 pb-2 flex items-center justify-between"><div class="flex items-center space-x-2"><div class="w-6 h-6 brand-orange rounded-lg flex items-center justify-center font-black text-xs text-white">U</div><span id="lp-ph-title" class="text-xs font-black text-white">KS / Foto</span></div><span class="text-[9px] text-emerald-400 font-black"><i class="fa-solid fa-circle text-[6px] mr-1"></i>Live</span></div>
+                        <div class="px-4 pt-2 pb-2 flex items-center justify-between"><div class="flex items-center space-x-2"><img src="logo.png" alt="UniSjak" class="w-6 h-6 object-contain "><span id="lp-ph-title" class="text-xs font-black text-white">KS / Foto</span></div><span class="text-[9px] text-emerald-400 font-black"><i class="fa-solid fa-circle text-[6px] mr-1"></i>Live</span></div>
                         <div class="px-4">
                             <button id="lp-mic" class="w-full rounded-2xl py-3.5 font-black text-xs text-white bg-red-600 flex items-center justify-center space-x-2 transition" tabindex="-1" aria-hidden="true"><i class="fa-solid fa-microphone text-base"></i><span id="lp-mic-label">Indtal KS-punkt</span></button>
                             <p id="lp-say" class="text-[11px] text-gray-300 mt-2.5 min-h-[58px] leading-snug italic"></p>
@@ -232,7 +248,7 @@
         </section>
 
         <footer class="border-t border-[#E7E3DA]"><div class="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center space-x-2.5"><div class="w-8 h-8 brand-orange rounded-lg flex items-center justify-center font-black text-white">U</div><span class="font-black text-[#12233F]">UniSjak</span><span class="text-xs text-[#566070]">· unisjak.dk · <a href="mailto:morten@unisjak.dk" class="underline">morten@unisjak.dk</a></span></div>
+            <div class="flex items-center space-x-2.5"><img src="logo.png" alt="UniSjak" class="w-8 h-8 object-contain "><span class="font-black text-[#12233F]">UniSjak</span><span class="text-xs text-[#566070]">· unisjak.dk · <a href="mailto:morten@unisjak.dk" class="underline">morten@unisjak.dk</a></span></div>
             <div class="flex gap-2"><button onclick="lpGo('login')" class="px-4 py-2.5 rounded-xl border-2 border-[#12233F] text-[#12233F] text-sm font-black hover:bg-[#12233F] hover:text-white transition">Log ind</button><button onclick="lpGo('signup')" class="px-4 py-2.5 rounded-xl bg-[#12233F] text-white text-sm font-black">Start gratis prøveperiode</button></div>
         </div></footer>
     </div>
@@ -241,7 +257,7 @@
     <div id="auth-screen" class="hidden fixed inset-0 bg-[#F7F5F1] z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-card w-full max-w-md rounded-2xl border border-card p-6 space-y-5 shadow-2xl">
             <div class="text-center space-y-2">
-                <div class="w-14 h-14 brand-orange rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-xl shadow-orange-950/50 mx-auto">U</div>
+                <img src="logo.png" alt="UniSjak" class="w-14 h-14 object-contain mx-auto">
                 <h1 class="text-2xl font-black text-white">UniSjak</h1>
                 <p class="text-xs text-gray-400">Timer og KS – med tale.</p>
                 <button onclick="showScreen('landing')" class="text-[11px] text-gray-500 hover:text-white underline">← Tilbage til forsiden</button>
@@ -275,12 +291,12 @@
     <!-- SUPERADMIN-KONTROLCENTER -->
     <!-- BESKED TIL ALLE (styres fra Kontrolcenteret) -->
     <div id="app-banner" class="hidden fixed top-0 inset-x-0 z-[70] px-4 py-2 text-xs font-bold flex items-center justify-center gap-3 bg-[#12233F] text-white"><span id="app-banner-text"></span><button type="button" onclick="dismissBanner()" class="shrink-0 opacity-80 hover:opacity-100 px-2" aria-label="Luk">✕</button></div>
-    <div id="maint-screen" class="hidden fixed inset-0 z-[65] bg-[#F7F5F1] flex items-center justify-center p-6"><div class="max-w-sm text-center space-y-4"><div class="w-16 h-16 mx-auto brand-orange rounded-2xl flex items-center justify-center font-black text-white text-3xl">U</div><h2 class="text-2xl font-black text-[#12233F]">Vi er straks tilbage</h2><p id="maint-text" class="text-[#566070]"></p><button type="button" onclick="location.reload()" class="px-6 py-3 rounded-2xl bg-[#12233F] text-white font-black">Prøv igen</button></div></div>
+    <div id="maint-screen" class="hidden fixed inset-0 z-[65] bg-[#F7F5F1] flex items-center justify-center p-6"><div class="max-w-sm text-center space-y-4"><img src="logo.png" alt="UniSjak" class="w-16 h-16 object-contain mx-auto"><h2 class="text-2xl font-black text-[#12233F]">Vi er straks tilbage</h2><p id="maint-text" class="text-[#566070]"></p><button type="button" onclick="location.reload()" class="px-6 py-3 rounded-2xl bg-[#12233F] text-white font-black">Prøv igen</button></div></div>
 
     <div id="sa-screen" class="hidden fixed inset-0 bg-[#F7F5F1] z-50 overflow-y-auto">
         <div class="md:flex min-h-full">
             <aside class="hidden md:flex flex-col w-64 shrink-0 bg-white border-r border-[#E7E3DA] p-4 sticky top-0 h-screen">
-                <div class="flex items-center gap-3 px-2 pt-1 pb-5"><div class="w-10 h-10 brand-orange rounded-xl flex items-center justify-center font-black text-white text-lg">U</div><div><p class="font-black text-[#12233F] leading-tight">UniSjak</p><p class="text-[11px] font-bold text-[#566070] flex items-center gap-1.5">Kontrolcenter <span class="sa-live-dot w-2 h-2 rounded-full bg-amber-500"></span></p></div></div>
+                <div class="flex items-center gap-3 px-2 pt-1 pb-5"><img src="logo.png" alt="UniSjak" class="w-10 h-10 object-contain "><div><p class="font-black text-[#12233F] leading-tight">UniSjak</p><p class="text-[11px] font-bold text-[#566070] flex items-center gap-1.5">Kontrolcenter <span class="sa-live-dot w-2 h-2 rounded-full bg-amber-500"></span></p></div></div>
                 <nav id="sa-nav" class="space-y-1 flex-1 overflow-y-auto"></nav>
                 <div class="space-y-2 pt-3 border-t border-[#E7E3DA]">
                     <button id="sa-close-btn2" type="button" data-act="sa-close" class="hidden w-full bg-gray-800 text-gray-200 px-3.5 py-2.5 rounded-xl text-sm font-bold">Til appen</button>
@@ -325,7 +341,7 @@
     <div id="onboard-screen" class="hidden fixed inset-0 bg-[#F7F5F1] z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-card w-full max-w-md rounded-2xl border border-card p-6 space-y-5 shadow-2xl">
             <div class="text-center space-y-2">
-                <div class="w-14 h-14 brand-orange rounded-2xl flex items-center justify-center font-black text-2xl text-white mx-auto">U</div>
+                <img src="logo.png" alt="UniSjak" class="w-14 h-14 object-contain mx-auto">
                 <h1 class="text-xl font-black text-white">Næsten klar</h1>
                 <p class="text-xs text-gray-400">Din konto hører ikke til en virksomhed endnu.</p>
             </div>
@@ -364,7 +380,7 @@
         <aside class="w-64 bg-card border-r border-card flex flex-col justify-between p-4 shrink-0">
             <div class="space-y-6">
                 <div class="flex items-center space-x-3 px-1">
-                    <div class="w-10 h-10 brand-orange rounded-xl flex items-center justify-center font-black text-xl text-white shadow-lg shadow-orange-950/50">U</div>
+                    <img src="logo.png" alt="UniSjak" class="w-10 h-10 object-contain ">
                     <div class="min-w-0">
                         <h1 class="font-black text-lg text-white tracking-tight leading-none truncate" id="pc-company-title">UniSjak</h1>
                         <span class="text-[10px] text-orange-400 font-bold uppercase tracking-wider">Kontor &amp; Drift</span>
@@ -563,7 +579,7 @@
     <div id="mobile-shell" class="flex md:hidden h-screen flex-col justify-between overflow-hidden max-w-md mx-auto relative border-x border-gray-800 shadow-2xl">
         <header class="p-3 bg-card border-b border-card flex justify-between items-center shrink-0 z-10">
             <div class="flex items-center space-x-2.5 min-w-0">
-                <div class="w-10 h-10 brand-orange rounded-xl flex items-center justify-center font-black text-lg text-white shadow-lg shadow-orange-950/50 shrink-0">U</div>
+                <img src="logo.png" alt="UniSjak" class="w-10 h-10 object-contain shrink-0">
                 <div class="min-w-0">
                     <select id="case-selector" onchange="changeProject(this.value)" class="bg-gray-900 text-sm font-bold text-white border border-gray-700 rounded-lg px-2 py-1.5 focus:outline-none focus:border-orange-500 transition max-w-[190px]"></select>
                     <div class="flex items-center space-x-1.5 mt-0.5">
@@ -6365,8 +6381,10 @@ function pdfHeader(doc, info) {
     let nm = String(info.company || 'UniSjak');
     if (pdfTextW(nm, 13, true) > maxW) { while (nm.length > 1 && pdfTextW(nm + '…', 13, true) > maxW) nm = nm.slice(0, -1); nm = nm.trimEnd() + '…'; }
     doc.text(tx, m - 4, nm, { size: 13, bold: true, color: [30, 34, 41] });
-    const gen = 'Genereret af UniSjak.dk', gw = doc.text(tx, m + 13, gen, { size: 8, color: [130, 130, 130] });
-    doc.link(tx, m + 12, gw, 11, 'https://unisjak.dk');
+    const gen = 'Genereret af UniSjak.dk';
+    try { doc.image(b64ToBytes(UNISJAK_PDF_LOGO), tx, m + 3, 14, 14.5); } catch (e) { /* uden logo */ }
+    const gw = doc.text(tx + 17, m + 13, gen, { size: 8, color: [130, 130, 130] });
+    doc.link(tx, m + 3, gw + 17, 15, 'https://unisjak.dk');
     doc.text(W - m, m - 4, info.title || '', { size: 13, bold: true, color: [30, 34, 41], align: 'right' });
     if (info.sub) doc.text(W - m, m + 13, info.sub, { size: 9, color: [110, 110, 110], align: 'right' });
     if (info.sub2) doc.text(W - m, m + 25, info.sub2, { size: 9, color: [110, 110, 110], align: 'right' });
@@ -9104,6 +9122,7 @@ function lpDemoStart(mode) {
 }
 
 /* ---- Globale indstillinger (styres fra Kontrolcenteret → Markedsføring / Indstillinger) ---- */
+const UNISJAK_PDF_LOGO = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwMDAgQDAwMEBAQFBgoGBgUFBgwICQcKDgwPDg4MDQ0PERYTDxAVEQ0NExoTFRcYGRkZDxIbHRsYHRYYGRj/2wBDAQQEBAYFBgsGBgsYEA0QGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBj/wAARCAB8AHgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD7+ooooAKKKKACiimSyxwQPNNIscaKWZ3OAoHUk9hSbtqwSvoh9Z+ta1pvh/RptU1W5WC2iHLHkk9lA7k+lc1ofjyPxR4ou4NGiQaLp6FrnUZsgSN2VB2HBJY9h0Ga8M+JPjmbxj4lYW8jrpdqSltH03eshHqf0GB618rnPFWHwWE9vQfNKTaj2bW780u63ei7n1WTcLYjG4v2FdcsYpOXdJ7Lyb89lq+x6c/x98NCUhNI1Vkz94iMfpurW0341eCL+RUnuLuwZuP9Kh+XP1Un9a+Za9Y+FvhPTLXTJvH/AIqKRadaEm2Eo+VmBwXx3weFHdvoK+MyfizOMbiVSi423ba0SW7dmtvU+xzfhTJ8FhnVkpX2ST1beyV77+h9CqwZQynIIyDS14Pd/Hu+HihXstIhOkK20xyk+dIP724cKfbB+tex+HvEOl+J9Dj1XSbjzYX4Knho27qw7EV+iZbxBgcyqSpYad5R+V/NX3R+e5lkGOy6nGriIWjL528n2Zq0UUV7R4wUUUUAFFFFABRRRQAV8/8Axi+IEuoalL4T0mcrZQNtu5EP+ukH8H+6vf1P0r1rx94iPhfwDf6pGwFxs8q3/wCujcA/hyfwr5JZ2eQuzFmJySTkk+tfnPHudzoQjgKLs5K8vTovn18vU/ReA8ljXnLH1ldRdo+vf5dPP0PVnvB4W/Zot7eI7LzX53LEdfLzhj/3yqj/AIFXk9db451Nbk6HpED7odN0uCI46eYyB3P6gfhXJV+d51iVUrQox+GnGMV8l733yufoOS4Z06U60viqSlJ/N6fdGxZ0+ym1HVrbT7cZluJVhQe7EAfzrv8A4q+IYje2vgrSH26XoyLCwXpJKowSf93p9S1cn4T1KDRvE0esTbWNnHJNEjfxShCIx/30QfwrGllknneaVy8jsWZmOSSeSazpYv6vgp0oP3qj1/wx1t82/wDyU0q4X2+NhVmvdprT/FLr8kv/ACYZXX/DzxpceDvFUc7OzadcER3cQ5yv98D+8vX6ZHeuQorkwmLq4StGvRdpRd0dmLwtLF0ZUKyvGSsz7biljmgSaJ1eN1DKynIIPIIp9ed/BnXm1j4cR2k7lp9OkNsSepTGU/Q4/wCA16JX9GZdjY47C08TDaST/wA18nofztmODlgsTUw094u3+T+a1Ciiiu04gooooAK4Txx8UdF8Hu1iiG/1PGfs0bYEeRwXbt9Bz9K7uuG1b4TeDdZ1W41G6tbpbi4kMsjx3DDLHqcHIFeVnCx8qHLlzipvrLovLR6+p6uUPARr82YKTguker89Vp6Hgfi34geIfGRSPVJoo7WN98drAm1FPTPqTg9zXLV9HTfAnwdIP3d1q0R9plP80qjJ8ANBP+p1zUl/31jb+gr8rxnB2d4io6ta05Przf52P1LB8YZJh6apUbwiunL/AJHgBJY5Ykn1NJXukv7Plsf9T4olX2e0B/k1U3/Z9vA/yeJoCvq1qwP/AKFXnT4MziP/AC5v/wBvR/zPQhxllEv+X1v+3Zf5Hi9W7LS9S1J9mnafdXbDqIImkP6Cvorw98FvCukFZtSEmr3A5/0gbYh9EHX8Sag174veGvCmoz6Fp2jzzSWjmJkhVYIlYdQP/wBVd64OWEpKvmtdUovovef4fpc4Hxg8XUdHKqDqtdX7q/H9bHig8A+NDHv/AOEX1XH/AF7tn8qzbzQNc08E3+j39qB1M1u6D8yK9Sn/AGgNUZybXw9Zxr6SzO5/QCtjwX8YdW8TeNrLQ73SbKOK6LqZImfK4Qt0JIPSsoZVkdepGhQxUuaTSV4aXei7Gs81zyhTlXr4WPLFNu0tbLV9zgvhd47g8F61cR6hC8lhe7FldDkxFScPjuPmOR1/lX07FLHPAk0Lq8bqGVlOQwIyCKwdY8D+E9dQ/wBpaFaSOf8AlqieXJ/30uDW1ZWdvp+m29haoUgt41ijUknCqMAZPsK/S+HMqxmV05YatUU6a+G2jV3qn5dd2fm3EWaYPNKkcTRg4VH8V9U9NGvPpsieiiivpT5sKKKKAPFfj9dXMH9grBcSxq3nkhHKg42dcV4p/aN//wA/tx/39b/GvZf2hPvaB9J//ZK8Rr8I4yqSWcVkn/L/AOko/dODqcXlFFtfzf8ApTLsGpagLqMi+uQQwwRK3r9a+z05QfSvieH/AI+I/wDeH86+2E/1Y+gr6jw4lKSxN3/L/wC3HzHiNGMXh7L+b/20dRRRX6efmQHpXyJ4/wD+Sn69/wBf0v8A6FX12elfIvxA/wCSoa9/1/S/+hV+d+I3+6Uf8X6H6F4d/wC91v8AD+qObrs/hR/yWDRf9+T/ANFNXGV2fwo/5LBov+/J/wCimr8zyX/kYYf/ABx/9KR+lZz/AMi/Ef4Jf+ks+qsgY5papappdnrGmSWN7GzRv0ZGKsh7MrDkEeoryKLx9rnw88dS+F/FdzJqmmAgw3rjMyRN91if4wOQQecg4Pav3rMM2p5dKDxCtTk7c3RPzXReevnY/CMvyqpmEZrDu9SKvy9WvJ9X5aeVz2qio4J4bq1juLeRZYpFDo6HIZSMgg+lFeqmmro8tpp2ZJRRRTEeH/tCfe0D6T/+yV4jXt37Qn3tA/7eP/ZK8Rr8F4z/AORxW/7d/wDSUfu/Bv8AyJ6P/b3/AKUySH/j4j/3h/OvthP9WPoK+JoiFmRj0BB/WvtiF1kt0kQgqyggjuMV9T4bP/eV/h/9uPl/Edf7s/8AF/7aPooor9RPzAD0r5F+IH/JUNe/6/pf519dHpXyF47ljm+JeuyRMGU30uCO+GIr878Rn/slFf3v0P0Pw7X+1Vn/AHf1Rz1dn8KP+SwaL/vyf+imrjK7f4RwzTfF7SWijZxGZHcqM7V8thk+gyQPxr80yVN5hh7fzx/9KR+kZ00svxF/5Jfkz6nHSvnv4+PCfG2mouPNWyy+OuDI2P617/c3EFnZy3VzKsUMSF3kY4CqBkk18jeNfEb+KvG17rGGEUj7IEP8Ma8KPrjk+5NfqfH+Np0sAsO/im19y1b/ACXzPy7gHBVKuPeIXwwT+96Jfmz3P4IatNqHw4a0nYsbG5aBCf7hAYD8MkUUvwR0qSw+Gv2uVSpvrl51z/dACD/0EmivoeG/af2Xh/a78q+7p+Fj5/iP2f8Aadf2e3M/v6/jc9KrNbWbc+Jk0OAGW5EJuJsdIUzhd3ux6D0BPajX9YtvD/hq91m7/wBVbRGQrnG49lHuTgfjXE/B559T0DVfE9+/mX2pXzGR/RUACqPYZOBW+Jx/Li6WDh8UryflFf5vT7zDDYDmwlXGT+GNorzk/wDJa/cc3+0HExh0Cb+ENOp+uEP9K8Nr6g+L3hybX/h3LJaRmS5sXF0ir1ZQCHA/4Cc/hXy/X5Hx1hZ0s0lUa0mk18kk/wAj9a4GxUKuVxpp6wbT+buvzCu40X4s+MtE0qLToL2GeCFQkYuYg5RR0APBwPeuHor5fCY7EYOTnh5uLfZ2Pp8XgsPi4qGIgpJd1c9J/wCF4eNvXTv/AAG/+yo/4Xh429dN/wDAb/7KvNqK9H/WPNP+giX3nn/6uZZ/0Dx+49BvfjP44u7N7dbu1tt4wZLeAK4+hJOPrXn7MzMWYkknJJ70KjO4RFLMxwABkk16v4J+C+paqY9Q8T+Zp9kcMtsOJpR7/wBwfXn2FOjTzPPqyppyqNd3ovnsv1JrVMtyKk6jUaafZav5bv8AQ4fwp4O1rxfqotNLt/3akedcvxHCPUn19hya+mPCPgzRfBGiNDZgNMy7ri8lwGkx6/3VHYdv1qa6vfC3gHwwgka20yxiBEcSD5nPoo6sx9fzrwPx78VdU8WGTT7APYaSeDCD883++R2/2Rx65r7qjQy3hOn7Su/aYhrRLp6dl5vV9Ox8PWr5jxXU9nRXs8Onq319e78louvc1/it8Tl11n8O6BMTpyt/pFwp/wCPgg/dH+wD+Z9uvDeDfC154u8VQaVbBljJ33EwHEUY6t9ew9yKq+HfDereKNaTTNJtjLK3LueEjX+8x7D/ACK+o/BXgzTvBnh8WNp+9uJMNcXJGGlb+ijsP6k14uV5di+J8c8ZjP4aevbT7Mf1+/dntZpmOE4ZwSweE/iPbv8A4pfp92yN6ys7fT9OgsbSIRQQRrFGg/hUDAFFT0V+yxiopRWyPxyUnJuUnqzyz48Xstv8PrW0jOFubxQ/uFVmx+ePyrM+A3iG3bSr3w1NIq3CSG6hB/jUgBgPoQD+Ndd8VvDNx4m+H0sVjGZLu0kF1FGOr4BDKPfaTj3Ar5isr290rU4r6xuJLa6gbckiHDKf89q/LeIsfWyjPoY2UbwcUvVbNeqev3H6hw9gKObZFPBRdpqTfo90/RrT7z7V615D41+Cdtqt9Lqfhm4hsZpCWe0lBETN3Kkcr9MEfSqvhn472rwJbeKbGSOUDBu7Rdyt7snUfhn6V3tp8SvA17GHi8S2SZ7TsYiPwYCvp62NyTPqChVqRfk3yyT+dn+h8zRwWdZFXc6UJL0XNFr5afr6HhMvwb8fxyFV0iKQf3kuo8H8yKZ/wp/4gf8AQDX/AMCYv/iq+hH8c+DUXc3ijSMf9fSH+tZt58VPAVmpL+IIZWH8MEbyE/kMV4NThHIKes8S0v8AHD/I92lxbn1TSGGTf+Cf+Z4b/wAKe+IH/QEX/wACov8A4qrumfBTxpeXyxX8Fvp0H8U0syyYHsqEkn8vrXean8e/D8AZdL0m+vGHRpSsKn+Z/SuE1r41+MNSDR2LW2lxHj/R03Pj/ebP6AV4eJwfDGEd/azqNdFbX52S+5nt4bGcTYtW9lCmn1d9Pldv70er6L4O8D/DexGo31zbi6A5vr5gGz6Rr2/DJ9zXL+Kfjrawq9r4UszO/T7ZcqVQe6p1P44+leJXd9qGqXpuL66uLu4c/fmcux/E11/hz4UeLvEJSVrL+zrRufPvcpkeyfeP5Ae9XHiTG4mP1LJMP7OP91Xfq3svXfzJlw5gsNL65nVf2kv7zsvRLd+m3kcrq2tarr2pPf6vfTXdw38ch6D0A6AewrsfBXwo13xQ0d5eo+m6YefOlX55B/sKev1PH1r2Dwp8JPDHhtkubiL+1L5eRNcqNqn/AGU6D6nJrvq9XKOBJzn9YzWV29eVO9/8Uv8AL7zys246hCH1fK42S05mrW/wx/z+4yPDvhnR/C2kjT9HtFhj6u55eVv7zN3P+RWvRRX6VRowowVOnFKK2S2PzerWnWm6lRtye7e4UUUVoZhXm/jX4Q6P4muJNS02UaZqL/M7KuYpT6svY+4/EGvSKK4sfl2Gx9L2OJgpR/L0e6O3AZhiMBV9thpuMvz9Vsz5Z1X4SeOdLlIXSft0Y6S2biQH/gPDfpXOzeGPEsDFZ9A1SMj+9ayD+lfZFGK+Jr+HWDk70qso+tn/AJH2lDxDxcVarSjL0uv8z41Tw54hkOI9C1Jz/s2rn+ladr8PPG95jyfDOojPQyx+WPzbFfW+KMCs6fhzhk/frSfokv8AM0qeIuJa9yjFerb/AMj5r074IeNLtgbsWNgvfzpt5/JAf512ekfAPSYCsmtazc3ZHJjt0EK/TJyT+lew0V7WE4JyrDu7g5v+87/grL8DxsXxrmuIVlNQX91W/F3f4mDofgzwx4dCnSNGtoJB/wAtiu+T/vtsmt6iivqKNClQjyUYqK7JWX4HzFavVry56snJ927sKKKK1MgooooAKKKKAP/Z';
 const GS = { pricing: null, landing: null, banner: null, maintenance: null };
 async function loadGlobalSettings() {
     try { const r = await sb.from('app_settings').select('key,value').in('key', ['pricing', 'landing', 'banner', 'maintenance']); if (!r.error) (r.data || []).forEach(x => { GS[x.key] = x.value; }); } catch (e) { /* offline: standardværdier */ }
