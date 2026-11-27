@@ -236,8 +236,20 @@
                 </div>
                 <div class="rounded-3xl border border-[#E7E3DA] p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div><p class="text-lg font-black">Større virksomhed med mange medarbejdere?</p><p class="text-[#566070]">Vi laver en aftale til hele virksomheden med fast pris, mængderabat og hjælp til opsætning af overenskomst, diæter og tillæg.</p></div>
-                    <a href="mailto:morten@unisjak.dk?subject=Aftale%20til%20hele%20virksomheden" class="shrink-0 px-6 py-3.5 rounded-2xl border-2 border-[#12233F] text-[#12233F] font-black hover:bg-[#12233F] hover:text-white transition text-center">Kontakt os</a>
+                    <button id="lp-contact-btn" type="button" onclick="lpContactToggle()" class="shrink-0 px-6 py-3.5 rounded-2xl border-2 border-[#12233F] text-[#12233F] font-black hover:bg-[#12233F] hover:text-white transition text-center">Kontakt os</button>
                 </div>
+                <form id="lp-contact" class="hidden rounded-3xl border border-[#E7E3DA] bg-white p-6 space-y-3" onsubmit="return lpContactSend(event)">
+                    <p class="text-lg font-black">Skriv til os – vi vender tilbage samme dag</p>
+                    <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hidden">
+                    <div class="grid md:grid-cols-2 gap-3">
+                        <input name="name" required maxlength="120" placeholder="Dit navn" autocomplete="name" class="w-full border border-[#E7E3DA] rounded-xl px-4 py-3.5 bg-white text-[#12233F]">
+                        <input name="company" maxlength="160" placeholder="Virksomhed" autocomplete="organization" class="w-full border border-[#E7E3DA] rounded-xl px-4 py-3.5 bg-white text-[#12233F]">
+                        <input name="email" type="email" required maxlength="200" placeholder="E-mail" autocomplete="email" class="w-full border border-[#E7E3DA] rounded-xl px-4 py-3.5 bg-white text-[#12233F]">
+                        <input name="phone" type="tel" maxlength="40" placeholder="Telefon (valgfrit)" autocomplete="tel" class="w-full border border-[#E7E3DA] rounded-xl px-4 py-3.5 bg-white text-[#12233F]">
+                    </div>
+                    <textarea name="message" rows="3" maxlength="2000" placeholder="Hvad har I brug for? Fx antal medarbejdere og overenskomst" class="w-full border border-[#E7E3DA] rounded-xl px-4 py-3.5 bg-white text-[#12233F]"></textarea>
+                    <button id="lp-contact-go" type="submit" class="w-full bg-[#FF5500] text-white py-4 rounded-2xl font-black active:scale-95 hover:brightness-110 transition">Send</button>
+                </form>
             </div>
         </section>
 
@@ -1330,6 +1342,38 @@ function userName(id) {
 }
 
 let toastTimer;
+// Førsteberøring: hvor kom besøgende fra? Gemmes lokalt og følger med tilmelding/henvendelse som "kilde" i CRM'et.
+function leadSource() {
+    try {
+        let v = localStorage.getItem('unisjak_src');
+        if (!v) {
+            const q = new URLSearchParams(location.search);
+            const utm = q.get('utm_source') || q.get('ref');
+            let host = ''; try { host = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; } catch { /* ignore */ }
+            if (host === location.hostname.replace(/^www\./, '')) host = '';
+            v = utm ? (utm + (q.get('utm_medium') ? ' / ' + q.get('utm_medium') : '')) : (host || 'Direkte');
+            v = v.replace(/[\r\n]+/g, ' ').slice(0, 120);
+            localStorage.setItem('unisjak_src', v);
+        }
+        return v;
+    } catch { return 'Forsiden'; }
+}
+try { leadSource(); } catch { /* ignore */ }
+function lpContactToggle() { const f = document.getElementById('lp-contact'); if (!f) return; f.classList.toggle('hidden'); if (!f.classList.contains('hidden')) { f.scrollIntoView({ behavior: 'smooth', block: 'center' }); f.elements.name.focus(); } }
+async function lpContactSend(e) {
+    e.preventDefault();
+    const f = document.getElementById('lp-contact'), btn = document.getElementById('lp-contact-go'), v = n => (f.elements[n].value || '').trim();
+    btn.disabled = true; const label = btn.textContent; btn.textContent = 'Sender…';
+    try {
+        const r = await sb.rpc('public_lead', { p_name: v('name'), p_company: v('company'), p_email: v('email'), p_phone: v('phone'), p_message: v('message'), p_source: leadSource(), p_hp: v('website') });
+        if (r.error) { toast(r.error.message || 'Kunne ikke sendes. Skriv til hej@unisjak.dk', 'error'); return false; }
+        if (r.data) fetch('/.netlify/functions/lead-notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.data }) }).catch(() => {});
+        f.reset(); f.classList.add('hidden');
+        toast('Tak! Vi vender tilbage samme dag.', 'ok');
+    } catch (err) { toast('Kunne ikke sendes. Skriv til hej@unisjak.dk', 'error'); }
+    finally { btn.disabled = false; btn.textContent = label; }
+    return false;
+}
 function toast(msg, kind) {
     const t = $('toast');
     t.textContent = msg;
@@ -1465,7 +1509,7 @@ async function resolveProfile(user) {
         // 2) Ny virksomhed ud fra oplysningerne fra tilmeldingen?
         const meta = user.user_metadata || {};
         if (meta.company_name && meta.full_name && meta.industry) {
-            const r = await sb.rpc('create_company', { p_company_name: meta.company_name, p_full_name: meta.full_name });
+            const r = await sb.rpc('create_company', { p_company_name: meta.company_name, p_full_name: meta.full_name, p_source: leadSource() });
             if (!r.error) {
                 prof = await loadMyProfile(user.id);
                 if (prof) await setCompanyIndustry(prof.company_id, meta.industry);
@@ -1500,7 +1544,7 @@ async function doOnboard(btn) {
     if (!$('ob-industry').value) return toast('Vælg branche – den kan ikke ændres bagefter.');
     btn.disabled = true;
     try {
-        const r = await sb.rpc('create_company', { p_company_name: company, p_full_name: name });
+        const r = await sb.rpc('create_company', { p_company_name: company, p_full_name: name, p_source: leadSource() });
         if (r.error) throw r.error;
         showScreen('boot');
         S.profile = await loadMyProfile(myId());
