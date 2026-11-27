@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UniSjak – timer og KS til håndværkere</title>
-    <meta name="description" content="Timeregistrering og kvalitetssikring (KS) til håndværkere og entreprenører. Foto med GPS, diæter og løn-eksport. Fra 49 kr. pr. medarbejder. 14 dages gratis prøveperiode.">
+    <meta name="description" content="Timeregistrering og kvalitetssikring (KS) til håndværkere og entreprenører. Foto med GPS, diæter og løn-eksport. 89 kr. pr. medarbejder. 14 dages gratis prøveperiode.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         /* Lyst tema: gray-skalaen og de farvede nuancer er vendt, så eksisterende klasser får lys baggrund og mørk tekst */
@@ -133,7 +133,7 @@
                     <button onclick="lpGo('signup')" class="px-7 py-4 rounded-2xl bg-[#12233F] text-white font-black text-base active:scale-95 hover:brightness-125 transition">Start gratis i 14 dage</button>
                     <button onclick="lpScroll(event,'lp-priser')" class="px-7 py-4 rounded-2xl border-2 border-[#12233F] text-[#12233F] font-black text-base hover:bg-[#12233F] hover:text-white transition">Se priser</button>
                 </div>
-                <p class="text-sm text-[#566070]">Fra 49 kr. pr. medarbejder pr. måned.</p>
+                <p class="text-sm text-[#566070]">89 kr. pr. medarbejder pr. måned.</p>
             </div>
 
             <div class="flex flex-col items-center">
@@ -203,20 +203,15 @@
 
         <section id="lp-priser" class="bg-white border-y border-[#E7E3DA]">
             <div class="max-w-5xl mx-auto px-4 py-16 space-y-8">
-                <div class="text-center space-y-3"><h2 class="text-3xl md:text-4xl font-black tracking-tight">Enkel pris pr. medarbejder</h2><p class="text-[#566070] text-lg">Første 14 dage er gratis. Vælg pakke og se, hvad det koster for jer.</p></div>
-                <div class="grid sm:grid-cols-3 gap-3" id="lp-packs">
-                    <button type="button" id="lp-pk-timer" onclick="lpPack('timer')" class="text-left rounded-2xl border-2 p-5 transition"><span class="block text-sm font-bold text-[#566070]">Timer</span><span class="block text-3xl font-black mt-1">49 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 5 medarbejdere</span></button>
-                    <button type="button" id="lp-pk-ks" onclick="lpPack('ks')" class="text-left rounded-2xl border-2 p-5 transition relative"><span class="absolute -top-3 left-5 bg-[#FF5500] text-white text-[11px] font-black rounded-full px-3 py-1">Anbefalet</span><span class="block text-sm font-bold text-[#566070]">Timer + KS</span><span class="block text-3xl font-black mt-1">69 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 5 medarbejdere</span></button>
-                    <button type="button" id="lp-pk-fuld" onclick="lpPack('fuld')" class="text-left rounded-2xl border-2 p-5 transition"><span class="block text-sm font-bold text-[#566070]">Fuld pakke</span><span class="block text-3xl font-black mt-1">89 <span class="text-base font-bold text-[#566070]">kr.</span></span><span class="block text-xs text-[#566070] mt-1">pr. medarbejder pr. md. · min. 5 medarbejdere</span></button>
-                </div>
+                <div class="text-center space-y-3"><h2 class="text-3xl md:text-4xl font-black tracking-tight">Enkel pris pr. medarbejder</h2><p class="text-[#566070] text-lg">Én pakke med alt inkluderet. Første 14 dage er gratis – se, hvad det koster for jer.</p></div>
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="bg-[#F7F5F1] rounded-3xl p-7 space-y-4">
-                        <p id="lp-pack-name" class="text-xl font-black">Timer + KS</p>
+                        <p id="lp-pack-name" class="text-xl font-black">Alt inkluderet</p><p class="text-sm text-[#566070] -mt-2">89 kr. pr. medarbejder pr. måned · min. 5 medarbejdere</p>
                         <ul id="lp-pack-list" class="space-y-2 text-[15px]"></ul>
                     </div>
                     <div class="bg-[#12233F] text-white rounded-3xl p-7 space-y-5">
                         <div><div class="flex justify-between text-sm"><span class="font-bold text-[#D5DCE8]">Antal medarbejdere</span><strong id="lp-n" class="text-white text-lg">10</strong></div><input id="lp-range" type="range" min="1" max="100" value="10" oninput="lpPrice(this.value)" aria-label="Antal medarbejdere" class="w-full accent-orange-500 mt-2"></div>
-                        <div class="text-center"><span id="lp-total" class="text-5xl font-black">690</span><span class="text-[#D5DCE8] font-bold"> kr./md.</span><p id="lp-calc" class="text-xs text-[#D5DCE8] mt-1"></p></div>
+                        <div class="text-center"><span id="lp-total" class="text-5xl font-black">890</span><span class="text-[#D5DCE8] font-bold"> kr./md.</span><p id="lp-calc" class="text-xs text-[#D5DCE8] mt-1"></p></div>
                         <div id="lp-ex" class="grid grid-cols-4 gap-2 text-center"></div>
                         <button onclick="lpGo('signup')" class="w-full bg-[#FF5500] text-white py-4 rounded-2xl font-black active:scale-95 hover:brightness-110 transition">Start 14 dages gratis prøve</button>
                     </div>
@@ -8965,21 +8960,17 @@ document.addEventListener('keydown', e => {
 function lpGo(tab) { lpDemoStop(); showScreen('auth'); switchAuthTab(tab); }
 function lpScroll(e, id) { e.preventDefault(); const el = $(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 const LP_PACKS = {
-    timer: { name: 'Timer', p: 49, min: 5, list: ['Timeregistrering på sekunder', 'Diæt og kørsel pr. virksomhed', 'Ugegodkendelse og delvis ugelås', 'Løn-eksport som CSV og PDF', 'Fravær og overblik pr. medarbejder', 'Tale-til-tekst'] },
-    ks: { name: 'Timer + KS', p: 69, min: 5, list: ['Alt i Timer', 'KS med foto og GPS', 'Sikkerhed i grøn, gul og rød', 'Fejl og mangler med ansvarlig og status', 'Ekstraarbejde der kan faktureres', 'KS-rapport som PDF til bygherre'] },
-    fuld: { name: 'Fuld pakke', p: 89, min: 5, list: ['Alt i Timer + KS', 'Opgaver og pakkelister', 'Materialemodtagelse med foto og oplagssted', 'Udenlandske sjak på dansk, engelsk, tjekkisk og polsk'] }
+    alt: { name: 'Alt inkluderet', p: 89, min: 5, list: ['Timeregistrering på sekunder – også med tale', 'Diæt og kørsel pr. virksomhed', 'Ugegodkendelse og løn-eksport som CSV og PDF', 'KS med foto og GPS', 'Sikkerhed i grøn, gul og rød', 'Fejl og mangler med ansvarlig og status', 'Ekstraarbejde der kan faktureres', 'KS-rapport som PDF til bygherre', 'Opgaver og pakkelister', 'Materialemodtagelse med foto og oplagssted', 'Udenlandske sjak på dansk, engelsk, tjekkisk og polsk'] }
 };
 const lpTotal = (k, n) => LP_PACKS[k].p * Math.max(LP_PACKS[k].min, n);
-function lpPack(k) {
-    if (!LP_PACKS[k]) k = 'ks';
-    LP.pack = k;
-    Object.keys(LP_PACKS).forEach(x => { const b = $('lp-pk-' + x); if (b) b.className = 'text-left rounded-2xl border-2 p-5 transition' + (x === 'ks' ? ' relative' : '') + (x === k ? ' border-[#12233F] bg-[#F7F5F1]' : ' border-[#E7E3DA] bg-white hover:border-[#12233F]'); });
-    const pk = LP_PACKS[k]; $('lp-pack-name').textContent = pk.name;
+function lpPack() {
+    LP.pack = 'alt';
+    const pk = LP_PACKS.alt; $('lp-pack-name').textContent = pk.name;
     $('lp-pack-list').innerHTML = pk.list.map(t => `<li><i class="fa-solid fa-check text-[#047857] w-6"></i>${t}</li>`).join('');
     lpPrice($('lp-range').value);
 }
 function lpPrice(v) {
-    const k = LP.pack || 'ks', pk = LP_PACKS[k], n = Math.max(1, Math.min(100, parseInt(v, 10) || 1)), tot = lpTotal(k, n);
+    const k = 'alt', pk = LP_PACKS[k], n = Math.max(1, Math.min(100, parseInt(v, 10) || 1)), tot = lpTotal(k, n);
     $('lp-n').textContent = n; $('lp-total').textContent = tot;
     $('lp-calc').textContent = n >= pk.min ? n + ' × ' + pk.p + ' kr.' : 'Minimum ' + pk.min + ' medarbejdere: ' + pk.min + ' × ' + pk.p + ' kr.';
     $('lp-ex').innerHTML = [5, 10, 25, 50].map(m => `<div class="bg-white/10 rounded-xl p-2"><p class="text-[10px] text-[#D5DCE8]">${m} pers.</p><p class="font-black text-white text-sm">${lpTotal(k, m)} kr.</p></div>`).join('');
@@ -9053,7 +9044,7 @@ function lpDemoStart(mode) {
 
 (function init() {
     switchAuthTab('login');
-    lpPack('ks');
+    lpPack();
     $('timer-date-input').value = fmtDate(new Date());
     ['pf-cat', 'ef-cat'].forEach(id => { $(id).innerHTML = '<option value="">Vælg kategori…</option>' + KS_CATS.map(c => `<option value="${esc(c)}">${esc(catName(c))}</option>`).join(''); });
     $('pf-cat').addEventListener('change', safeFormRender); $('ef-cat').addEventListener('change', () => { S.editSafeLv = S.editSafeLv || ''; editSafeRender(); });
