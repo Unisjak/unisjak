@@ -292,7 +292,7 @@
             <div id="auth-form-signup" class="hidden space-y-4">
                 <div><label class="lbl">Dit navn</label><input type="text" id="su-name" autocomplete="name" placeholder="f.eks. Morten Kampmann" class="inp"></div>
                 <div><label class="lbl">Virksomhedsnavn</label><input type="text" id="su-company" placeholder="f.eks. Kampmann Entreprenør ApS" class="inp"><p class="text-[10px] text-gray-500 mt-1">Lad feltet stå tomt, hvis din formand har inviteret dig.</p></div>
-                <div><label class="lbl">Branche</label><select id="su-industry" class="inp"><option value="">Vælg branche…</option><option value="haandvaerk">Håndværk &amp; Byggeri</option><option value="butik">Butik &amp; Restaurant</option></select><p class="text-[10px] text-amber-300 mt-1 font-bold"><i class="fa-solid fa-lock mr-1"></i>Vælges én gang og kan ikke ændres bagefter. Kun hvis du opretter en ny virksomhed.</p></div>
+                <select id="su-industry" class="hidden"><option value="haandvaerk" selected>Håndværk &amp; Byggeri</option></select>
                 <div><label class="lbl">E-mail</label><input type="email" id="su-email" autocomplete="username" placeholder="din@email.dk" class="inp"></div>
                 <div><label class="lbl">Vælg adgangskode (mindst 8 tegn)</label><input type="password" id="su-pass" autocomplete="new-password" placeholder="••••••••" class="inp"></div>
                 <button id="btn-signup" onclick="doSignup(this)" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black text-base shadow-lg active:scale-98 transition">Opret konto</button>
@@ -358,7 +358,7 @@
                 <p class="text-xs text-gray-400">Din konto hører ikke til en virksomhed endnu.</p>
             </div>
             <div><label class="lbl">Virksomhedsnavn</label><input type="text" id="ob-company" class="inp" placeholder="f.eks. Kampmann Entreprenør ApS"></div>
-            <div><label class="lbl">Branche</label><select id="ob-industry" class="inp"><option value="">Vælg branche…</option><option value="haandvaerk">Håndværk &amp; Byggeri</option><option value="butik">Butik &amp; Restaurant</option></select><p class="text-[10px] text-amber-300 mt-1 font-bold"><i class="fa-solid fa-lock mr-1"></i>Vælges én gang og kan ikke ændres bagefter.</p></div>
+            <select id="ob-industry" class="hidden"><option value="haandvaerk" selected>Håndværk &amp; Byggeri</option></select>
             <div><label class="lbl">Dit navn</label><input type="text" id="ob-name" class="inp" placeholder="f.eks. Morten Kampmann"></div>
             <button id="btn-onboard" onclick="doOnboard(this)" class="w-full brand-orange text-white py-4 rounded-xl font-black text-base shadow-lg">Opret virksomhed</button>
             <p class="text-[11px] text-gray-500 text-center">Er du inviteret af en admin? Så skal adminen først oprette en invitation til <span id="ob-email" class="text-gray-300 font-bold"></span>. Genindlæs siden bagefter.</p>
@@ -1522,7 +1522,7 @@ async function resolveProfile(user) {
         const meta = user.user_metadata || {};
         $('ob-name').value = meta.full_name || '';
         $('ob-company').value = meta.company_name || '';
-        $('ob-industry').value = meta.industry ? normIndustry(meta.industry) : '';
+        $('ob-industry').value = 'haandvaerk';
         $('ob-email').textContent = user.email || '';
         showScreen('onboard');
         return false;
@@ -3403,7 +3403,7 @@ const saLabsHtml = l => SA_LABELS.map(([k, t]) => `<div><label class="lbl">${t}<
 function saNewHtml() {
     return saBack('sa-back', 'Tilbage') + `<h3 class="font-black text-white text-base">Ny kunde</h3>` +
         `<div><label class="lbl">Virksomhed / organisation</label><input data-sa-f="name" class="inp" maxlength="120" placeholder="F.eks. Vejdirektoratet"></div>` +
-        `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Branche</label><select data-sa-f="industry" class="inp"><option value="haandvaerk">Håndværk &amp; Byggeri</option><option value="butik">Butik &amp; Restaurant</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="lbl">Brugere</label><input data-sa-f="max_int" type="number" min="1" class="inp" value="${esc(String(saSet('defaults').max_int || 25))}"></div><div><label class="lbl">Gæster</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="${esc(String(saSet('defaults').max_guest == null ? 10 : saSet('defaults').max_guest))}"></div></div></div>` +
+        `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Branche</label><select data-sa-f="industry" class="inp"><option value="haandvaerk">Håndværk &amp; Byggeri</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="lbl">Brugere</label><input data-sa-f="max_int" type="number" min="1" class="inp" value="${esc(String(saSet('defaults').max_int || 25))}"></div><div><label class="lbl">Gæster</label><input data-sa-f="max_guest" type="number" min="0" class="inp" value="${esc(String(saSet('defaults').max_guest == null ? 10 : saSet('defaults').max_guest))}"></div></div></div>` +
         `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Første admin – navn</label><input data-sa-f="admin_name" class="inp" maxlength="120"></div><div><label class="lbl">Første admin – e-mail</label><input data-sa-f="admin_email" type="email" class="inp"></div></div>` +
         `<span class="lbl">Moduler</span><div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">${saModsHtml(saSet('defaults').modules || {})}</div><span class="lbl">Egne navne (valgfrit)</span><div class="grid grid-cols-2 gap-2">${saLabsHtml({})}</div>` +
         `<button type="button" data-act="sa-create" class="w-full brand-orange text-white py-4 rounded-xl font-black">Opret kunde og send invitation</button>`;
