@@ -1,7 +1,7 @@
 // Netlify Function: crm-campaign-send  (superadmin sender næste portion af en udsendelse)
 // Kaldes gentagne gange af Kontrolcenteret, indtil remaining = 0. Hver modtager får sin egen tråd, så svar lander i indbakken.
-// Afmeldte/bounced modtagere springes over. Miljø: RESEND_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, (CRM_FROM_EMAIL)
-import { json, UUID, requireSuperadmin, serviceRpc, fillTpl, sleep, sendViaResend } from './_lib/crm-auth.mjs';
+// Afmeldte/bounced modtagere springes over. Miljø: RESEND_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+import { FROM_MORTEN, json, UUID, requireSuperadmin, serviceRpc, fillTpl, sleep, sendViaResend } from './_lib/crm-auth.mjs';
 
 const hits = new Map();
 function limited(uid, max = 60) {   // højst 60 portioner i timen (≈ 600 mails)
@@ -13,8 +13,8 @@ function limited(uid, max = 60) {   // højst 60 portioner i timen (≈ 600 mail
 export default async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405);
   const env = process.env;
-  const from = env.CRM_FROM_EMAIL || env.RESEND_FROM_EMAIL;
-  if (!env.RESEND_API_KEY || !from || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'not configured' }, 500);
+  const from = FROM_MORTEN;
+  if (!env.RESEND_API_KEY || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'not configured' }, 500);
   const auth = await requireSuperadmin(req, env); if (auth.err) return auth.err;
   if (limited(auth.user.id)) return json({ error: 'limit' }, 429);
   let b; try { b = await req.json(); } catch { return json({ error: 'json' }, 400); }

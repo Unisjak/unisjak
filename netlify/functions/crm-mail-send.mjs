@@ -4,10 +4,10 @@
 // Miljøvariabler i Netlify:
 //   RESEND_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY            (findes allerede)
 //   SUPABASE_SERVICE_ROLE_KEY                                  (NY – kun serveren; aldrig i appen)
-//   CRM_FROM_EMAIL   (valgfri, standard RESEND_FROM_EMAIL)     f.eks.  Morten fra UniSjak <morten@unisjak.dk>
+//   Afsender er fast: Morten fra UniSjak <morten@unisjak.dk>
 //   REPLY_DOMAIN     (valgfri, standard svar.unisjak.dk)
 
-import { replyToAddr, mailBodies } from './_lib/crm-auth.mjs';
+import { replyToAddr, mailBodies, FROM_MORTEN } from './_lib/crm-auth.mjs';
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const EMAIL = /^[^@\s<>",;]+@[^@\s<>",;]+\.[^@\s<>",;]+$/;
@@ -25,10 +25,10 @@ function limited(uid, max = 60) {
 export default async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405);
   const env = process.env;
-  if (!env.RESEND_API_KEY || !(env.CRM_FROM_EMAIL || env.RESEND_FROM_EMAIL) || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY)
+  if (!env.RESEND_API_KEY || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY)
     return json({ error: 'not configured' }, 500);
   const base = env.SUPABASE_URL.replace(/\/+$/, '');
-  const from = env.CRM_FROM_EMAIL || env.RESEND_FROM_EMAIL;
+  const from = FROM_MORTEN;
 
   // 1) Hvem kalder? Kun aktiv superadmin.
   const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');

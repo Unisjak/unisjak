@@ -1,10 +1,12 @@
 // Netlify Function: send-mail  (kalder Resend – nøglen ligger kun på serveren)
 // Handlinger:  test (sender til dig selv) · invite (invitation på medarbejderens sprog) · report (PDF/CSV til bygherre m.fl.)
 // Miljøvariabler i Netlify:
-//   RESEND_API_KEY, RESEND_FROM_EMAIL   (f.eks.  UniSjak <noreply@unisjak.dk>)
+//   RESEND_API_KEY                      (afsender er fast: UniSjak <noreply@unisjak.dk>, svar går til hej@unisjak.dk)
 //   SUPABASE_URL, SUPABASE_ANON_KEY     (samme værdier som i appen – bruges til at kontrollere, hvem der kalder)
 //   SITE_URL                            (valgfri, standard https://unisjak.dk)
 // Kun indloggede, aktive admins/formænd (og superadmin til nye kunders første admin) kan sende. Invitationer kan kun sendes til en e-mail, der har en åben invitation i firmaet.
+
+import { FROM_SYSTEM, REPLY_MAIN } from './_lib/crm-auth.mjs';
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const EMAIL = /^[^@\s<>",;]+@[^@\s<>",;]+\.[^@\s<>",;]+$/;
@@ -33,7 +35,7 @@ function shell(inner, siteUrl) {
 const btnHtml = (href, label) => `<p style="margin:22px 0"><a href="${esc(href)}" style="background:#ea580c;color:#fff;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:10px;display:inline-block">${esc(label)}</a></p>`;
 
 async function resend(env, payload) {
-  const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: env.RESEND_FROM_EMAIL, ...payload }) });
+  const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: FROM_SYSTEM, reply_to: REPLY_MAIN, ...payload }) });
   if (!r.ok) { let d = ''; try { d = (await r.text()).slice(0, 300); } catch { /* ignore */ } console.error('Resend', r.status, d); return false; }
   return true;
 }
@@ -41,7 +43,7 @@ async function resend(env, payload) {
 export default async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405);
   const env = process.env;
-  if (!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return json({ error: 'not configured' }, 500);
+  if (!env.RESEND_API_KEY || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return json({ error: 'not configured' }, 500);
   const siteUrl = (env.SITE_URL || 'https://unisjak.dk').replace(/\/+$/, '');
   const base = env.SUPABASE_URL.replace(/\/+$/, '');
 
