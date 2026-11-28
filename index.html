@@ -1470,6 +1470,74 @@ async function lpContactSend(e) {
     finally { btn.disabled = false; btn.textContent = label; }
     return false;
 }
+/* ---- Push-notifikationer (opgave tildelt m.m.) ---- */
+const PUSH_PUBLIC = 'BFe7JZAp-uHs8zXxy5itMVYDmJEnWc-OKpPNWvbOnwjEGVbfht6zXfDs2SVOHRx8L1srQA5qQf0MfqMrCqpmu6g';
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const pushB64 = s => { const p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+S.push = { state: 'checking' };
+async function pushRefresh() {
+    let st = 'off';
+    try {
+        if (isIOS() && !isStandalone()) st = 'ios-install';
+        else if (!pushSupported()) st = 'unsupported';
+        else if (Notification.permission === 'denied') st = 'denied';
+        else if (Notification.permission === 'granted') { const reg = await navigator.serviceWorker.getRegistration('/'); const sub = reg && await reg.pushManager.getSubscription(); st = sub ? 'on' : 'off'; }
+    } catch (e) { st = 'unsupported'; }
+    S.push.state = st; return st;
+}
+async function pushSubscribeNow() {
+    const reg = await navigator.serviceWorker.register('/sw.js'); await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushB64(PUSH_PUBLIC) });
+    const j = sub.toJSON(), k = j.keys || {};
+    const r = await sb.rpc('push_register', { p_endpoint: j.endpoint, p_p256dh: k.p256dh, p_auth: k.auth, p_ua: (navigator.userAgent || '').slice(0, 280) });
+    if (r.error) throw r.error;
+}
+async function pushEnable() {
+    try {
+        if (!pushSupported()) { await pushRefresh(); return renderTeam(); }
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') { await pushRefresh(); renderTeam(); return toast('Notifikationer er ikke slået til. Du kan tillade dem i telefonens indstillinger.', 'info'); }
+        await pushSubscribeNow(); await pushRefresh(); renderTeam(); toast('Notifikationer er slået til på denne enhed.', 'ok');
+    } catch (e) { console.error(e); toast('Kunne ikke slå notifikationer til.'); await pushRefresh(); renderTeam(); }
+}
+async function pushDisable() {
+    try {
+        const reg = await navigator.serviceWorker.getRegistration('/'); const sub = reg && await reg.pushManager.getSubscription();
+        if (sub) { const ep = sub.endpoint; await sub.unsubscribe(); await sb.from('push_subscriptions').delete().eq('endpoint', ep); }
+    } catch (e) { console.error(e); }
+    await pushRefresh(); renderTeam(); toast('Notifikationer er slået fra på denne enhed.', 'ok');
+}
+/* Efter login: har enheden allerede tilladelse, kobles den til den aktuelle bruger (samme telefon kan skifte bruger) */
+async function pushSync() {
+    try { if (pushSupported() && Notification.permission === 'granted') await pushSubscribeNow(); } catch (e) { console.warn(e); }
+    await pushRefresh();
+}
+/* Giv kolleger besked (kun i samme virksomhed; serveren tjekker). Fejl er stille – opgaven er gemt uanset. */
+async function pushAssign(ids, title, body, open) {
+    try {
+        const to = [...new Set((ids || []).filter(x => x && x !== myId()))]; if (!to.length) return;
+        const ses = await sb.auth.getSession(), tok = ses && ses.data && ses.data.session && ses.data.session.access_token; if (!tok) return;
+        await fetch('/.netlify/functions/push-notify', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ user_ids: to, title, body: String(body || '').slice(0, 180), url: '/?open=' + (open || 'tasks') }) });
+    } catch (e) { /* stille */ }
+}
+function pushOpen(where) {
+    if (!where || !S.started) return;
+    if (where === 'tasks') { if ($('nav-tasks') && $('nav-tasks').style.display !== 'none') { if (window.innerWidth >= 768 && typeof switchPcView === 'function') switchPcView('tasks'); else switchTab('tasks'); } }
+    else if (where === 'ks') { if (window.innerWidth >= 768) switchPcView('ks'); else switchTab('ks'); }
+}
+function pushBoxHtml(box) {
+    const st = S.push.state;
+    const msg = { 'ios-install': 'På iPhone skal UniSjak først lægges på hjemmeskærmen (Del-knappen → "Føj til hjemmeskærm"). Åbn derefter appen derfra og slå notifikationer til her.', unsupported: 'Denne browser understøtter ikke notifikationer.', denied: 'Notifikationer er blokeret. Tillad dem for UniSjak i telefonens eller browserens indstillinger.', off: 'Få besked på telefonen, når en opgave eller en fejl og mangel bliver tildelt dig.', on: 'Slået til på denne enhed. Du får besked, når en opgave bliver tildelt dig.', checking: '' }[st] || '';
+    const btn = st === 'off' ? `<button type="button" data-act="push-on" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-bell mr-1.5"></i>Slå notifikationer til</button>`
+        : st === 'on' ? `<button type="button" data-act="push-off" class="w-full bg-gray-800 border border-gray-700 text-gray-200 py-3 rounded-xl font-bold text-sm">Slå fra på denne enhed</button>` : '';
+    return `<div class="${box} push-box"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-bell text-orange-500 mr-2"></i>Notifikationer${st === 'on' ? ' <span class="ml-2 text-[10px] font-black text-emerald-300 bg-emerald-950/50 border border-emerald-700/50 rounded-full px-2 py-0.5">TIL</span>' : ''}</h3><p class="text-xs text-gray-400">${msg}</p>${btn}</div>`;
+}
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'push-open') { try { pushOpen(new URL(e.data.url, location.origin).searchParams.get('open')); } catch (x) { /* ignore */ } } });
+}
 function toast(msg, kind) {
     const t = $('toast');
     t.textContent = msg;
@@ -1765,12 +1833,14 @@ async function startApp() {
     ]);
     pickInitialProject();
     S.started = true; applyGlobalSettings();
+    pushSync().then(() => { try { renderTeam(); } catch (e) { /* ignore */ } });
     subscribeRealtime();
     renderAll();
     resolveUrls();
     refreshGps();
     switchTab('home');
     switchPcView('overview');
+    try { const o = new URLSearchParams(location.search).get('open'); if (o) { history.replaceState(null, '', location.pathname); setTimeout(() => pushOpen(o), 300); } } catch (e) { /* ignore */ }
 }
 
 let refreshTimer;
@@ -2876,7 +2946,7 @@ const logoBoxHtml = (b64, chg, delAct, hint) =>
 function teamHtml() {
     const mgr = isManager(), admin = isAdmin(), me = S.profile;
     const box = 'bg-card border border-card rounded-2xl p-4 md:p-6 space-y-3';
-    let h = '';
+    let h = pushBoxHtml(box);
     if (admin) h += `<div class="${box} md:col-span-2"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-image text-orange-500 mr-2"></i>Virksomhedslogo</h3>` +
         logoBoxHtml(S.logo && S.logo.b64, 'logo-file', 'logo-del', 'Vises øverst på alle PDF\'er sammen med virksomhedsnavnet og teksten "Genereret af UniSjak.dk". PNG eller JPG.') + `</div>`;
     if (mgr) {
@@ -4451,6 +4521,7 @@ async function savePhotoEntry(btn) {
         U.photoZone = null;
         if (error) { if (paths.length) await sb.storage.from(BUCKET).remove(paths); throw error; }
         mergeRow(S.photos, data);
+        try { const pj = proj(data.project_id), where = pj ? pj.name : ''; if (data.safety_level) pushAssign(data.case_assignees, 'Sikkerhed: ' + SAFE[data.safety_level].n, (data.note || 'Ny sikkerhedsopgave') + (where ? ' – ' + where : ''), 'ks'); else if (data.dev_no || wantDev) pushAssign(data.case_assignees, 'Ny fejl og mangel', (data.note || 'Fejl og mangel') + (where ? ' – ' + where : ''), 'ks'); if (data.is_extra) pushAssign(data.extra_assignees, 'Nyt ekstraarbejde', (data.note || 'Ekstraarbejde') + (where ? ' – ' + where : ''), 'tasks'); } catch (e) { /* stille */ }
         clearShots();
         closeModal('modal-photo-note');
         if (data.is_extra) { await pullExtraTask(data); toast('Ekstraarbejde ' + exNo(data) + ' er oprettet – opgaven ligger under Opgaver' + (S.extraAssign.size ? '.' : ' (modtager kan vælges senere).'), 'ok'); }
@@ -4717,9 +4788,10 @@ function renderEditExtra(p) {
 }
 async function extraSetAssignees(set) {
     const p = S.photos.find(x => x.id === S.editPhotoId), t = extraTaskOf(p); if (!t) return;
-    const ids = [...set];
+    const ids = [...set], before = new Set([].concat(t.assignees || [], t.assigned_to || []));
     const res = await sb.from('tasks').update({ assignees: ids, assigned_to: ids[0] || null }).eq('id', t.id).select().single();
     if (res.error) return fail(res.error);
+    pushAssign(ids.filter(x => !before.has(x)), 'Ny opgave til dig', t.text || 'Ekstraarbejde', 'tasks');
     mergeRow(S.tasks, res.data); renderEditExtra(p); renderEditSafety(p); renderTasks(); renderKpis(); scheduleRender();
 }
 async function extraMake() {
@@ -4948,10 +5020,11 @@ function caseChipsHtml(set, act) {
 const caseAssignBlock = () => S.caseReady ? `<div class="space-y-2"><span class="lbl">Ansvarlig (valgfri)</span><div class="flex flex-wrap gap-2">${caseChipsHtml(S.caseAssign, 'case-assign')}</div></div>` : '';
 async function caseAssignEdit(uid) {
     const p = S.photos.find(x => x.id === S.editPhotoId); if (!p || !isCasePt(p) || !isManager()) return;
-    const set = new Set(p.case_assignees || []); toggleAssign(set, uid);
+    const set = new Set(p.case_assignees || []), prev = new Set(set); toggleAssign(set, uid);
     const res = await sb.rpc('case_assign', { p_id: p.id, p_users: [...set] });
     if (res.error) return fail(res.error);
     mergeRow(S.photos, res.data); renderEditSafety(res.data); renderAll();
+    pushAssign([...set].filter(x => !prev.has(x)), res.data.safety_level ? 'Sikkerhed: ' + SAFE[res.data.safety_level].n : 'Ny fejl og mangel', res.data.note || 'Du er tildelt et punkt', 'ks');
 }
 async function loadKsUpdates() {
     try {
@@ -5341,6 +5414,7 @@ async function insertTask(text, ids, subs) {
     if (res.error && missingCol(res.error)) { S.noAssignees = true; delete row.assignees; res = await sb.from('tasks').insert(row).select().single(); }
     if (res.error) { fail(res.error); return false; }
     mergeRow(S.tasks, res.data);
+    pushAssign(ids, 'Ny opgave til dig', text, 'tasks');
     if (subs.length) {
         const rows = subs.map((s, i) => ({ company_id: S.profile.company_id, task_id: res.data.id, text: s.slice(0, 300), sort: i, created_by: myId() }));
         const r2 = await sb.from('task_items').insert(rows).select();
@@ -8995,6 +9069,8 @@ async function handleAct(act, el) {
     if (act.startsWith('sa-')) return saAct(act, el);
     if (['open-photo', 'extra-time', 'extra-mat', 'place-task'].includes(act) && el.closest('#modal-task')) { closeModal('modal-task'); S.editTask = null; }
     switch (act) {
+        case 'push-on': return pushEnable();
+        case 'push-off': return pushDisable();
         case 'logo-del': return logoRemove();
         case 'draft-create': return draftCreate(el);
         case 'emp-new': return openEmpNew();

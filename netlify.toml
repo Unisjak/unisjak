@@ -8,4 +8,10 @@
 # Disse værdier er offentlige og står bevidst i index.html / kommentarer. Hemmelige nøgler (RESEND_API_KEY,
 # RESEND_WEBHOOK_SECRET, SUPABASE_SERVICE_ROLE_KEY) må ALDRIG stå her – de scannes stadig.
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_ANON_KEY,RESEND_FROM_EMAIL"
+  SECRETS_SCAN_OMIT_KEYS = "VAPID_PUBLIC_KEY,SUPABASE_URL,SUPABASE_ANON_KEY,RESEND_FROM_EMAIL"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Service-Worker-Allowed = "/"
