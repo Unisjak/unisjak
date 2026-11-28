@@ -413,6 +413,7 @@
                     <button onclick="switchPcView('plan')" id="pc-nav-plan" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold border border-transparent text-gray-400 hover:bg-gray-800/60 hover:text-white transition"><i class="fa-solid fa-chart-gantt w-4 text-center"></i><span id="pc-nav-plan-label">Planlægning</span></button>
                     <button onclick="switchPcView('timers')" id="pc-nav-timers" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold border border-transparent text-gray-400 hover:bg-gray-800/60 hover:text-white transition"><i class="fa-solid fa-clock w-4 text-center"></i><span>Timer &amp; Løngodkendelse</span></button>
                     <button onclick="switchPcView('ks')" id="pc-nav-ks" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold border border-transparent text-gray-400 hover:bg-gray-800/60 hover:text-white transition"><i class="fa-solid fa-map-location-dot w-4 text-center"></i><span>Kvalitetssikring</span></button>
+                    <button onclick="switchPcView('map')" id="pc-nav-map" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold border border-transparent text-gray-400 hover:bg-gray-800/60 hover:text-white transition"><i class="fa-solid fa-map w-4 text-center"></i><span>Byggepladskort</span></button>
                     <button onclick="switchPcView('materials')" id="pc-nav-materials" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold border border-transparent text-gray-400 hover:bg-gray-800/60 hover:text-white transition"><i class="fa-solid fa-boxes-stacked w-4 text-center"></i><span>Materialemodtagelse</span></button>
                     <button onclick="switchPcView('tasks')" id="pc-nav-tasks" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold border border-transparent text-gray-400 hover:bg-gray-800/60 hover:text-white transition"><i class="fa-solid fa-list-check w-4 text-center"></i><span>Opgaver</span></button>
                     <button onclick="switchPcView('admin')" id="pc-nav-admin" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold border border-transparent text-gray-400 hover:bg-gray-800/60 hover:text-white transition"><i class="fa-solid fa-users-gear w-4 text-center"></i><span>Hold &amp; Indstillinger</span></button>
@@ -556,6 +557,9 @@
                     <div id="pc-ks-grid" class="grid grid-cols-3 gap-4"></div>
                 </div>
 
+                <!-- BYGGEPLADSKORT -->
+                <div id="pc-view-map" class="hidden"><div id="pc-map-root" class="max-w-5xl"></div></div>
+
                 <!-- MATERIALER -->
                 <div id="pc-view-materials" class="hidden space-y-4">
                     <div class="flex justify-between items-center bg-card border border-card p-4 rounded-2xl">
@@ -673,6 +677,9 @@
                 <div id="ks-list" class="space-y-3"></div>
             </div>
 
+            <!-- BYGGEPLADSKORT -->
+            <div id="tab-map" class="hidden"><div id="map-root"></div></div>
+
             <!-- TIMER -->
             <div id="tab-timer" class="hidden space-y-3">
                 <div class="bg-card border border-card rounded-2xl p-3 flex justify-between items-center shadow-lg">
@@ -767,15 +774,16 @@
             </div>
         </main>
 
-        <nav class="bg-card border-t border-card p-1.5 flex justify-around items-center shrink-0 z-10">
-            <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center p-1.5 active-tab min-w-[48px]"><i class="fa-solid fa-house text-lg"></i><span class="text-[9px] font-bold mt-1">Hjem</span></button>
-            <button onclick="switchTab('overview')" id="nav-overview" style="display:none" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-chart-column text-lg"></i><span class="text-[9px] font-bold mt-1">Overblik</span></button>
-            <button onclick="switchTab('ks')" id="nav-ks" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-camera text-lg"></i><span class="text-[9px] font-bold mt-1">KS</span></button>
-            <button onclick="switchTab('timer')" id="nav-timer" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-clock text-lg"></i><span class="text-[9px] font-bold mt-1">Timer</span></button>
-            <button onclick="switchTab('shifts')" id="nav-shifts" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-calendar-week text-lg"></i><span class="text-[9px] font-bold mt-1">Vagter</span></button>
-            <button onclick="switchTab('plan')" id="nav-plan" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-chart-gantt text-lg"></i><span id="nav-plan-label" class="text-[9px] font-bold mt-1">Planlægning</span></button>
-            <button onclick="switchTab('materials')" id="nav-materials" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[9px] font-bold mt-1">Materiale</span></button>
-            <button onclick="switchTab('tasks')" id="nav-tasks" class="flex flex-col items-center p-1.5 inactive-tab min-w-[48px]"><span class="relative"><i class="fa-solid fa-list-check text-lg"></i><span id="nav-tasks-badge" class="hidden absolute -top-2 -right-3 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center">0</span></span><span class="text-[9px] font-bold mt-1">Opgaver</span></button>
+        <nav id="mob-nav" class="bg-card border-t border-card p-1.5 flex items-center shrink-0 z-10 overflow-x-auto" style="scrollbar-width:none">
+            <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center p-1.5 active-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-house text-lg"></i><span class="text-[9px] font-bold mt-1">Hjem</span></button>
+            <button onclick="switchTab('overview')" id="nav-overview" style="display:none" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-chart-column text-lg"></i><span class="text-[9px] font-bold mt-1">Overblik</span></button>
+            <button onclick="switchTab('ks')" id="nav-ks" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-camera text-lg"></i><span class="text-[9px] font-bold mt-1">KS</span></button>
+            <button onclick="switchTab('map')" id="nav-map" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-map text-lg"></i><span class="text-[9px] font-bold mt-1">Kort</span></button>
+            <button onclick="switchTab('timer')" id="nav-timer" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-clock text-lg"></i><span class="text-[9px] font-bold mt-1">Timer</span></button>
+            <button onclick="switchTab('shifts')" id="nav-shifts" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-calendar-week text-lg"></i><span class="text-[9px] font-bold mt-1">Vagter</span></button>
+            <button onclick="switchTab('plan')" id="nav-plan" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-chart-gantt text-lg"></i><span id="nav-plan-label" class="text-[9px] font-bold mt-1">Planlægning</span></button>
+            <button onclick="switchTab('materials')" id="nav-materials" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[9px] font-bold mt-1">Materiale</span></button>
+            <button onclick="switchTab('tasks')" id="nav-tasks" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><span class="relative"><i class="fa-solid fa-list-check text-lg"></i><span id="nav-tasks-badge" class="hidden absolute -top-2 -right-3 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center">0</span></span><span class="text-[9px] font-bold mt-1">Opgaver</span></button>
         </nav>
     </div>
 
@@ -1271,6 +1279,9 @@ function applyIndustry() {
     const set = (el, on) => { if (el) el.style.display = on ? '' : 'none'; };
     const g = isGuest(), mat = hasMat(), tm = modOn('time') && !g, tk = modOn('tasks'), shOn = sh && modOn('shifts') && !g, plOn = !sh && hasPlan();
     ['pc-nav-ks', 'pc-view-ks', 'nav-ks', 'tab-ks'].forEach(id => set($(id), ks));
+    ['pc-nav-map', 'pc-view-map', 'nav-map', 'tab-map'].forEach(id => set($(id), ks && !g));
+    if (!(ks && !g) && S.pcView === 'map') switchPcView('overview');
+    if (!(ks && !g) && S.mobTab === 'map') switchTab('home');
     ['pc-nav-materials', 'pc-view-materials', 'nav-materials', 'tab-materials'].forEach(id => set($(id), mat));
     ['pc-nav-timers', 'pc-view-timers', 'nav-timer', 'tab-timer'].forEach(id => set($(id), tm));
     ['pc-nav-tasks', 'pc-view-tasks', 'nav-tasks', 'tab-tasks'].forEach(id => set($(id), tk));
@@ -5452,6 +5463,7 @@ function initPcMap() {
     lastMapSig = ''; updateMaps();
 }
 function updateMaps() {
+    try { mapSync(); } catch (e) { console.error('mapSync', e); }
     const nums = numbering();
     const pts = photosOf('ks').filter(p => p.lat != null && p.lng != null);
     $('map-point-count').textContent = pts.length + ' punkter';
@@ -5550,18 +5562,19 @@ function renderPcOvKs() {
 /* ------------------------------ NAVIGATION ------------------------------ */
 function switchTab(tab) {
     S.mobTab = tab;
-    ['home', 'overview', 'ks', 'timer', 'shifts', 'plan', 'materials', 'tasks', 'admin'].forEach(t => {
+    ['home', 'overview', 'ks', 'map', 'timer', 'shifts', 'plan', 'materials', 'tasks', 'admin'].forEach(t => {
         const el = $('tab-' + t); if (el) el.classList.toggle('hidden', t !== tab);
-        const nav = $('nav-' + t); if (nav) nav.className = 'flex flex-col items-center p-1.5 min-w-[48px] ' + (t === tab ? 'active-tab' : 'inactive-tab');
+        const nav = $('nav-' + t); if (nav) { nav.className = 'flex flex-col items-center p-1.5 flex-1 shrink-0 min-w-[58px] whitespace-nowrap ' + (t === tab ? 'active-tab' : 'inactive-tab'); if (t === tab) { try { nav.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* ignore */ } } }
     });
     if (tab === 'ks') setTimeout(initMobileMap, 200);
+    if (tab === 'map') mapOpen(); else mapStopLocate();
     if (tab === 'overview') renderMobOverview();
     if (tab === 'plan') { U.week = 0; U.day = null; ugEnsure().then(scheduleRender).catch(() => {}); }
     const c = $('app-content'); if (c) c.scrollTop = 0;
 }
 function switchPcView(view) {
     S.pcView = view;
-    const titles = { overview: 'Kontor Overblik', plan: 'Planlægning', shifts: 'Vagtplan', timers: 'Timer & Løngodkendelse', ks: 'Kvalitetssikring', materials: 'Materialemodtagelse', tasks: 'Opgaver & Pakkeliste', admin: 'Hold & Indstillinger' };
+    const titles = { overview: 'Kontor Overblik', plan: 'Planlægning', shifts: 'Vagtplan', timers: 'Timer & Løngodkendelse', ks: 'Kvalitetssikring', map: 'Byggepladskort', materials: 'Materialemodtagelse', tasks: 'Opgaver & Pakkeliste', admin: 'Hold & Indstillinger' };
     Object.keys(titles).forEach(v => {
         const el = $('pc-view-' + v); if (el) el.classList.toggle('hidden', v !== view);
         const nav = $('pc-nav-' + v);
@@ -5569,6 +5582,7 @@ function switchPcView(view) {
     });
     $('pc-header-title').textContent = titles[view] || 'Kontor Overblik';
     if (view === 'overview') { setTimeout(initPcMap, 150); scheduleRender(); }
+    if (view === 'map') mapOpen(); else mapStopLocate();
     if (view === 'plan') { ugEnsure().then(() => isAdmin() ? ensureRange('time', ugMonday(), addDays(ugMonday(), 6)) : null).then(scheduleRender).catch(() => {}); scheduleRender(); }
 }
 function forceMobilePreview(on) {
@@ -8354,6 +8368,14 @@ async function buildExport(kind, fmt, opt) {
         const cats = {}; list.forEach(p => { const c = catName(p.category) || 'Uden kategori'; cats[c] = (cats[c] || 0) + 1; });
         doc.paragraph(list.length + ' KS-punkter' + ' – ' + Object.keys(cats).map(c => c + ': ' + cats[c]).join('  ·  '), { size: 10, bold: true });
         doc.y += 8;
+        try {
+            for (const mi of await mapReportImages(list, nums)) {
+                const w = doc.W - 2 * doc.margin, h = Math.min(w * mi.h / mi.w, 470), ww = h * mi.w / mi.h;
+                doc.ensure(h + 26);
+                doc.paragraph('Byggepladskort: ' + mi.name + ' (' + mi.n + ' punkter)', { size: 10, bold: true });
+                doc.image(mi.bytes, doc.margin, doc.y, ww, h); doc.y += h + 12;
+            }
+        } catch (e) { console.warn('kort i rapport', e); }
         const usePhotos = opt.photos !== false;
         let shown = 0;
         for (const p of list) {
@@ -9267,6 +9289,428 @@ async function saSetSave(k) {
     else if (k === 'defaults') { v = { max_int: parseInt(g('d_int'), 10) || 25, max_guest: Math.max(0, parseInt(g('d_guest'), 10) || 0), modules: saVals().modules }; }
     else return;
     if (await saSaveSetting(k, v)) { if (k === 'pricing') { saRender(); } }
+}
+
+/* ============================== BYGGEPLADSKORT ==============================
+   Tegning/luftfoto pr. sag, justeret med kontrolpunkter. KS-punkter lægges på tegningen ud fra de GPS-koordinater, de allerede har.
+   Din egen position vises kun lokalt på din telefon og sendes aldrig – ingen sporing af medarbejdere. */
+const MB = 'site-maps';
+const MP = { list: [], loadedFor: null, cur: null, mode: 'view', pend: null, draft: null, map: null, layer: null, ctrlLayer: null, meLayer: null, me: null, meState: 'idle', watch: null, urls: {}, busy: false, missing: false, sig: '', pickMap: null, firstFix: true };
+const mapPcMode = () => { const e = $('pc-shell'); return !!e && getComputedStyle(e).display !== 'none'; };
+const mapRoot = () => $(mapPcMode() ? 'pc-map-root' : 'map-root');
+const mapActive = () => !!S.started && (mapPcMode() ? S.pcView === 'map' : S.mobTab === 'map');
+const mapCur = () => MP.list.find(x => x.id === MP.cur) || null;
+
+/* ---- koordinater: ETRS89 / UTM zone 32 (EPSG:25832) og 33 (EPSG:25833) <-> WGS84 (Krüger-rækker; forskellen mellem ETRS89 og WGS84 er under 1 m) ---- */
+const GEO = (() => {
+    const a = 6378137, f = 1 / 298.257222101, k0 = 0.9996, E0 = 500000, n = f / (2 - f), n2 = n * n, n3 = n2 * n, n4 = n3 * n;
+    const A = a / (1 + n) * (1 + n2 / 4 + n4 / 64);
+    const al = [n / 2 - 2 * n2 / 3 + 5 * n3 / 16 + 41 * n4 / 180, 13 * n2 / 48 - 3 * n3 / 5 + 557 * n4 / 1440, 61 * n3 / 240 - 103 * n4 / 140, 49561 * n4 / 161280];
+    const be = [n / 2 - 2 * n2 / 3 + 37 * n3 / 96 - n4 / 360, n2 / 48 + n3 / 15 - 437 * n4 / 1440, 17 * n3 / 480 - 37 * n4 / 840, 4397 * n4 / 161280];
+    const de = [2 * n - 2 * n2 / 3 - 2 * n3 + 116 * n4 / 45, 7 * n2 / 3 - 8 * n3 / 5 - 227 * n4 / 45, 56 * n3 / 15 - 136 * n4 / 35, 4279 * n4 / 630];
+    const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI, lon0 = z => rad(z * 6 - 183);
+    const zoneOf = crs => crs === 'EPSG:25833' ? 33 : 32;
+    function toUtm(lat, lng, zone) {
+        const phi = rad(lat), dl = rad(lng) - lon0(zone), e = 2 * Math.sqrt(n) / (1 + n), s = Math.sin(phi);
+        const t = Math.sinh(Math.atanh(s) - e * Math.atanh(e * s));
+        const xi = Math.atan2(t, Math.cos(dl)), eta = Math.atanh(Math.sin(dl) / Math.sqrt(1 + t * t));
+        let E = eta, N = xi;
+        for (let j = 1; j <= 4; j++) { E += al[j - 1] * Math.cos(2 * j * xi) * Math.sinh(2 * j * eta); N += al[j - 1] * Math.sin(2 * j * xi) * Math.cosh(2 * j * eta); }
+        return { e: E0 + k0 * A * E, n: k0 * A * N };
+    }
+    function fromUtm(E, N, zone) {
+        const xi = N / (k0 * A), eta = (E - E0) / (k0 * A);
+        let xp = xi, ep = eta;
+        for (let j = 1; j <= 4; j++) { xp -= be[j - 1] * Math.sin(2 * j * xi) * Math.cosh(2 * j * eta); ep -= be[j - 1] * Math.cos(2 * j * xi) * Math.sinh(2 * j * eta); }
+        const chi = Math.asin(Math.sin(xp) / Math.cosh(ep));
+        let phi = chi; for (let j = 1; j <= 4; j++) phi += de[j - 1] * Math.sin(2 * j * chi);
+        return { lat: deg(phi), lng: deg(lon0(zone) + Math.atan2(Math.sinh(ep), Math.cos(xp))) };
+    }
+    return { toUtm, fromUtm, zoneOf };
+})();
+
+/* ---- justering: pixel på tegningen <-> GPS. 2 punkter = ensformig drejning/skalering, 3+ = fladt afbildning (mindste kvadrater) ---- */
+function mapFit(ctrl) {
+    const c = (ctrl || []).filter(p => [p.px, p.py, p.lat, p.lng].every(v => typeof v === 'number' && isFinite(v)));
+    if (c.length < 2) return null;
+    const lat0 = c.reduce((s, p) => s + p.lat, 0) / c.length, lng0 = c.reduce((s, p) => s + p.lng, 0) / c.length;
+    const kx = 111320 * Math.cos(lat0 * Math.PI / 180), ky = 110574;
+    const XY = p => [(p.lng - lng0) * kx, (p.lat - lat0) * ky];
+    let M;
+    if (c.length === 2) {
+        const [x1, y1] = XY(c[0]), [x2, y2] = XY(c[1]);
+        const zr = x2 - x1, zi = y2 - y1, wr = c[1].px - c[0].px, wi = -(c[1].py - c[0].py), zz = zr * zr + zi * zi;
+        if (zz < 1 || (wr * wr + wi * wi) < 1) return null;
+        const sr = (wr * zr + wi * zi) / zz, si = (wi * zr - wr * zi) / zz;
+        const tx = c[0].px - (sr * x1 - si * y1), ty = -c[0].py - (si * x1 + sr * y1);
+        M = { a: sr, b: -si, tx, c: -si, d: -sr, ty: -ty };
+    } else {
+        const rows = c.map(p => { const [X, Y] = XY(p); return [X, Y, 1, p.px, p.py]; });
+        const S3 = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], bx = [0, 0, 0], by = [0, 0, 0];
+        rows.forEach(r => { for (let i = 0; i < 3; i++) { for (let j = 0; j < 3; j++) S3[i][j] += r[i] * r[j]; bx[i] += r[i] * r[3]; by[i] += r[i] * r[4]; } });
+        const det3 = m => m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+        const D = det3(S3); if (!isFinite(D) || Math.abs(D) < 1e-6) return null;
+        const solve = b => [0, 1, 2].map(k => { const m = S3.map((row, i) => row.map((v, j) => j === k ? b[i] : v)); return det3(m) / D; });
+        const sx = solve(bx), sy = solve(by);
+        M = { a: sx[0], b: sx[1], tx: sx[2], c: sy[0], d: sy[1], ty: sy[2] };
+    }
+    const det = M.a * M.d - M.b * M.c; if (!isFinite(det) || Math.abs(det) < 1e-9) return null;
+    const toPx = (lat, lng) => { const X = (lng - lng0) * kx, Y = (lat - lat0) * ky; return { px: M.a * X + M.b * Y + M.tx, py: M.c * X + M.d * Y + M.ty }; };
+    const toLL = (px, py) => { const u = px - M.tx, v = py - M.ty, X = (M.d * u - M.b * v) / det, Y = (-M.c * u + M.a * v) / det; return { lat: lat0 + Y / ky, lng: lng0 + X / kx }; };
+    const ppm = Math.sqrt(Math.abs(det));   // pixel pr. meter
+    let rms = 0; c.forEach(p => { const q = toPx(p.lat, p.lng); rms += (q.px - p.px) ** 2 + (q.py - p.py) ** 2; }); rms = Math.sqrt(rms / c.length) / ppm;
+    let span = 0; for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++) { const [x1, y1] = XY(c[i]), [x2, y2] = XY(c[j]); span = Math.max(span, Math.hypot(x2 - x1, y2 - y1)); }
+    return { toPx, toLL, ppm, rms, n: c.length, span };
+}
+const mapFitOf = m => m ? mapFit(m.ctrl) : null;
+const mapInside = (m, q, pad) => { const k = pad == null ? 0.03 : pad; return q.px >= -m.width * k && q.px <= m.width * (1 + k) && q.py >= -m.height * k && q.py <= m.height * (1 + k); };
+
+/* ---- hent kort for den valgte sag ---- */
+async function mapLoad(force) {
+    if (!S.currentProject) { MP.list = []; MP.loadedFor = null; MP.cur = null; return; }
+    if (!force && MP.loadedFor === S.currentProject) return;
+    const keep = MP.cur;
+    const r = await sb.from('site_maps').select('*').eq('project_id', S.currentProject).order('created_at');
+    if (r.error) { console.error(r.error); MP.missing = /site_maps|schema cache|relation/i.test(r.error.message || ''); MP.list = []; MP.loadedFor = S.currentProject; MP.cur = null; return; }
+    MP.missing = false; MP.list = r.data || []; MP.loadedFor = S.currentProject;
+    MP.cur = MP.list.some(x => x.id === keep) ? keep : (MP.list.length ? MP.list[0].id : null);
+    if (MP.mode !== 'view' && !mapCur()) { MP.mode = 'view'; MP.pend = null; MP.draft = null; }
+}
+async function mapSignedUrl(m) {
+    const c = MP.urls[m.id]; if (c && c.exp > Date.now() + 60000) return c.url;
+    const r = await sb.storage.from(MB).createSignedUrl(m.file_path, 3600);
+    if (r.error || !r.data) throw r.error || new Error('url');
+    MP.urls[m.id] = { url: r.data.signedUrl, exp: Date.now() + 3600000 };
+    return r.data.signedUrl;
+}
+
+/* ---- åbning / lukning ---- */
+async function mapOpen() {
+    if (!mapActive()) return;
+    try { await mapLoad(true); } catch (e) { console.error(e); }
+    mapRender();
+}
+function mapSync() {   // kaldes ved hver gentegning: følger sagsskift og nye KS-punkter, mens kortet er åbent
+    if (!mapActive()) { if (MP.watch != null) mapStopLocate(); return; }
+    if (MP.loadedFor !== S.currentProject) { mapOpen(); return; }
+    const sig = mapPinSig();
+    if (sig !== MP.sig) { MP.sig = sig; if (MP.layer) mapPins(); }
+}
+const mapPinSig = () => S.currentProject + '|' + photosOf('ks').filter(p => p.lat != null).map(p => p.id + ':' + p.lat + ':' + (p.title || '') + (p.updated_at || '') + (isCasePt(p) ? (isClosed(p) ? 'c' : 'o') : '')).join(',');
+function mapTeardown() {
+    if (MP.map) { try { MP.map.remove(); } catch (e) { /* ignore */ } }
+    MP.map = null; MP.layer = null; MP.ctrlLayer = null; MP.meLayer = null;
+    if (MP.pickMap) { try { MP.pickMap.remove(); } catch (e) { /* ignore */ } MP.pickMap = null; }
+    const pk = $('map-pick'); if (pk) pk.remove();
+}
+function mapStopLocate() { if (MP.watch != null) { try { navigator.geolocation.clearWatch(MP.watch); } catch (e) { /* ignore */ } } MP.watch = null; }
+function mapStartLocate() {
+    if (MP.watch != null) return;
+    if (!navigator.geolocation) { MP.meState = 'nosupport'; mapMe(); return; }
+    MP.meState = 'wait'; mapMe();
+    try {
+        MP.watch = navigator.geolocation.watchPosition(pos => {
+            MP.me = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy, ts: Date.now() }; MP.meState = 'ok'; mapMe();
+        }, err => { MP.meState = err && err.code === 1 ? 'denied' : 'fail'; mapMe(); }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+    } catch (e) { MP.meState = 'fail'; mapMe(); }
+}
+
+/* ---- tegning af visningen ---- */
+const mapInp = 'inp';
+function mapRender() {
+    const root = mapRoot(); if (!root) return;
+    const other = $(mapPcMode() ? 'map-root' : 'pc-map-root'); if (other) other.innerHTML = '';
+    mapTeardown();
+    const pr = curProj(), mgr = isManager();
+    if (!pr) { root.innerHTML = `<div class="bg-card border border-card rounded-2xl p-5 text-sm text-gray-400">Vælg først en ${esc(placeW())}.</div>`; return; }
+    if (MP.missing) { root.innerHTML = '<div class="bg-card border border-card rounded-2xl p-5 text-sm text-amber-300 font-bold">Kortfunktionen er ikke slået til i databasen endnu.</div>'; return; }
+    const m = mapCur();
+    if (!m || MP.mode === 'new') {
+        if (!mgr) { root.innerHTML = `<div class="bg-card border border-card rounded-2xl p-5 space-y-1"><p class="font-black text-white">Der er ikke lagt noget kort op endnu</p><p class="text-xs text-gray-400">Kontoret eller formanden kan lægge en tegning op på ${esc(projLabel(pr))}.</p></div>`; return; }
+        root.innerHTML = mapUploadHtml(!!m); return;
+    }
+    const fit = mapFitOf(m), setup = MP.mode === 'setup' && mgr;
+    const sel = MP.list.length > 1 ? `<select onchange="mapPick(this.value)" class="${mapInp} min-w-0 flex-1">${MP.list.map(x => `<option value="${esc(x.id)}" ${x.id === m.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : `<p class="font-black text-white truncate flex-1 min-w-0">${esc(m.name)}</p>`;
+    const mgrBtns = mgr ? (setup ? '' : `<button type="button" onclick="mapSetup()" class="shrink-0 bg-gray-800 border border-gray-700 text-gray-200 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-sliders mr-1"></i>${fit ? 'Juster' : 'Opsæt'}</button><button type="button" onclick="mapNew()" class="shrink-0 bg-gray-800 border border-gray-700 text-gray-200 px-3 py-2.5 rounded-xl text-xs font-black" aria-label="Nyt kort"><i class="fa-solid fa-plus"></i></button>`) : '';
+    const hCanvas = mapPcMode() ? 'calc(100vh - 300px)' : 'calc(100dvh - 330px)';
+    root.innerHTML = `<div class="space-y-3"><div class="flex items-center gap-2">${sel}${mgrBtns}</div>` +
+        `<div class="relative"><div id="map-canvas" class="w-full rounded-2xl border border-gray-800 overflow-hidden bg-gray-900 z-0" style="height:${hCanvas};min-height:320px"></div><div id="map-me-txt" class="absolute left-2 bottom-2 right-2 z-[500] pointer-events-none"></div></div>` +
+        (setup ? `<div id="map-sheet" class="space-y-3"></div>` :
+            `<div class="grid grid-cols-2 gap-2"><button type="button" onclick="mapCenterMe()" class="bg-gray-800 border border-gray-700 text-gray-200 py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-location-crosshairs mr-1.5"></i>Min position</button><button type="button" onclick="triggerCamera('ks')" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-camera mr-1.5"></i>Ny KS her</button></div>` +
+            `<div class="flex items-center justify-between gap-2 text-[11px] text-gray-400"><span id="map-pin-txt"></span>${mgr ? `<button type="button" onclick="mapExportCsv()" class="shrink-0 text-sky-300 font-black underline">Eksportér koordinater</button>` : ''}</div>` +
+            (fit ? '' : `<div class="bg-amber-950/40 border border-amber-700/50 text-amber-200 rounded-xl p-3 text-xs font-bold">${mgr ? 'Kortet er ikke justeret endnu. Tryk på Opsæt for at placere tegningen på kortet.' : 'Kortet er ikke justeret endnu, så KS-punkter og din position kan ikke vises. Bed kontoret opsætte det.'}</div>`)) + `</div>`;
+    mapDraw(m, fit, setup);
+}
+function mapUploadHtml(hasMaps) {
+    return `<div class="bg-card border border-card rounded-2xl p-5 space-y-3"><div><p class="font-black text-white text-base">${hasMaps ? 'Nyt kort' : 'Opret byggepladskort'}</p><p class="text-xs text-gray-400 mt-0.5">Upload en plantegning (PDF) eller et luftfoto/billede. Bagefter placerer du den på kortet, så din position og KS-punkterne passer.</p></div>` +
+        `<div><label class="lbl">Navn</label><input id="map-name" maxlength="80" placeholder="Fx Situationsplan, Etage 1" class="${mapInp}"></div>` +
+        `<div><label class="lbl">Fil</label><input id="map-file" type="file" accept="image/*,application/pdf" class="${mapInp}"></div>` +
+        `<div><label class="lbl">Side i PDF</label><input id="map-page" type="number" min="1" max="200" value="1" class="${mapInp}"></div>` +
+        `<div class="flex gap-2"><button id="map-up-btn" type="button" onclick="mapUpload()" class="flex-1 brand-orange text-white py-3.5 rounded-xl font-black text-sm">Upload</button>${hasMaps ? `<button type="button" onclick="mapCancelNew()" class="bg-gray-800 border border-gray-700 text-gray-200 px-4 py-3.5 rounded-xl font-black text-sm">Annuller</button>` : ''}</div></div>`;
+}
+function mapPick(id) { MP.cur = id; MP.mode = 'view'; MP.pend = null; MP.draft = null; mapRender(); }
+function mapNew() { MP.mode = 'new'; mapRender(); }
+function mapCancelNew() { MP.mode = 'view'; mapRender(); }
+
+/* ---- Leaflet i pixelkoordinater (L.CRS.Simple): punkt (px,py) -> [-py, px] ---- */
+async function mapDraw(m, fit, setup) {
+    const el = $('map-canvas'); if (!el || typeof L === 'undefined') return;
+    let url; try { url = await mapSignedUrl(m); } catch (e) { el.innerHTML = '<p class="p-5 text-sm text-red-300 font-bold">Kunne ikke hente tegningen.</p>'; return; }
+    if ($('map-canvas') !== el) return;   // visningen er skiftet imens
+    const bounds = [[-m.height, 0], [0, m.width]];
+    const map = L.map(el, { crs: L.CRS.Simple, minZoom: -4, maxZoom: 3, zoomSnap: 0.25, attributionControl: false, zoomControl: !isTouchDevice(), maxBoundsViscosity: 0.6 });
+    MP.map = map; L.imageOverlay(url, bounds).addTo(map);
+    map.fitBounds(bounds); map.setMaxBounds(L.latLngBounds(bounds).pad(0.6));
+    MP.layer = L.layerGroup().addTo(map); MP.ctrlLayer = L.layerGroup().addTo(map); MP.meLayer = L.layerGroup().addTo(map);
+    MP.sig = mapPinSig(); mapPins();
+    if (setup) { mapSheet(); map.on('click', ev => { MP.pend = { px: Math.round(ev.latlng.lng * 10) / 10, py: Math.round(-ev.latlng.lat * 10) / 10 }; mapCtrlMarkers(); mapSheet(); }); mapCtrlMarkers(); }
+    else if (fit) { MP.firstFix = true; mapStartLocate(); }
+    if (MP.me) mapMe();
+    setTimeout(() => { try { map.invalidateSize(); } catch (e) { /* ignore */ } }, 200);
+}
+function mapPinColor(p) { return isCasePt(p) ? (isClosed(p) ? '#16A34A' : '#DC2626') : (p.safety_level ? '#DC2626' : '#FF5500'); }
+function mapPins() {
+    const m = mapCur(); if (!MP.layer || !m) return;
+    MP.layer.clearLayers();
+    const fit = MP.mode === 'setup' ? null : mapFitOf(m), nums = numbering(), pts = photosOf('ks').filter(p => p.lat != null && p.lng != null);
+    let out = 0, inn = 0;
+    if (fit) pts.forEach(p => {
+        const q = fit.toPx(p.lat, p.lng);
+        if (!mapInside(m, q)) { out++; return; }
+        inn++;
+        const ic = L.divIcon({ className: '', iconSize: [28, 28], iconAnchor: [14, 14], html: `<div style="width:28px;height:28px;border-radius:50%;background:${mapPinColor(p)};color:#fff;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font:900 11px/1 system-ui">${esc(String(nums[p.id] || ''))}</div>` });
+        const mk = L.marker([-q.py, q.px], { icon: ic, keyboard: false }).addTo(MP.layer);
+        mk.bindTooltip(esc((p.title || catName(p.category) || 'KS') + ''), { direction: 'top', offset: [0, -12] });
+        mk.on('click', () => openPhoto(p.id));
+    });
+    const t = $('map-pin-txt');
+    if (t) t.textContent = !fit ? '' : inn + ' KS-punkter på kortet' + (out ? ' · ' + out + ' ligger uden for tegningen' : '') + (pts.length < photosOf('ks').length ? ' · ' + (photosOf('ks').length - pts.length) + ' uden GPS' : '');
+}
+
+/* ---- din egen position (kun lokalt) ---- */
+function mapMe() {
+    const m = mapCur(), fit = mapFitOf(m), t = $('map-me-txt');
+    const msg = (txt, cls) => { if (t) t.innerHTML = txt ? `<div class="inline-block max-w-full bg-white/95 border border-gray-700 rounded-xl px-3 py-1.5 text-[11px] font-black ${cls || 'text-gray-200'} shadow">${txt}</div>` : ''; };
+    if (MP.meLayer) MP.meLayer.clearLayers();
+    if (MP.mode === 'setup') { mapGpsBtn(); if (MP.meState === 'ok' && MP.me) msg('GPS ±' + Math.round(MP.me.acc) + ' m'); else msg(''); return; }
+    if (!fit) { msg(''); return; }
+    if (MP.meState === 'wait') return msg('<i class="fa-solid fa-spinner fa-spin mr-1"></i>Finder din position…');
+    if (MP.meState === 'denied') return msg('Din telefon må ikke bruge placering. Slå det til i indstillinger.', 'text-amber-300');
+    if (MP.meState === 'nosupport' || MP.meState === 'fail') return msg('Kunne ikke finde din position.', 'text-amber-300');
+    if (MP.meState !== 'ok' || !MP.me) return msg('');
+    const q = fit.toPx(MP.me.lat, MP.me.lng);
+    if (!mapInside(m, q, 0.1)) return msg('Du står uden for tegningen', 'text-gray-300');
+    if (MP.meLayer) {
+        const c = [-q.py, q.px];
+        L.circle(c, { radius: Math.max(2, MP.me.acc * fit.ppm), color: '#2563EB', weight: 1, fillColor: '#3B82F6', fillOpacity: 0.12, interactive: false }).addTo(MP.meLayer);
+        L.circleMarker(c, { radius: 8, color: '#fff', weight: 3, fillColor: '#2563EB', fillOpacity: 1, interactive: false }).addTo(MP.meLayer);
+        if (MP.firstFix && MP.map) { MP.firstFix = false; MP.map.setView(c, Math.max(MP.map.getZoom(), -1)); }
+    }
+    msg('Din position · ±' + Math.round(MP.me.acc) + ' m', 'text-sky-300');
+}
+function mapCenterMe() {
+    if (MP.watch == null) { MP.firstFix = true; mapStartLocate(); return; }
+    const m = mapCur(), fit = mapFitOf(m); if (!fit || !MP.me || !MP.map) return mapMe();
+    const q = fit.toPx(MP.me.lat, MP.me.lng); if (!mapInside(m, q, 0.1)) return toast('Du står uden for tegningen.', 'info');
+    MP.map.setView([-q.py, q.px], Math.max(MP.map.getZoom(), 0));
+}
+
+/* ---- opsætning (kontor/formand) ---- */
+function mapSetup() {
+    const m = mapCur(); if (!m || !isManager()) return;
+    MP.mode = 'setup'; MP.pend = null; MP.draft = { ctrl: (m.ctrl || []).map(p => ({ ...p })), crs: m.crs || 'EPSG:25832' };
+    mapStopLocate(); MP.firstFix = false; MP.meState = 'idle'; mapRender(); mapStartLocate();
+}
+function mapSetupCancel() { MP.mode = 'view'; MP.pend = null; MP.draft = null; mapRender(); }
+function mapCtrlMarkers() {
+    if (!MP.ctrlLayer || !MP.draft) return;
+    MP.ctrlLayer.clearLayers();
+    MP.draft.ctrl.forEach((p, i) => L.marker([-p.py, p.px], { keyboard: false, icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div style="width:26px;height:26px;border-radius:6px;background:#7C3AED;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font:900 11px/1 system-ui">F${i + 1}</div>` }) }).addTo(MP.ctrlLayer));
+    if (MP.pend) L.marker([-MP.pend.py, MP.pend.px], { keyboard: false, icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: '<div style="width:30px;height:30px;border-radius:50%;border:3px solid #FF5500;background:rgba(255,85,0,.2)"></div>' }) }).addTo(MP.ctrlLayer);
+}
+function mapSheet() {
+    const el = $('map-sheet'), d = MP.draft; if (!el || !d) return;
+    const fit = mapFit(d.ctrl), n = d.ctrl.length;
+    let q = '';
+    if (n < 2) q = `<p class="text-xs text-gray-300"><b>Trin ${n + 1} af 2.</b> Tryk på et sted på tegningen, som du kender placeringen af (fx et hjørne på en bygning, en vejkant eller et fikspunkt). Brug punkter langt fra hinanden.</p>`;
+    else if (!fit) q = '<p class="text-xs text-amber-300 font-bold">Punkterne kan ikke bruges: de ligger for tæt på hinanden eller på en linje. Fjern et og vælg et nyt.</p>';
+    else q = `<p class="text-xs ${fit.span < 20 ? 'text-amber-300' : 'text-emerald-300'} font-bold">${n} punkter · ${Math.round(fit.span)} m mellem de fjerneste${fit.span < 20 ? ' – brug gerne punkter længere fra hinanden' : ''}${n >= 3 ? ' · afvigelse ca. ' + (fit.rms < 0.1 ? '0' : fit.rms.toFixed(1).replace('.', ',')) + ' m' : ''}</p>${n < 3 ? '<p class="text-[11px] text-gray-400">Tilføj gerne et tredje punkt som kontrol.</p>' : ''}`;
+    const list = d.ctrl.length ? `<div class="space-y-1.5">${d.ctrl.map((p, i) => `<div class="flex items-center justify-between gap-2 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2"><span class="text-xs font-bold text-gray-200 min-w-0 truncate"><span class="text-violet-400 font-black">F${i + 1}</span> · ${p.e != null ? 'Ø ' + Math.round(p.e) + ' N ' + Math.round(p.n) : p.lat.toFixed(5) + ', ' + p.lng.toFixed(5)}${p.src === 'gps' ? ' · min GPS' : p.src === 'osm' ? ' · valgt på kort' : ''}</span><button type="button" onclick="mapCtrlDel(${i})" class="shrink-0 text-red-300 text-xs font-black px-2 py-1">Fjern</button></div>`).join('')}</div>` : '';
+    let pend = '';
+    if (MP.pend) {
+        const me = MP.me && MP.meState === 'ok' ? MP.me : null;
+        pend = `<div class="bg-card border border-orange-500/60 rounded-2xl p-4 space-y-2.5"><p class="font-black text-white text-sm">Hvor er det punkt i virkeligheden?</p>` +
+            `<button id="map-gps-btn" type="button" onclick="mapAddGps()" ${me ? '' : 'disabled'} class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl font-black text-sm disabled:opacity-40">${mapGpsBtnTxt(me)}</button>` +
+            `<button type="button" onclick="mapPickOpen()" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl font-black text-sm"><i class="fa-solid fa-map-pin mr-1.5"></i>Find stedet på et kort</button>` +
+            `<div class="border-t border-gray-800 pt-2.5 space-y-2"><p class="text-[11px] font-black text-gray-400">Eller indtast fikspunkt fra landmåler</p><div class="grid grid-cols-2 gap-2"><input id="map-e" inputmode="decimal" placeholder="Øst (E)" class="${mapInp}"><input id="map-n" inputmode="decimal" placeholder="Nord (N)" class="${mapInp}"></div>` +
+            `<select id="map-crs" class="${mapInp}"><option value="EPSG:25832" ${d.crs === 'EPSG:25832' ? 'selected' : ''}>ETRS89 / UTM zone 32N (EPSG:25832)</option><option value="EPSG:25833" ${d.crs === 'EPSG:25833' ? 'selected' : ''}>ETRS89 / UTM zone 33N (EPSG:25833, Bornholm)</option></select>` +
+            `<button type="button" onclick="mapAddUtm()" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl font-black text-sm">Brug koordinater</button></div>` +
+            `<button type="button" onclick="mapPendCancel()" class="w-full text-gray-400 text-xs font-black py-1">Annuller dette punkt</button></div>`;
+    }
+    el.innerHTML = `<div class="bg-card border border-card rounded-2xl p-4 space-y-2.5"><p class="font-black text-white text-sm">Placér tegningen på kortet</p>${q}${list}</div>${pend}` +
+        `<div class="grid grid-cols-2 gap-2"><button type="button" onclick="mapSetupSave()" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm disabled:opacity-40" ${fit ? '' : 'disabled'}>Gem justering</button><button type="button" onclick="mapSetupCancel()" class="bg-gray-800 border border-gray-700 text-gray-200 py-3.5 rounded-xl font-black text-sm">Annuller</button></div>` +
+        (isManager() ? `<button type="button" onclick="mapDelete()" class="w-full text-red-300 text-xs font-black py-2">Slet dette kort</button>` : '');
+}
+const mapGpsBtnTxt = me => '<i class="fa-solid fa-location-crosshairs mr-1.5"></i>Jeg står her nu' + (me ? ' (±' + Math.round(me.acc) + ' m)' : ' – venter på GPS');
+function mapGpsBtn() {   // opdaterer kun knappen (ikke hele panelet), så indtastede koordinater ikke går tabt
+    const b = $('map-gps-btn'); if (!b) return;
+    const me = MP.me && MP.meState === 'ok' ? MP.me : null; b.disabled = !me; b.innerHTML = mapGpsBtnTxt(me);
+}
+function mapPendCancel() { MP.pend = null; mapCtrlMarkers(); mapSheet(); }
+function mapCtrlDel(i) { if (!MP.draft) return; MP.draft.ctrl.splice(i, 1); mapCtrlMarkers(); mapSheet(); }
+function mapCtrlAdd(extra) {
+    if (!MP.draft || !MP.pend) return;
+    if (MP.draft.ctrl.length >= 12) return toast('Højst 12 punkter.');
+    MP.draft.ctrl.push({ px: MP.pend.px, py: MP.pend.py, ...extra });
+    MP.pend = null; mapCtrlMarkers(); mapSheet();
+}
+function mapAddGps() {
+    if (!MP.me || MP.meState !== 'ok') return toast('Venter på GPS-position.', 'info');
+    if (MP.me.acc > 25 && !confirm('GPS-præcisionen er kun ±' + Math.round(MP.me.acc) + ' m. Brug alligevel positionen?')) return;
+    mapCtrlAdd({ lat: Math.round(MP.me.lat * 1e7) / 1e7, lng: Math.round(MP.me.lng * 1e7) / 1e7, src: 'gps' });
+}
+function mapAddUtm() {
+    const num = id => parseFloat(String(($(id) || {}).value || '').replace(/\s/g, '').replace(',', '.'));
+    const e = num('map-e'), n = num('map-n'), crs = $('map-crs') ? $('map-crs').value : 'EPSG:25832';
+    if (!isFinite(e) || !isFinite(n) || e < 100000 || e > 900000 || n < 5500000 || n > 8000000) return toast('Koordinaterne ser forkerte ud. Øst er typisk 6 cifre, nord 7 cifre.');
+    const ll = GEO.fromUtm(e, n, GEO.zoneOf(crs));
+    if (MP.draft) MP.draft.crs = crs;
+    mapCtrlAdd({ lat: Math.round(ll.lat * 1e8) / 1e8, lng: Math.round(ll.lng * 1e8) / 1e8, e, n, src: 'utm' });
+}
+function mapPickOpen() {
+    if (typeof L === 'undefined' || !MP.pend) return;
+    const pr = curProj(), c = pr && pr.lat != null ? { lat: pr.lat, lng: pr.lng } : (MP.me ? { lat: MP.me.lat, lng: MP.me.lng } : DEFAULT_CENTER);
+    const ov = document.createElement('div'); ov.id = 'map-pick'; ov.className = 'fixed inset-0 z-[90] bg-white flex flex-col';
+    ov.innerHTML = `<div class="p-3 flex items-center justify-between gap-2 border-b border-gray-800 bg-white"><p class="font-black text-white text-sm">Tryk på det samme sted på kortet</p><button type="button" onclick="mapPickClose()" class="text-gray-300 font-black text-sm px-3 py-2">Luk</button></div><div id="map-pick-canvas" class="flex-1 min-h-0"></div><div class="p-3 bg-white border-t border-gray-800"><button id="map-pick-ok" type="button" disabled onclick="mapPickUse()" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm disabled:opacity-40">Brug dette sted</button></div>`;
+    document.body.appendChild(ov);
+    const mp = L.map('map-pick-canvas', { zoomControl: !isTouchDevice() }).setView([c.lat, c.lng], 17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mp);
+    MP.pickMap = mp; MP.pickAt = null; let mk = null;
+    mp.on('click', ev => { MP.pickAt = ev.latlng; if (mk) mk.setLatLng(ev.latlng); else mk = L.marker(ev.latlng).addTo(mp); $('map-pick-ok').disabled = false; });
+    setTimeout(() => mp.invalidateSize(), 150);
+}
+function mapPickClose() { if (MP.pickMap) { try { MP.pickMap.remove(); } catch (e) { /* ignore */ } MP.pickMap = null; } const pk = $('map-pick'); if (pk) pk.remove(); }
+function mapPickUse() { const a = MP.pickAt; mapPickClose(); if (a) mapCtrlAdd({ lat: Math.round(a.lat * 1e7) / 1e7, lng: Math.round(a.lng * 1e7) / 1e7, src: 'osm' }); }
+async function mapSetupSave() {
+    const m = mapCur(), d = MP.draft; if (!m || !d || !isManager()) return;
+    const fit = mapFit(d.ctrl); if (!fit) return toast('Vælg mindst to punkter, der ligger et stykke fra hinanden.');
+    if (fit.span < 10) return toast('Punkterne ligger under 10 m fra hinanden. Vælg punkter længere fra hinanden.');
+    const r = await sb.from('site_maps').update({ ctrl: d.ctrl, crs: d.crs }).eq('id', m.id).select().single();
+    if (r.error) { console.error(r.error); return toast('Kunne ikke gemme justeringen.'); }
+    const i = MP.list.findIndex(x => x.id === m.id); if (i >= 0) MP.list[i] = r.data;
+    MP.mode = 'view'; MP.pend = null; MP.draft = null; toast('Kortet er justeret.', 'ok'); mapRender();
+}
+async function mapDelete() {
+    const m = mapCur(); if (!m || !isManager()) return;
+    if (!confirm('Slet kortet "' + m.name + '"? KS-punkterne bliver ikke slettet, men de vises ikke længere på dette kort.')) return;
+    const r = await sb.from('site_maps').delete().eq('id', m.id);
+    if (r.error) { console.error(r.error); return toast('Kunne ikke slette kortet.'); }
+    try { await sb.storage.from(MB).remove([m.file_path]); } catch (e) { /* ignore */ }
+    MP.list = MP.list.filter(x => x.id !== m.id); MP.cur = MP.list.length ? MP.list[0].id : null; MP.mode = 'view'; MP.draft = null; MP.pend = null;
+    toast('Kortet er slettet.', 'ok'); mapRender();
+}
+
+/* ---- upload: billede eller PDF -> JPEG (max 3200 px) ---- */
+const MAP_MAX = 3200;
+function mapImgToCanvas(file) {
+    return new Promise((res, rej) => {
+        const url = URL.createObjectURL(file), img = new Image();
+        img.onload = () => {
+            try {
+                const sc = Math.min(1, MAP_MAX / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+                c.width = Math.max(100, Math.round(img.naturalWidth * sc)); c.height = Math.max(100, Math.round(img.naturalHeight * sc));
+                const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height); res(c);
+            } catch (e) { rej(e); } finally { URL.revokeObjectURL(url); }
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Kunne ikke læse billedet. Prøv en JPG, PNG eller PDF.')); };
+        img.src = url;
+    });
+}
+const PDFJS_V = '3.11.174';
+function mapLoadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return new Promise((res, rej) => {
+        const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_V + '/pdf.min.js';
+        s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_V + '/pdf.worker.min.js'; res(window.pdfjsLib); };
+        s.onerror = () => rej(new Error('Kunne ikke hente PDF-læseren. Tjek forbindelsen, eller upload tegningen som billede.'));
+        document.head.appendChild(s);
+    });
+}
+async function mapPdfToCanvas(file, page) {
+    const lib = await mapLoadPdfJs();
+    const doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    if (page > doc.numPages) throw new Error('PDF-filen har kun ' + doc.numPages + ' sider.');
+    const pg = await doc.getPage(page), v1 = pg.getViewport({ scale: 1 }), sc = Math.min(6, MAP_MAX / Math.max(v1.width, v1.height)), vp = pg.getViewport({ scale: sc });
+    const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: g, viewport: vp }).promise;
+    return c;
+}
+async function mapUpload() {
+    if (MP.busy || !isManager() || !S.currentProject) return;
+    const file = $('map-file') && $('map-file').files[0], page = Math.max(1, parseInt($('map-page').value, 10) || 1);
+    if (!file) return toast('Vælg en tegning (PDF eller billede).');
+    const name = (($('map-name').value || '').trim() || file.name.replace(/\.[^.]+$/, '')).slice(0, 80) || 'Kort';
+    const btn = $('map-up-btn'); MP.busy = true; if (btn) { btn.disabled = true; btn.textContent = 'Behandler tegningen…'; }
+    let path = null;
+    try {
+        const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+        const canvas = isPdf ? await mapPdfToCanvas(file, page) : await mapImgToCanvas(file);
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.86));
+        if (!blob) throw new Error('Kunne ikke lave billedet.');
+        if (blob.size > 14 * 1024 * 1024) throw new Error('Tegningen er for stor.');
+        const id = crypto.randomUUID();
+        path = S.profile.company_id + '/' + S.currentProject + '/' + id + '.jpg';
+        const up = await sb.storage.from(MB).upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+        if (up.error) throw up.error;
+        const r = await sb.from('site_maps').insert({ id, company_id: S.profile.company_id, project_id: S.currentProject, name, file_path: path, width: canvas.width, height: canvas.height }).select().single();
+        if (r.error) throw r.error;
+        MP.list.push(r.data); MP.cur = r.data.id; MP.mode = 'view';
+        toast('Tegningen er lagt op. Placér den nu på kortet.', 'ok');
+        MP.busy = false; mapSetup();
+    } catch (e) {
+        console.error(e); if (path) { try { await sb.storage.from(MB).remove([path]); } catch (x) { /* ignore */ } }
+        toast((e && e.message && !/^\{/.test(e.message) ? e.message : 'Kunne ikke lægge tegningen op.').slice(0, 140));
+        MP.busy = false; if (btn) { btn.disabled = false; btn.textContent = 'Upload'; }
+    } finally { MP.busy = false; }
+}
+
+/* ---- eksport: KS-punkter med koordinater (til landmåler) ---- */
+function mapExportCsv() {
+    const m = mapCur(), pr = curProj(); if (!pr) return;
+    const crs = m && m.crs && m.crs !== 'WGS84' ? m.crs : 'EPSG:25832', zone = GEO.zoneOf(crs), nums = numbering();
+    const pts = photosOf('ks').filter(p => p.lat != null && p.lng != null).slice().sort((a, b) => (nums[a.id] || 0) - (nums[b.id] || 0));
+    if (!pts.length) return toast('Der er ingen KS-punkter med GPS.', 'info');
+    const f = (v, d) => String(Number(v).toFixed(d)).replace('.', ',');
+    const rows = pts.map(p => { const u = GEO.toUtm(p.lat, p.lng, zone); return [nums[p.id], catName(p.category), [p.title, p.note].filter(Boolean).join(' – '), dkWhen(p.created_at), userName(p.user_id), f(p.lat, 7), f(p.lng, 7), f(u.e, 2), f(u.n, 2), crs, p.gps_accuracy != null ? Math.round(p.gps_accuracy) : '', isCasePt(p) ? (isClosed(p) ? 'Afsluttet' : 'Åben') : '']; });
+    saveBytes(new TextEncoder().encode(csvOf(['Nr', 'Kategori', 'Beskrivelse', 'Oprettet', 'Oprettet af', 'Bredde (WGS84)', 'Længde (WGS84)', 'Øst', 'Nord', 'Koordinatsystem', 'GPS-præcision (m)', 'Status'], rows)), 'text/csv', 'UniSjak_KS_koordinater_' + safeName(pr.case_number || pr.name) + '.csv');
+}
+
+/* ---- KS-rapport: oversigtskort med nummererede punkter (JPEG-bytes til PDF'en) ---- */
+async function mapReportImages(list, nums) {
+    const out = [];
+    try {
+        try { await mapLoad(false); } catch (e) { return out; }   // kort er valgfrit: rapporten bygges altid
+        for (const m of MP.list.slice(0, 3)) {
+            const fit = mapFit(m.ctrl); if (!fit) continue;
+            const dl = await sb.storage.from(MB).download(m.file_path); if (dl.error || !dl.data) continue;
+            const bmp = await createImageBitmap(dl.data), sc = Math.min(1, 1500 / Math.max(bmp.width, bmp.height)), W = Math.round(bmp.width * sc), H = Math.round(bmp.height * sc);
+            const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+            g.drawImage(bmp, 0, 0, W, H);
+            let n = 0;
+            list.forEach(p => {
+                if (p.lat == null || p.lng == null) return;
+                const q = fit.toPx(p.lat, p.lng); if (!mapInside(m, q, 0)) return;
+                const x = q.px * W / m.width, y = q.py * H / m.height, r = Math.max(11, W / 90);
+                g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = mapPinColor(p); g.fill(); g.lineWidth = Math.max(2, r / 5); g.strokeStyle = '#fff'; g.stroke();
+                g.fillStyle = '#fff'; g.font = '900 ' + Math.round(r * 1.05) + 'px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(nums[p.id] || ''), x, y + 1); n++;
+            });
+            if (!n) continue;
+            const b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
+            if (b) out.push({ name: m.name, bytes: new Uint8Array(await b.arrayBuffer()), w: W, h: H, n });
+        }
+    } catch (e) { console.warn('mapReport', e); }
+    return out;
 }
 
 (function init() {
