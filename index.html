@@ -6474,9 +6474,9 @@ function pdfHeader(doc, info) {
     if (pdfTextW(nm, 13, true) > maxW) { while (nm.length > 1 && pdfTextW(nm + '…', 13, true) > maxW) nm = nm.slice(0, -1); nm = nm.trimEnd() + '…'; }
     doc.text(tx, m - 4, nm, { size: 13, bold: true, color: [30, 34, 41] });
     const gen = 'Genereret af UniSjak.dk';
-    try { doc.image(b64ToBytes(UNISJAK_PDF_LOGO), tx, m + 3, 14, 14.5); } catch (e) { /* uden logo */ }
-    const gw = doc.text(tx + 17, m + 13, gen, { size: 8, color: [130, 130, 130] });
-    doc.link(tx, m + 3, gw + 17, 15, 'https://unisjak.dk');
+    try { doc.image(b64ToBytes(UNISJAK_PDF_LOGO), tx, m + 15, 13, 13.5); } catch (e) { /* uden logo */ }
+    const gw = doc.text(tx + 17, m + 20, gen, { size: 8, color: [130, 130, 130] });
+    doc.link(tx, m + 15, gw + 17, 14, 'https://unisjak.dk');
     doc.text(W - m, m - 4, info.title || '', { size: 13, bold: true, color: [30, 34, 41], align: 'right' });
     if (info.sub) doc.text(W - m, m + 13, info.sub, { size: 9, color: [110, 110, 110], align: 'right' });
     if (info.sub2) doc.text(W - m, m + 25, info.sub2, { size: 9, color: [110, 110, 110], align: 'right' });
