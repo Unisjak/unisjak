@@ -211,6 +211,35 @@
             </div>
         </section>
 
+        <section id="lp-kort" class="max-w-6xl mx-auto px-4 py-16 grid md:grid-cols-2 gap-10 items-center">
+            <div class="space-y-5 max-w-md">
+                <span class="inline-flex items-center text-xs font-black text-[#12233F] bg-white border border-[#E7E3DA] rounded-full px-3.5 py-1.5"><i class="fa-solid fa-map mr-1.5 text-[#FF5500]"></i>Byggepladskort</span>
+                <h2 class="text-3xl md:text-4xl font-black tracking-tight text-[#12233F]">Se, hvor du står. På jeres egen tegning.</h2>
+                <p class="text-[#566070] text-lg leading-relaxed">Upload byggepladsens tegning eller et luftfoto. Så ligger alle KS-punkter præcis dér, hvor de blev taget, og du ser din egen position som en blå prik.</p>
+                <ul class="space-y-3 text-[15px] text-[#12233F] font-bold">
+                    <li class="flex gap-3"><i class="fa-solid fa-location-dot text-[#FF5500] mt-1"></i><span>KS-punkter gemmes på kortet, som de plejer</span></li>
+                    <li class="flex gap-3"><i class="fa-solid fa-ruler-combined text-[#FF5500] mt-1"></i><span>Justeres med landmålerens fikspunkter</span></li>
+                    <li class="flex gap-3"><i class="fa-solid fa-user-shield text-[#FF5500] mt-1"></i><span>Din position vises kun på din egen telefon. Vi sporer ikke medarbejdere.</span></li>
+                </ul>
+            </div>
+            <div class="rounded-3xl border border-[#E7E3DA] bg-white p-3 shadow-sm">
+                <svg viewBox="0 0 400 300" class="w-full h-auto rounded-2xl" role="img" aria-label="Eksempel på byggepladskort med KS-punkter og egen position">
+                    <rect width="400" height="300" fill="#F7F5F1"/>
+                    <g stroke="#E7E3DA" stroke-width="1"><path d="M0 50H400M0 100H400M0 150H400M0 200H400M0 250H400M50 0V300M100 0V300M150 0V300M200 0V300M250 0V300M300 0V300M350 0V300"/></g>
+                    <rect x="70" y="60" width="150" height="90" fill="#E3ECFD" stroke="#12233F" stroke-width="2.5"/>
+                    <rect x="250" y="130" width="90" height="110" fill="#fff" stroke="#566070" stroke-width="2" stroke-dasharray="6 4"/>
+                    <path d="M20 215H230L250 270" fill="none" stroke="#566070" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>
+                    <g font-family="sans-serif" font-weight="800" font-size="13" fill="#fff" text-anchor="middle">
+                        <circle cx="105" cy="95" r="14" fill="#FF5500"/><text x="105" y="100">1</text>
+                        <circle cx="190" cy="125" r="14" fill="#FF5500"/><text x="190" y="130">2</text>
+                        <circle cx="300" cy="170" r="14" fill="#FF5500"/><text x="300" y="175">3</text>
+                    </g>
+                    <circle cx="150" cy="200" r="22" fill="#1D4ED8" fill-opacity=".18"/><circle cx="150" cy="200" r="9" fill="#1D4ED8" stroke="#fff" stroke-width="3"/>
+                </svg>
+                <p class="text-xs text-[#566070] px-2 pt-2.5 pb-1">Eksempel. Orange: KS-punkter. Blå prik: dig.</p>
+            </div>
+        </section>
+
         <section id="lp-sadan" class="max-w-6xl mx-auto px-4 py-16 space-y-10">
             <div class="max-w-2xl space-y-3"><h2 class="text-3xl md:text-4xl font-black tracking-tight">Sådan kommer I i gang</h2></div>
             <div class="grid md:grid-cols-3 gap-6">
@@ -3393,7 +3422,7 @@ function saAcctHtml() {
 /* ---- Nyt lead / ny kunde ---- */
 function saLeadHtml() {
     return saBack('sa-back', 'Tilbage') + `<h3 class="font-black text-white text-base">Nyt lead</h3>` +
-        `<div><label class="lbl">Virksomhed / organisation</label><input data-sa-f="name" class="inp" maxlength="160" placeholder="F.eks. Hedensted Kommune"></div>` +
+        `<div><label class="lbl">Virksomhed / organisation</label><div class="flex gap-2"><input data-sa-f="name" class="inp flex-1" maxlength="160" placeholder="Navn eller CVR"><button type="button" data-act="sa-cvr" class="shrink-0 bg-gray-800 border border-gray-700 text-sky-300 px-4 rounded-xl text-sm font-black"><i class="fa-solid fa-magnifying-glass mr-1.5"></i>Find i CVR</button></div><p id="sa-cvr-info" class="text-[11px] text-gray-400 mt-1.5"></p></div>` +
         `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Type</label><select data-sa-f="segment" class="inp">${SA_SEG.map(([k, t]) => `<option value="${k}">${t}</option>`).join('')}</select></div><div><label class="lbl">CVR (valgfri)</label><input data-sa-f="cvr" class="inp" maxlength="8" inputmode="numeric"></div></div>` +
         `<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Kontakt – navn</label><input data-sa-f="c_name" class="inp" maxlength="120"></div><div><label class="lbl">Kontakt – e-mail</label><input data-sa-f="c_email" type="email" class="inp" maxlength="320"></div></div>` +
         `<div><label class="lbl">Hvor kom de fra? (valgfri)</label><input data-sa-f="source" class="inp" maxlength="120" placeholder="Fx anbefaling, messe, hjemmeside"></div>` +
@@ -3512,6 +3541,23 @@ async function saInvite() {
     if (r.error) return fail(r.error);
     saAudit('admin inviteret', a.name, { email }); await sendInviteMail(email, 'da'); await saReload(); S.sa.view = 'cust'; saRender();
 }
+async function saCvrFind() {
+    const B = $('sa-main'), q = ((B.querySelector('[data-sa-f="name"]') || {}).value || '').trim(), info = $('sa-cvr-info');
+    if (q.length < 2) return toast('Skriv navn eller CVR først.');
+    if (info) info.textContent = 'Søger…';
+    try {
+        const ses = await sb.auth.getSession(), tok = ses && ses.data && ses.data.session && ses.data.session.access_token;
+        const r = await fetch('/.netlify/functions/cvr-lookup', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ q }) });
+        const j = await r.json().catch(() => ({}));
+        if (r.status === 429) { if (info) info.textContent = 'For mange opslag lige nu. Prøv igen om lidt.'; return; }
+        if (!r.ok) { if (info) info.textContent = 'CVR-opslag er ikke tilgængeligt lige nu.'; return; }
+        if (!j.firm) { if (info) info.textContent = 'Ingen virksomhed fundet. Prøv CVR-nummeret.'; return; }
+        const m = j.firm, set = (n, v, only) => { const e = B.querySelector('[data-sa-f="' + n + '"]'); if (e && v && (!only || !e.value)) e.value = v; };
+        set('name', m.name); set('cvr', m.cvr); set('c_email', m.email, true);
+        S.sa.cvrInfo = m;
+        if (info) info.textContent = [m.address && (m.address + ', ' + m.zip + ' ' + m.city), m.industry, m.employees && (m.employees + ' ansatte'), m.phone, m.active ? '' : 'OPHØRT'].filter(Boolean).join(' · ');
+    } catch (e) { if (info) info.textContent = 'CVR-opslag er ikke tilgængeligt lige nu.'; }
+}
 async function saLeadCreate() {
     const { f } = saVals(), email = f('c_email').toLowerCase();
     if (f('name').length < 1) return toast('Skriv navnet på virksomheden.');
@@ -3519,6 +3565,8 @@ async function saLeadCreate() {
     if (f('cvr') && !/^[0-9]{8}$/.test(f('cvr'))) return toast('CVR skal være 8 cifre.');
     const r = await sb.from('crm_accounts').insert({ name: f('name'), stage: 'lead', segment: f('segment') || null, cvr: f('cvr') || null, source: f('source') || null }).select().single();
     if (r.error) return fail(r.error);
+    const ci = S.sa.cvrInfo; S.sa.cvrInfo = null;
+    if (ci && ci.cvr === f('cvr')) { const t = ['CVR ' + ci.cvr, ci.address && (ci.address + ', ' + ci.zip + ' ' + ci.city), ci.industry, ci.employees && (ci.employees + ' ansatte'), ci.phone && ('Tlf. ' + ci.phone)].filter(Boolean).join(' · '); await sb.from('crm_events').insert({ account_id: r.data.id, kind: 'note', text: t }); }
     if (f('c_name') || email) { const k = await sb.from('crm_contacts').insert({ account_id: r.data.id, name: f('c_name') || email, email: email || null }); if (k.error) fail(k.error); }
     await saReload(); await saOpenAcct(r.data.id);
 }
@@ -3645,6 +3693,7 @@ async function saAct(act, el) {
         case 'sa-save': return saSave();
         case 'sa-al': return saToggleAllow(el);
         case 'sa-invite': return saInvite();
+        case 'sa-cvr': return saCvrFind();
         case 'sa-lead-create': return saLeadCreate();
         case 'sa-acct-save': return saAcctSave();
         case 'sa-stage': return saSetStage(d.stage);
