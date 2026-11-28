@@ -760,6 +760,7 @@
                     <div class="flex justify-between items-center px-1"><span class="text-[10px] font-bold uppercase text-gray-400">Byggepladskort</span><span class="text-[10px] text-orange-400 font-semibold" id="map-point-count">0 punkter</span></div>
                     <div id="leaflet-map" class="w-full h-48 rounded-xl overflow-hidden border border-gray-800 z-0"></div>
                 </div>
+                <div id="ks-tilsyn-stat"></div>
                 <div id="ks-tilsyn-bar" class="hidden space-y-2"><button type="button" onclick="tilsynNew('Afvigelse')" class="w-full bg-red-600 text-white py-5 rounded-2xl text-lg font-black shadow flex items-center justify-center gap-3 active:scale-[.98]"><i class="fa-solid fa-camera"></i>Ny fejl og mangel</button><button type="button" onclick="tilsynNew('Sikkerhed')" class="w-full bg-amber-500 text-gray-950 py-5 rounded-2xl text-lg font-black shadow flex items-center justify-center gap-3 active:scale-[.98]"><i class="fa-solid fa-triangle-exclamation"></i>Ny sikkerhed</button></div>
                 <div id="ks-extra-bar" class="hidden"></div>
                 <div id="ks-list" class="space-y-3"></div>
@@ -1349,7 +1350,7 @@ const canPlan = () => !!S.profile && !isGuest() && (isAdmin() || S.profile.perm_
 const LBL = () => (S.company && S.company.labels && typeof S.company.labels === 'object') ? S.company.labels : {};
 const lbl = (k, d) => { const v = LBL()[k]; return typeof v === 'string' && v.trim() ? v.trim().slice(0, 40) : d; };
 const hasKs = () => industry() === 'haandvaerk' && modOn('ks') && (!isGuest() || isTilsyn() || (S.caseReady && S.photos.some(isCasePt)));
-const hasMap = () => hasKs() && !isGuest() && modOn('map') && (isAdmin() || !S.profile || S.profile.perm_map !== false);
+const hasMap = () => hasKs() && (!isGuest() || isTilsyn()) && modOn('map') && (isAdmin() || !S.profile || S.profile.perm_map !== false);
 const hasMat = () => hasKs() && modOn('materials') && !isGuest();
 const hasShifts = () => industry() === 'butik';
 async function setCompanyIndustry(cid, val) {
@@ -1390,7 +1391,7 @@ function applyIndustry() {
     if (!tk && S.pcView === 'tasks') switchPcView('overview');
     if (!tm && S.mobTab === 'timer') switchTab('home');
     if (!tk && S.mobTab === 'tasks') switchTab('home');
-    if (g) { document.body.classList.add('force-mobile'); const bb = $('btn-back-to-pc'); if (bb) bb.classList.add('hidden'); if (S.mobTab !== 'tasks' && S.mobTab !== 'admin' && !(S.mobTab === 'ks' && ks)) switchTab(ks && !S.tasks.length ? 'ks' : 'tasks'); [$('ks-head-btns'), $('ks-export-btn')].forEach(el => set(el, false)); }
+    if (g) { document.body.classList.add('force-mobile'); const bb = $('btn-back-to-pc'); if (bb) bb.classList.add('hidden'); if (S.mobTab !== 'tasks' && S.mobTab !== 'admin' && !(S.mobTab === 'ks' && ks)) switchTab(ks && !S.tasks.length ? 'ks' : 'tasks'); [$('ks-head-btns'), $('ks-export-btn')].forEach(el => set(el, el === $('ks-export-btn') && isTilsyn() && ks)); }
     const nl = (id, t) => { const el = $(id); const sp = el && (el.tagName === 'SPAN' ? el : el.lastElementChild); if (sp && sp.tagName === 'SPAN' && !sp.children.length && t) sp.textContent = t; };
     nl('nav-ks', g ? 'Sager' : lbl('ks', 'KS')); nl('pc-nav-ks', lbl('ks', 'Kvalitetssikring')); nl('nav-tasks', lbl('opgaver', 'Opgaver')); nl('pc-nav-tasks', lbl('opgaver', 'Opgaver'));
     set(document.querySelector('#pc-shell header button[onclick*="triggerCamera(\'ks\')"]'), ks);
@@ -1778,7 +1779,7 @@ async function loadCore() {
     S.members = r[2].data || [];
     S.profiles = r[3].data || [];
     S.approvals = r[4].data || [];
-    S.photos = r[5].data || [];
+    S.photos = (r[5].data || []).map(x => isTilsyn() ? tilsynMask(x) : x);
     S.tasks = r[6].data || [];
     S.invitations = isManager() ? (r[7].data || []) : [];
     await loadPlan();
@@ -1804,7 +1805,11 @@ function keyOf(row) {
     if (row.role_id != null && row.project_id === undefined) return row.user_id + '|' + row.role_id;
     return row.project_id + '|' + row.user_id;
 }
-function mergeRow(arr, row) { const k = keyOf(row); const i = arr.findIndex(x => keyOf(x) === k); if (i >= 0) arr[i] = row; else arr.push(row); }
+function tilsynMask(p) {   // bygherren ser først 'afsluttet', når admin har sendt punktet til godkendelse
+    if (!p || p.tilsyn_sent_at || (!p.dev_closed_at && !p.safety_closed_at)) return p;
+    return Object.assign({}, p, { dev_closed_at: null, dev_closed_by: null, dev_close_note: null, safety_closed_at: null, safety_closed_by: null, safety_close_note: null });
+}
+function mergeRow(arr, row) { if (arr === S.photos && isTilsyn()) row = tilsynMask(row); const k = keyOf(row); const i = arr.findIndex(x => keyOf(x) === k); if (i >= 0) arr[i] = row; else arr.push(row); }
 function dropRow(arr, row) { const k = keyOf(row); const i = arr.findIndex(x => keyOf(x) === k); if (i >= 0) arr.splice(i, 1); }
 
 async function ensureRange(kind, from, to) {
@@ -2009,8 +2014,15 @@ function scheduleRender() {
     renderQueued = true;
     requestAnimationFrame(() => { renderQueued = false; if (S.started) renderAll(); });
 }
+function renderTilsynStat() {
+    const el = $('ks-tilsyn-stat'); if (!el) return;
+    if (!isTilsyn()) { el.innerHTML = ''; return; }
+    const cs = S.photos.filter(isCasePt), n = f => cs.filter(f).length;
+    const tiles = [['Åbne', n(p => !isClosed(p)), 'text-amber-300'], ['Til godkendelse', n(p => { const t = tilsynState(p); return !!t && t[0].indexOf('Til godkendelse') === 0; }), 'text-sky-300'], ['Godkendt', n(p => p.tilsyn_decision === 'godkendt'), 'text-emerald-300']];
+    el.innerHTML = '<div class="grid grid-cols-3 gap-2">' + tiles.map(t => `<div class="bg-card border border-card rounded-xl p-3 text-center"><p class="text-2xl font-black ${t[2]}">${t[1]}</p><p class="text-[10px] font-bold uppercase text-gray-400">${t[0]}</p></div>`).join('') + '</div>';
+}
 function renderAll() {
-    [renderChrome, renderProjectSelectors, renderKpis, renderMobOverview, renderPcOvKs, renderPcOverview, renderPcTimersList, renderTimerTab, renderPayroll, renderPhotos, renderTasks, renderShifts, renderClock, renderQuick, renderTeam, renderPlanUi, renderUgeplan, updateMaps]
+    [renderTilsynStat, renderChrome, renderProjectSelectors, renderKpis, renderMobOverview, renderPcOvKs, renderPcOverview, renderPcTimersList, renderTimerTab, renderPayroll, renderPhotos, renderTasks, renderShifts, renderClock, renderQuick, renderTeam, renderPlanUi, renderUgeplan, updateMaps]
         .forEach(f => { try { f(); } catch (e) { console.error(f.name, e); } });
 }
 
@@ -2224,6 +2236,7 @@ function photoMeta(p, tone) {
     if (p.quantity) bits.push(`<span class="text-${tone}-400 font-black">${esc(p.quantity)}</span>`);
     if (p.location) bits.push(`<span class="text-gray-400">Oplag: ${esc(p.location)}</span>`);
     if (isCasePt(p) && (p.case_assignees || []).length) bits.push(`<span class="text-sky-300 font-bold"><i class="fa-solid fa-user-check mr-1"></i>${esc(p.case_assignees.map(caseWho).map(n => isGuest() ? n : firstName(n)).join(', '))}</span>`);
+    if (isCasePt(p)) { const ts = isTilsyn() ? (tilsynState(p) || (isClosed(p) ? null : ['Under udbedring', 'bg-gray-800 text-gray-300 border-gray-700'])) : (tilsynIdsOf(p).length ? tilsynState(p) : null); if (ts) bits.push(`<span class="border ${ts[1]} px-1.5 py-0.5 rounded text-[9px] font-black">${esc(ts[0])}</span>`); }
     const nPh = photoPaths(p).length; if (nPh > 1) bits.push(`<span class="text-sky-300 font-bold"><i class="fa-solid fa-images mr-1"></i>${nPh} billeder</span>`);
     const meta = bits.length ? `<div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[11px]">${bits.join('')}</div>` : '';
     const sub = (p.title && p.note) ? `<p class="text-[11px] text-gray-400 mt-1 line-clamp-2">${esc(p.note)}</p>` : '';
@@ -5060,6 +5073,13 @@ async function loadKsUpdates() {
 }
 function catName(c) { return c === 'Afvigelse' ? 'Fejl og mangler' : (c || ''); }
 const CASE_CATS = ['Afvigelse', 'Sikkerhed'];
+const tilsynIdsOf = p => (p.case_assignees || []).filter(id => { const x = S.profiles.find(q => q.id === id); return x && x.role === 'gaest' && x.guest_kind === 'tilsyn'; });
+function tilsynState(p) {
+    if (p.tilsyn_decision === 'godkendt') return ['Godkendt af bygherre', 'bg-emerald-900/60 text-emerald-200 border-emerald-700/60'];
+    if (p.tilsyn_decision === 'afvist' && !isClosed(p)) return ['Afvist – under udbedring', 'bg-red-950/60 text-red-200 border-red-800/60'];
+    if (p.tilsyn_sent_at && isClosed(p) && !p.tilsyn_decision) return ['Til godkendelse hos bygherre', 'bg-sky-950/60 text-sky-200 border-sky-700/60'];
+    return null;
+}
 const isCasePt = p => !!p && S.caseReady && p.kind === 'ks' && !p.is_extra && CASE_CATS.indexOf(p.category) !== -1;
 const casePoints = () => S.photos.filter(p => (isGuest() || p.project_id === S.currentProject) && isCasePt(p));
 const devNo = p => 'FM-' + String(p && p.dev_no || 0).padStart(3, '0');
@@ -5083,6 +5103,55 @@ async function resolveCaseUrls(pid) {
     } catch (e) { /* ignore */ }
 }
 const caseImgs = paths => (paths || []).length ? `<div class="grid grid-cols-3 gap-1.5">` + paths.map(pt => { const x = S.urls[pt]; return x ? `<img src="${esc(x.url)}" loading="lazy" alt="" data-zoom="thread" class="w-full aspect-square object-cover rounded-lg border border-gray-800 cursor-zoom-in">` : `<div class="w-full aspect-square rounded-lg bg-gray-800 animate-pulse"></div>`; }).join('') + `</div>` : '';
+function caseShareBtn(u, p) {
+    if (!isManager() || !tilsynIdsOf(p).length) return '';
+    return u.tilsyn_visible
+        ? `<button type="button" data-act="upd-share" data-id="${u.id}" class="text-[11px] font-black text-sky-300 bg-sky-950/50 border border-sky-800 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-eye mr-1"></i>Delt med bygherre – tryk for at skjule</button>`
+        : `<button type="button" data-act="upd-share" data-id="${u.id}" class="text-[11px] font-bold text-gray-400 bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-eye-slash mr-1"></i>Kun internt – del med bygherre</button>`;
+}
+function tilsynBoxHtml(p, closed) {
+    const note = p.tilsyn_decision_note ? `<p class="text-xs text-gray-200 whitespace-pre-line">${esc(p.tilsyn_decision_note)}</p>` : '';
+    if (p.tilsyn_sent_at && closed && !p.tilsyn_decision) return `<div class="rounded-xl border border-sky-700/60 bg-sky-950/30 p-3 space-y-2"><p class="text-xs font-black text-sky-200"><i class="fa-solid fa-clipboard-check mr-1.5"></i>Udbedringen er klar til din godkendelse</p><textarea id="tilsyn-note" rows="2" maxlength="2000" placeholder="Kommentar (skal udfyldes, hvis du afviser)" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500"></textarea><div class="grid grid-cols-2 gap-2"><button type="button" data-act="tilsyn-no" class="bg-red-950/60 border-2 border-red-600 text-red-200 py-4 rounded-xl text-base font-black"><i class="fa-solid fa-xmark mr-1.5"></i>Afvis</button><button type="button" data-act="tilsyn-ok" class="bg-emerald-500 text-gray-950 py-4 rounded-xl text-base font-black"><i class="fa-solid fa-check mr-1.5"></i>Godkend</button></div></div>`;
+    if (p.tilsyn_decision === 'godkendt') return `<div class="rounded-xl border border-emerald-700/60 bg-emerald-950/40 p-3 space-y-1"><p class="text-xs font-black text-emerald-300"><i class="fa-solid fa-circle-check mr-1.5"></i>Godkendt af dig ${esc(dkWhen(p.tilsyn_decision_at))}</p>${note}</div>`;
+    if (p.tilsyn_decision === 'afvist') return `<div class="rounded-xl border border-red-800/60 bg-red-950/30 p-3 space-y-1"><p class="text-xs font-black text-red-300"><i class="fa-solid fa-circle-xmark mr-1.5"></i>Afvist ${esc(dkWhen(p.tilsyn_decision_at))} – afventer ny udbedring</p>${note}</div>`;
+    return `<p class="text-xs text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-hammer mr-1.5 text-amber-400"></i>Under udbedring. Du får besked, når kontoret har sendt den til din godkendelse.</p>`;
+}
+function tilsynAdminHtml(p, closed) {
+    const names = tilsynIdsOf(p).map(userName).join(', ');
+    const note = p.tilsyn_decision_note ? ` <span class="font-normal text-gray-300">“${esc(p.tilsyn_decision_note)}”</span>` : '';
+    if (p.tilsyn_decision === 'godkendt') return `<p class="text-xs font-black text-emerald-300 bg-emerald-950/40 border border-emerald-700/60 rounded-xl p-3"><i class="fa-solid fa-circle-check mr-1.5"></i>Godkendt af ${esc(names)} ${esc(dkWhen(p.tilsyn_decision_at))}${note}</p>`;
+    if (p.tilsyn_sent_at && closed && !p.tilsyn_decision) return `<p class="text-xs font-black text-sky-200 bg-sky-950/30 border border-sky-700/60 rounded-xl p-3"><i class="fa-solid fa-paper-plane mr-1.5"></i>Sendt til ${esc(names)} ${esc(dkWhen(p.tilsyn_sent_at))} – afventer godkendelse</p>`;
+    if (!closed) return `<p class="text-[11px] text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-clipboard-check mr-1.5 text-sky-400"></i>Bygherre/tilsyn: ${esc(names)}. Intet er delt endnu – afslut punktet og del det, du vil vise, så kan du sende det til godkendelse.${p.tilsyn_decision === 'afvist' ? `<span class="block mt-1 font-black text-red-300">Afvist ${esc(dkWhen(p.tilsyn_decision_at))}${note}</span>` : ''}</p>`;
+    return `<div class="rounded-xl border border-sky-700/60 bg-sky-950/30 p-3 space-y-2"><p class="text-xs font-black text-sky-200"><i class="fa-solid fa-clipboard-check mr-1.5"></i>Bygherre/tilsyn: ${esc(names)}</p>${p.tilsyn_decision === 'afvist' ? `<p class="text-xs font-black text-red-300">Tidligere afvist${note}</p>` : ''}<p class="text-[11px] text-gray-400">Bygherren ser kun det, du har delt ovenfor. Intet sendes, før du trykker her.</p><textarea id="tilsyn-send-note" rows="2" maxlength="2000" placeholder="Besked til bygherren (valgfri)" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500"></textarea><button type="button" data-act="tilsyn-send" class="w-full bg-sky-500 text-gray-950 py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send til ${esc(names)} til godkendelse</button></div>`;
+}
+async function tilsynSend() {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p || !isCasePt(p)) return;
+    const note = $('tilsyn-send-note') ? $('tilsyn-send-note').value : null;
+    const r = await sb.rpc('case_send_to_tilsyn', { p_id: p.id, p_note: note });
+    if (r.error) return fail(r.error);
+    mergeRow(S.photos, r.data); await loadKsUpdates(); renderEditSafety(r.data); renderAll();
+    pushAssign(tilsynIdsOf(r.data), 'Til din godkendelse', (r.data.note || r.data.title || 'Udbedring er klar') + (proj(r.data.project_id) ? ' – ' + proj(r.data.project_id).name : ''), 'ks');
+    toast('Sendt til godkendelse hos bygherre/tilsyn.', 'ok');
+}
+async function tilsynDecide(dec) {
+    const p = S.photos.find(x => x.id === S.editPhotoId); if (!p || !isCasePt(p)) return;
+    const note = $('tilsyn-note') ? $('tilsyn-note').value.trim() : '';
+    if (dec === 'afvist' && !note) return toast('Skriv kort, hvad der ikke er i orden.', 'info');
+    const r = await sb.rpc('case_tilsyn_decide', { p_id: p.id, p_decision: dec, p_note: note || null });
+    if (r.error) return fail(r.error);
+    mergeRow(S.photos, r.data); await loadKsUpdates(); renderEditSafety(r.data); renderAll();
+    pushAssign([], (dec === 'godkendt' ? 'Godkendt af ' : 'Afvist af ') + (S.profile.full_name || 'bygherre'), (r.data.note || r.data.title || 'Punkt') + (note ? ' – ' + note : ''), 'ks', true);
+    toast(dec === 'godkendt' ? 'Godkendt – kontoret får besked.' : 'Afvist – kontoret får besked, og punktet er åbnet igen.', 'ok');
+}
+async function updShare(id) {
+    const u = S.ksUpdates.find(x => x.id === id), p = S.photos.find(x => x.id === S.editPhotoId); if (!u || !p) return;
+    const on = !u.tilsyn_visible;
+    const r = await sb.rpc('ks_update_share', { p_id: id, p_on: on });
+    if (r.error) return fail(r.error);
+    mergeRow(S.ksUpdates, r.data); renderEditSafety(p);
+    if (on) pushAssign(tilsynIdsOf(p), 'Ny opdatering på dit punkt', (r.data.text || 'Nyt billede/kommentar') + '', 'ks');
+    toast(on ? 'Delt med bygherre/tilsyn.' : 'Skjult for bygherre/tilsyn.', 'ok');
+}
 function casePanelHtml(p) {
     const closed = isClosed(p), isSafe = p.category === 'Sikkerhed';
     const ico = isSafe ? 'fa-shield-halved text-sky-400' : 'fa-triangle-exclamation text-amber-400';
@@ -5100,10 +5169,12 @@ function casePanelHtml(p) {
     const ups = caseUpdatesOf(p);
     h += `<div class="space-y-2" id="case-thread"><span class="lbl !mb-0">Dokumentation</span>` + (ups.length ? ups.map(u =>
         `<div class="bg-gray-900/70 border border-gray-800 rounded-xl p-3 space-y-1.5" data-upd="${u.id}"><div class="flex justify-between gap-2 text-[11px]"><span class="font-bold ${u.user_id === myId() ? 'text-orange-300' : 'text-gray-200'}">${esc(caseAuthor(u))}${u.kind === 'status' ? ' <span class="text-emerald-400">· status</span>' : ''}</span><span class="text-gray-500 shrink-0">${esc(dkWhen(u.created_at))}</span></div>` +
-        (u.text ? `<p class="text-sm ${u.kind === 'status' ? 'font-black text-emerald-300' : 'text-gray-100'} whitespace-pre-wrap break-words">${esc(u.text)}</p>` : '') + caseImgs(u.image_paths) + `</div>`).join('') : '<p class="text-xs text-gray-500">Intet skrevet endnu.</p>') + `</div>`;
+        (u.text ? `<p class="text-sm ${u.kind === 'status' ? 'font-black text-emerald-300' : 'text-gray-100'} whitespace-pre-wrap break-words">${esc(u.text)}</p>` : '') + caseImgs(u.image_paths) + caseShareBtn(u, p) + `</div>`).join('') : '<p class="text-xs text-gray-500">Intet skrevet endnu.</p>') + `</div>`;
     h += `<div class="space-y-2"><textarea id="case-text" rows="2" maxlength="2000" oninput="S.caseDraft=this.value;autoGrow(this)" placeholder="${closed ? 'Skriv en kommentar…' : 'Skriv kommentar – eller en afslutningsnote…'}" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">${esc(S.caseDraft || '')}</textarea>` +
         `<div class="flex items-stretch gap-2"><div data-voicebox="cupd"></div><button type="button" data-act="case-photo" class="flex-1 bg-sky-950/60 border border-sky-800 text-sky-200 py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-camera mr-1.5"></i>Billeder</button>` +
         `<button type="button" data-act="case-send" class="flex-1 brand-orange text-white py-3 rounded-xl text-sm font-black"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send</button></div></div>`;
+    if (isTilsyn()) return h + tilsynBoxHtml(p, closed) + `</div>`;
+    if (isManager() && tilsynIdsOf(p).length) h += tilsynAdminHtml(p, closed);
     h += closed
         ? `<button type="button" data-act="case-reopen" class="w-full bg-gray-800 border border-gray-600 text-gray-100 py-3.5 rounded-xl text-sm font-black"><i class="fa-solid fa-rotate-left mr-1.5"></i>Åbn igen</button>`
         : `<button type="button" data-act="case-close" class="w-full bg-emerald-500 text-gray-950 py-4 rounded-xl text-base font-black"><i class="fa-solid fa-check mr-1.5"></i>Afslut</button>`;
@@ -9157,6 +9228,10 @@ async function handleAct(act, el) {
         case 'safe-report': return openExport('safety');
         case 'case-photo': { const f = $('case-file'); if (f) { f.value = ''; f.click(); } return; }
         case 'case-send': return caseSend([]);
+        case 'upd-share': return updShare(d.id);
+        case 'tilsyn-send': return tilsynSend();
+        case 'tilsyn-ok': return tilsynDecide('godkendt');
+        case 'tilsyn-no': return tilsynDecide('afvist');
         case 'case-close': return caseClose(true);
         case 'case-assign': toggleAssign(S.caseAssign, d.user); return safeFormRender();
         case 'case-assign-edit': return caseAssignEdit(d.user);
