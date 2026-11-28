@@ -103,6 +103,8 @@
         #hero-demo .h-tile { position: absolute; left: 14px; right: 14px; height: 78px; border-radius: 20px; background: #fff; border: 1px solid #E7E3DA; display: flex; align-items: center; gap: 12px; padding: 0 14px; font-weight: 900; color: #12233F; font-size: 14px; box-shadow: 0 4px 10px rgba(18,35,63,.06); }
         #hero-demo .h-tile i.ic { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
         #hero-demo .h-tile small { display: block; font-weight: 600; font-size: 10px; color: #566070; }
+        #hero-demo .h-lb { font-size: 9px; font-weight: 900; color: #566070; margin-bottom: 3px; }
+        #hero-demo .h-in { height: 34px; border-radius: 10px; background: #F7F5F1; border: 1.5px solid #E7E3DA; padding: 0 10px; display: flex; align-items: center; font-size: 12px; font-weight: 800; color: #12233F; }
         #hero-demo .h-cur { position: absolute; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; z-index: 20; pointer-events: none; opacity: 0; }
         #hero-demo .h-cur b { position: absolute; inset: 0; border-radius: 50%; background: rgba(18,35,63,.28); border: 2.5px solid #fff; box-shadow: 0 3px 8px rgba(0,0,0,.3); }
         #hero-demo .h-cur i { position: absolute; inset: -6px; border-radius: 50%; border: 2.5px solid #FF5500; opacity: 0; }
@@ -9337,7 +9339,7 @@ function lpHeroBuild() {
     const paper = (id, x, y, w, h, rot, gx, gy, gr, inner, cls, bg) => `<div class="h-paper ${cls || ''}" id="${id}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;transform:rotate(${rot}deg);${bg ? 'background:' + bg + ';' : ''}--gx:${gx}px;--gy:${gy}px;--gr:${gr}deg;animation-delay:${(x % 7) / 10}s">${inner}</div>`;
     const sms = (id, x, y, rot, txt, gx, gy) => `<div class="h-paper" id="${id}" style="left:${x}px;top:${y}px;width:150px;height:46px;border-radius:16px;background:#DCF8C6;transform:rotate(${rot}deg);--gx:${gx}px;--gy:${gy}px;--gr:40deg;color:#1F3A2B;font-weight:700;font-size:10px;line-height:1.25;padding:7px 10px">${txt}</div>`;
     const tile = (top, ic, bg, col, t, s, id) => `<div class="h-tile h-ho" id="${id}" style="top:${top}px"><i class="ic fa-solid ${ic}" style="background:${bg};color:${col}"></i><span>${t}<small>${s}</small></span></div>`;
-    const wk = [['Man', '8,0', 80], ['Tir', '7,5', 75], ['Ons', '8,0', 80], ['Tor', '8,5', 85]].map((r, i) => `<div class="h-abs" style="left:14px;right:14px;top:${356 + i * 24}px;height:20px;display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;color:#566070"><span style="width:26px">${r[0]}</span><span style="flex:1;height:8px;border-radius:4px;background:#E7E3DA;overflow:hidden"><i style="display:block;height:100%;width:${r[2]}%;background:#12233F"></i></span><span style="width:34px;text-align:right;color:#12233F">${r[1]} t</span></div>`).join('');
+    const wk = [['Man', '8,0', 80], ['Tir', '7,5', 75], ['Ons', '8,0', 80], ['Tor', '8,5', 85]].map((r, i) => `<div class="h-abs" style="left:14px;right:14px;top:${164 + i * 24}px;height:20px;display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;color:#566070"><span style="width:26px">${r[0]}</span><span style="flex:1;height:8px;border-radius:4px;background:#E7E3DA;overflow:hidden"><i style="display:block;height:100%;width:${r[2]}%;background:#12233F"></i></span><span style="width:34px;text-align:right;color:#12233F">${r[1]} t</span></div>`).join('');
     root.innerHTML = `
     <div id="h-papers">
       ${paper('hp1', 30, 70, 104, 130, -9, -420, -200, -70, '<b style="color:#12233F">Timeseddel</b><br>Uge 47 …<br>Man 7-15<br>Tir ?? <br>Ons 7-15,5<br>(diæt?)', 'h-lines')}
@@ -9369,7 +9371,7 @@ function lpHeroBuild() {
       <div style="height:2px;background:#FF5500;margin:8px 0"></div>
       <div style="font-size:9px;font-weight:900;color:#12233F;margin-bottom:6px">10 KS-punkter · Fejl og mangler: 1</div>
       ${[['Punkt #1', 'Rør lagt i sandbed'], ['Punkt #2', 'Mangler afslutning ved brønd']].map(p => `<div style="display:flex;gap:8px;margin-bottom:7px"><div style="width:62px;height:62px;border-radius:4px;overflow:hidden;flex:none">${H_TRENCH(62, 62)}</div><div style="font-size:9px;line-height:1.3;color:#566070"><b style="color:#12233F;font-size:10px">${p[0]}</b><br>${p[1]}<br><span style="color:#2563EB">GPS 55.54284, 9.51486</span></div></div>`).join('')}
-      <div style="position:absolute;left:14px;right:14px;bottom:12px;background:#FF5500;color:#fff;font-weight:900;font-size:9px;border-radius:6px;padding:6px 8px;text-align:center">✓ Klar til bygherre</div>
+      <div style="position:absolute;left:14px;right:14px;bottom:12px;background:#FF5500;color:#fff;font-weight:900;font-size:9px;border-radius:6px;padding:6px 8px;text-align:center"><i class="fa-solid fa-download"></i> Download</div>
     </div>
     <div class="h-phw" id="h-phw">
       <div class="h-ph p1 fold" id="h-p1">
@@ -9380,16 +9382,26 @@ function lpHeroBuild() {
             ${tile(242, 'fa-list-check', '#E3F6EC', '#047857', 'Opgaver', 'Dine opgaver i dag', 'ht3')}
             ${tile(328, 'fa-map', '#FDF1D8', '#B45309', 'Byggepladskort', 'Se, hvor du står', 'ht4')}
           </div>
-          <div class="h-scr" id="hs-time">${H_HDR('Registrér timer')}
-            <div class="h-abs" style="left:14px;right:14px;top:70px;height:40px;border-radius:12px;background:#fff;border:1px solid #E7E3DA;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:900;color:#12233F"><span style="flex:1">6000 – Østergade 12</span><i class="fa-solid fa-chevron-down" style="font-size:10px;color:#8A93A3"></i></div>
-            <div class="h-btn" id="h-stamp" style="left:14px;right:14px;top:128px;height:84px;background:#12233F;font-size:19px"><i class="fa-solid fa-play mr-2" id="h-stamp-i"></i><span id="h-stamp-t">Stempl ind</span></div>
-            <div class="h-abs" id="h-clock" style="left:0;right:0;top:224px;text-align:center;font:900 34px/1 ui-monospace,Menlo,monospace;color:#12233F">00:00:00</div>
-            <div class="h-abs h-ho" id="hch1" style="left:14px;top:278px;width:112px;height:34px;border-radius:12px;background:#fff;border:1.5px solid #D9D3C6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#12233F"><span id="hch1t">Diæt: ligger ude</span></div>
-            <div class="h-abs h-ho" id="hch2" style="left:132px;top:278px;width:112px;height:34px;border-radius:12px;background:#fff;border:1.5px solid #D9D3C6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#12233F">Kørsel 24 km</div>
-            <div class="h-abs" style="left:14px;top:332px;font-size:9px;font-weight:900;color:#566070;letter-spacing:.06em">DENNE UGE</div>
+          <div class="h-scr" id="hs-time">${H_HDR('Timer')}
+            <div class="h-btn" id="h-newt" style="left:14px;right:14px;top:70px;height:52px;background:#2563EB;font-size:14px"><i class="fa-solid fa-stopwatch mr-2"></i>Registrér timer</div>
+            <div class="h-abs" style="left:14px;top:144px;font-size:9px;font-weight:900;color:#566070;letter-spacing:.06em">DENNE UGE</div>
             ${wk}
-            <div class="h-abs h-ho" id="hwk5" style="left:14px;right:14px;top:452px;height:20px;display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;color:#12233F;background:#FFF3EA;border-radius:6px;padding:0 4px"><span style="width:26px">Fre</span><span style="flex:1;height:8px;border-radius:4px;background:#E7E3DA;overflow:hidden"><i style="display:block;height:100%;width:80%;background:#FF5500"></i></span><span style="width:34px;text-align:right">8,0 t</span></div>
-            <div class="h-abs h-ho" id="hwk6" style="left:14px;right:14px;top:480px;font-size:11px;font-weight:900;color:#047857;text-align:center">I alt 40,0 t · klar til godkendelse ✓</div>
+            <div class="h-abs h-ho" id="hwk5" style="left:14px;right:14px;top:260px;height:20px;display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;color:#12233F;background:#FFF3EA;border-radius:6px;padding:0 4px"><span style="width:26px">Fre</span><span style="flex:1;height:8px;border-radius:4px;background:#E7E3DA;overflow:hidden"><i style="display:block;height:100%;width:80%;background:#FF5500"></i></span><span style="width:34px;text-align:right">8,0 t</span></div>
+            <div class="h-abs h-ho" id="hwk6" style="left:14px;right:14px;top:296px;font-size:11px;font-weight:900;color:#047857;text-align:center">I alt 40,0 t · klar til godkendelse ✓</div>
+            <div class="h-abs" id="h-tmod" style="left:0;right:0;top:40px;height:486px;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -10px 30px rgba(18,35,63,.25);transform:translateY(500px);transition:transform .5s cubic-bezier(.3,1.1,.5,1)">
+              <div class="h-abs" style="left:14px;top:12px;font-size:13px;font-weight:900;color:#12233F"><i class="fa-solid fa-stopwatch" style="color:#2563EB"></i> Registrér timer<div style="font-size:9px;font-weight:700;color:#8A93A3">6000 – Østergade 12</div></div>
+              <i class="fa-solid fa-xmark h-abs" style="right:16px;top:14px;color:#8A93A3;font-size:16px"></i>
+              <div class="h-abs" style="left:14px;right:14px;top:56px;height:34px;border-radius:10px;background:#DC2626;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px"><i class="fa-solid fa-microphone"></i>Indtal dagen</div>
+              <div class="h-abs" style="left:14px;right:14px;top:100px"><div class="h-lb">Dato</div><div class="h-in">28.11.2026</div></div>
+              <div class="h-abs" style="left:14px;width:108px;top:152px"><div class="h-lb">Starttid</div><div class="h-in" id="h-t-start">06:00</div></div>
+              <div class="h-abs" style="right:14px;width:108px;top:152px"><div class="h-lb">Sluttid</div><div class="h-in">15:30</div></div>
+              <div class="h-abs" style="left:14px;width:108px;top:206px"><div class="h-lb">Pause</div><div class="h-in">30 min</div></div>
+              <div class="h-abs" style="right:14px;width:108px;top:206px"><div class="h-lb">Timer</div><div class="h-in" id="h-t-sum" style="color:#2563EB;font-weight:900;background:#F1F5FF">9,0 t</div></div>
+              <div class="h-abs" style="left:14px;right:14px;top:262px"><div class="h-lb">Tillæg</div><div style="display:flex;gap:8px"><div class="h-in" id="h-t-dae" style="flex:1;display:flex;align-items:center;gap:6px;transition:background .25s,border-color .25s"><i class="fa-regular fa-square" id="h-t-daei"></i>Diæt / Ligger ude</div><div class="h-in" style="width:92px;color:#8A93A3">Kørsel km</div></div></div>
+              <div class="h-abs" style="left:14px;right:14px;top:316px"><div class="h-lb">Arbejdsbeskrivelse</div><div class="h-in" style="height:56px;white-space:normal"><span id="h-t-note"></span><span id="h-t-caret" style="color:#2563EB">▍</span></div></div>
+              <div class="h-btn" id="h-t-save" style="left:14px;right:14px;top:392px;height:46px;background:#2563EB;font-size:14px">Gem registrering</div>
+            </div>
+            <div class="h-abs" id="h-toast" style="left:30px;right:30px;top:110px;border-radius:12px;background:#047857;color:#fff;font-size:11px;font-weight:900;text-align:center;padding:10px;opacity:0;transition:opacity .3s"><i class="fa-solid fa-circle-check mr-1"></i>Gemt</div>
           </div>
           <div class="h-scr" id="hs-cam" style="background:#0B1424"><div class="h-abs" style="inset:0">${H_TRENCH(258, 526)}</div>
             <div class="h-abs" style="left:0;right:0;top:0;height:60px;background:linear-gradient(#000a,#0000)"></div>
@@ -9461,20 +9473,19 @@ const HU = [
         hCap(0, lt >= 3.2);
         hCur('hc-p', [[9, 0, 0], [10, 0, 0]], [], lt, 7, 7);
     },
-    function (lt) { // 2: timer + diæt
+    function (lt) { // 2: Registrér timer (som i appen)
         hSty('h-papers', 'opacity', 0);
         hCls('h-p1', 'fold', false); hCls('h-p1', 'side', false); hCls('h-p2', 'on', false); hCls('h-p1', 'gone', false);
         hScr('time'); hCap(1, lt >= .5);
-        const run = lt >= 1.75, el = run ? hC((lt - 2.0) / 3.6) * 8 : 0, hh = Math.floor(el), mm = Math.floor((el - hh) * 60), ss = Math.floor((((el - hh) * 60) - mm) * 60);
-        const p2 = n => String(n).padStart(2, '0'), done = lt >= 5.6;
-        hSty('h-stamp', 'background', run ? '#047857' : '#12233F');
-        hTxt('h-stamp-t', done ? 'Dagen gemt' : (run ? 'Stemplet ind 07:00' : 'Stempl ind'));
-        hE('h-stamp-i').className = 'fa-solid mr-2 ' + (done ? 'fa-check' : (run ? 'fa-circle-play' : 'fa-play'));
-        hTxt('h-clock', p2(hh) + ':' + p2(mm) + ':' + p2(ss));
-        hOn('hch1', lt >= 2.4); hOn('hch2', lt >= 2.6);
-        const dae = lt >= 4.1; hSty('hch1', 'background', dae ? '#1D4ED8' : '#fff'); hSty('hch1', 'borderColor', dae ? '#1D4ED8' : '#D9D3C6'); hSty('hch1', 'color', dae ? '#fff' : '#12233F'); hTxt('hch1t', dae ? '✓ Diæt: ligger ude' : 'Diæt: ligger ude');
-        hOn('hwk5', lt >= 5.8); hOn('hwk6', lt >= 6.4);
-        hCur('hc-p', [[.3, 230, 300], [1.3, 129, 170], [3.1, 129, 170], [3.9, 70, 295], [5.0, 70, 295], [5.8, 220, 440]], [1.7, 4.1], lt, 7, 7);
+        const open = lt >= .8 && lt < 6.7; hSty('h-tmod', 'transform', open ? 'translateY(0)' : 'translateY(500px)');
+        const st = lt >= 2.0; hTxt('h-t-start', st ? '07:00' : '06:00'); hTxt('h-t-sum', st ? '8,0 t' : '9,0 t');
+        hSty('h-t-start', 'borderColor', lt >= 1.7 && lt < 2.6 ? '#2563EB' : '#E7E3DA');
+        const dae = lt >= 3.4; hSty('h-t-dae', 'background', dae ? '#E3ECFD' : '#F7F5F1'); hSty('h-t-dae', 'borderColor', dae ? '#2563EB' : '#E7E3DA'); hE('h-t-daei').className = dae ? 'fa-solid fa-square-check' : 'fa-regular fa-square'; hSty('h-t-daei', 'color', dae ? '#2563EB' : '#8A93A3');
+        const N = 'Rør i køkkenet, Østergade 12', n = Math.floor(hK(lt, 3.9, 5.6) * N.length); hTxt('h-t-note', N.slice(0, n)); hSty('h-t-caret', 'opacity', lt >= 3.7 && lt < 6.2 ? 1 : 0);
+        hSty('h-t-save', 'transform', lt >= 6.25 && lt < 6.45 ? 'scale(.95)' : 'scale(1)');
+        hSty('h-toast', 'opacity', lt >= 6.5 && lt < 8.2 ? 1 : 0);
+        hOn('hwk5', lt >= 7.0); hOn('hwk6', lt >= 7.8);
+        hCur('hc-p', [[.2, 220, 150], [.6, 129, 96], [1.0, 129, 96], [1.7, 70, 209], [2.5, 70, 209], [3.2, 70, 325], [3.6, 70, 325], [5.8, 150, 400], [6.2, 129, 453], [6.8, 129, 453], [7.4, 220, 430]], [.7, 1.9, 3.3, 6.3], lt, 7, 7);
     },
     function (lt) { // 3: KS m. GPS + stemme
         hSty('h-papers', 'opacity', 0);
