@@ -3333,7 +3333,8 @@ function saThreadHtml() {
     return saBack('sa-back', 'Tilbage') + `<h3 class="font-black text-white text-base">${esc(th.subject || '(uden emne)')}</h3><p class="text-xs text-gray-400">${esc(th.contact_email || '')}</p>` + link +
         `<div class="space-y-2">${msgs}</div>` +
         `<div><label class="lbl">Svar</label><textarea data-sa-f="reply" rows="5" maxlength="20000" class="inp" placeholder="Skriv dit svar…"></textarea></div>` +
-        `<button type="button" data-act="sa-reply" class="w-full brand-orange text-white py-4 rounded-xl font-black">Send svar</button>`;
+        `<button type="button" data-act="sa-reply" class="w-full brand-orange text-white py-4 rounded-xl font-black">Send svar</button>` +
+        `<button type="button" data-act="sa-del-thread" class="w-full py-3.5 rounded-xl text-sm font-black border border-red-700/50 text-red-400 bg-red-950/40"><i class="fa-solid fa-trash mr-1.5"></i>Slet mailtråd</button>`;
 }
 
 /* ---- Skriv mail ---- */
@@ -3385,6 +3386,7 @@ function saAcctHtml() {
     h += `<div class="space-y-2"><span class="lbl">Noter og historik</span><textarea data-sa-f="note" rows="3" maxlength="4000" class="inp" placeholder="Skriv en note (fx hvad I aftalte på telefonen)…"></textarea>` +
         `<button type="button" data-act="sa-note-add" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-sm font-bold">Gem note</button>` +
         X.events.map(e => `<div class="flex gap-2.5 items-start"><i class="fa-solid ${ic[e.kind] || 'fa-circle'} mt-1 text-xs w-4 text-center"></i><div class="min-w-0 flex-1"><p class="text-sm text-gray-100 whitespace-pre-wrap break-words">${esc(e.text)}</p><p class="text-[10px] text-gray-500">${saDT(e.created_at)}</p></div>${e.kind === 'note' ? `<button type="button" data-act="sa-note-del" data-id="${e.id}" class="text-gray-600 p-1" aria-label="Slet note"><i class="fa-solid fa-xmark"></i></button>` : ''}</div>`).join('') + `</div>`;
+    if (!a.company_id) h += `<button type="button" data-act="sa-del-acct" class="w-full py-3.5 rounded-xl text-sm font-black border border-red-700/50 text-red-400 bg-red-950/40"><i class="fa-solid fa-trash mr-1.5"></i>Slet lead</button>`;
     return h;
 }
 
@@ -3593,6 +3595,18 @@ async function saAct(act, el) {
         case 'sa-kpi': S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.q = ''; S.sa.filter = d.k === 'inaktiv' ? 'inaktiv' : 'alle'; S.sa.health = ['groen', 'roed'].includes(d.k) ? d.k : ''; saRender(); return saPageRefresh();
         case 'sa-filter-go': S.sa.tab = 'kunder'; S.sa.view = 'list'; S.sa.q = ''; S.sa.health = ''; S.sa.filter = d.f; saRender(); return saPageRefresh();
         case 'sa-set-save': return saSetSave(d.k);
+        case 'sa-del-thread': {
+            const th = S.sa.threads.find(x => x.id === S.sa.selThread); if (!th) return;
+            if (!confirm('Slet hele mailtråden "' + (th.subject || 'uden emne') + '" permanent?')) return;
+            const r = await sb.from('mail_threads').delete().eq('id', th.id); if (r.error) return fail(r.error);
+            toast('Mailtråd slettet.', 'ok'); S.sa.selThread = null; S.sa.view = S.sa.sel && S.sa.acct && th.account_id === S.sa.sel ? 'acct' : 'list'; await saReload(); return saRender();
+        }
+        case 'sa-del-acct': {
+            const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a || a.company_id) return;
+            if (!confirm('Slet leadet "' + a.name + '" med kontakter, noter og historik permanent? Mails beholdes, men kobles fra.')) return;
+            const r = await sb.from('crm_accounts').delete().eq('id', a.id); if (r.error) return fail(r.error);
+            toast('Lead slettet.', 'ok'); S.sa.sel = null; S.sa.acct = null; S.sa.view = 'list'; await saReload(); return saRender();
+        }
         case 'sa-snooze': { const r = await sb.from('crm_accounts').update({ snoozed_until: fmtDate(addDays(new Date(), 3)) }).eq('id', d.id); if (r.error) return fail(r.error); toast('Udsat i 3 dage.', 'ok'); return saReload(); }
         case 'sa-go': { S.sa.view = d.v; if (d.v === 'camps') { await saLoadCamps(); } else if (d.v === 'rules') { await saLoadRules(); } else if (d.v === 'tpls') { await saLoadTpls(); } else if (d.v === 'ov') { await saLoadOverview(); } else if (d.v === 'mkt' || d.v === 'set') { await saLoadSettings(); } else if (d.v === 'log') { await saLoadAudit(); } saRender(); return window.scrollTo(0, 0); }
         case 'sa-tpl-open': S.sa.tplSel = d.key || null; S.sa.view = 'tpl'; return saRender();
