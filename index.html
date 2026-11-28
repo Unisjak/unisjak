@@ -5622,7 +5622,7 @@ function navMore() {
     let o = $('nav-sheet'); if (o) o.remove();
     o = document.createElement('div'); o.id = 'nav-sheet'; o.className = 'fixed inset-0 z-[90] flex items-end bg-black/60';
     o.onclick = e => { if (e.target === o) o.remove(); };
-    o.innerHTML = '<div class="w-full bg-card border-t border-card rounded-t-3xl p-4 pb-8"><div class="grid grid-cols-2 gap-3">' + over.map(t => `<button type="button" data-nav="${t}" class="bg-gray-900 border border-gray-800 rounded-2xl py-6 flex flex-col items-center gap-2 text-white"><i class="fa-solid ${NAV_META[t][0]} text-3xl"></i><span class="text-base font-black">${NAV_META[t][1]}</span></button>`).join('') + '</div><button type="button" data-nav="" class="w-full mt-3 py-4 rounded-2xl bg-gray-800 text-gray-200 font-black">Luk</button></div>';
+    o.innerHTML = '<div class="w-full bg-card border-t border-card rounded-t-3xl p-4 pb-8"><div class="grid grid-cols-2 gap-3">' + over.map(t => `<button type="button" data-nav="${t}" class="bg-gray-900 border border-gray-800 rounded-2xl py-6 flex flex-col items-center gap-2" style="color:#12233F"><i class="fa-solid ${NAV_META[t][0]} text-3xl"></i><span class="text-base font-black">${NAV_META[t][1]}</span></button>`).join('') + '</div><button type="button" data-nav="" class="w-full mt-3 py-4 rounded-2xl bg-gray-800 text-gray-200 font-black">Luk</button></div>';
     o.addEventListener('click', e => { const b = e.target.closest('[data-nav]'); if (!b) return; o.remove(); if (b.dataset.nav) switchTab(b.dataset.nav); });
     document.body.appendChild(o);
 }
