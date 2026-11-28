@@ -1415,6 +1415,7 @@ function showScreen(which) {
     show('onboard-screen', which === 'onboard');
     show('app-root', which === 'app');
     show('sa-screen', which === 'sa');
+    if (which !== 'sa' && typeof MP !== 'undefined' && MP.sa) mapSaReset();
 }
 function authMsg(text, kind) {
     const el = $('auth-msg');
@@ -3032,12 +3033,13 @@ async function saLoadThread(quiet) {
 function saKeepIn() { const m = {}; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { m[e.dataset.saF] = e.value; }); return { view: S.sa.view, m }; }
 function saKeepOut(k) { if (!k || k.view !== S.sa.view) return; $('sa-main').querySelectorAll('[data-sa-f]').forEach(e => { const n = e.dataset.saF, v = k.m[n]; if (v != null && (!e.value || (/^q[sb]-/.test(n) && v !== e.value))) e.value = v; }); }
 
-const SA_FULL = ['new', 'lead', 'cust', 'compose', 'tpls', 'tpl', 'rules', 'camps', 'camp-new', 'camp', 'ov', 'mkt', 'set', 'log'];
+const SA_FULL = ['new', 'lead', 'cust', 'map', 'compose', 'tpls', 'tpl', 'rules', 'camps', 'camp-new', 'camp', 'ov', 'mkt', 'set', 'log'];
 const SA_TITLES = { idag: 'I dag', kunder: 'Kunder', indbakke: 'Indbakke', godkend: 'Godkend', tpls: 'Skabeloner', camps: 'Udsendelser', rules: 'Regler', ov: 'Overblik', mkt: 'Markedsføring', set: 'Indstillinger', log: 'Log' };
 function saNavKey() { const v = S.sa.view; return ['tpls', 'tpl'].includes(v) ? 'tpls' : ['camps', 'camp', 'camp-new'].includes(v) ? 'camps' : v === 'rules' ? 'rules' : ['ov', 'mkt', 'set', 'log'].includes(v) ? v : S.sa.tab; }
 function saRender() {
     const B = $('sa-main'); if (!B) return;
     const keep = saKeepIn(), v = S.sa.view;
+    if (v !== 'map' && MP.sa) mapSaReset();
     const unread = S.sa.threads.filter(t => t.unread).length;
     const todayN = (S.sa.today || []).length;
     const nav = [['idag', 'I dag', 'fa-bolt', todayN], ['kunder', 'Kunder', 'fa-building', 0], ['indbakke', 'Indbakke', 'fa-inbox', unread], ['godkend', 'Godkend', 'fa-circle-check', (S.sa.queue || []).length]];
@@ -3071,6 +3073,7 @@ function saRender() {
     else if (v === 'lead') html = saLeadHtml();
     else if (v === 'acct') html = saAcctHtml();
     else if (v === 'cust') html = saCustHtml();
+    else if (v === 'map') html = saMapHtml();
     else if (v === 'compose') html = saComposeHtml();
     else if (v === 'thread') html = saThreadHtml();
     else if (v === 'tpls') html = saTplsHtml();
@@ -3088,6 +3091,7 @@ function saRender() {
     else html = saListHtml();
     B.innerHTML = (S.sa.tab === 'idag' && !SA_FULL.includes(v) && v !== 'acct' && v !== 'thread') ? html : `<div class="${SA_NEWV.includes(v) ? 'md:max-w-5xl' : 'md:max-w-3xl'} space-y-3">${html}</div>`;
     saKeepOut(keep);
+    if (v === 'map' && MP.sa) setTimeout(mapOpen, 0);
 }
 
 const saBack = (act, txt) => `<button type="button" data-act="${act}" class="text-sm text-sky-300 font-bold py-1 ${(S.sa.tab === 'kunder' || S.sa.tab === 'indbakke') && ['acct', 'thread'].includes(S.sa.view) ? 'md:hidden' : ''}"><i class="fa-solid fa-chevron-left mr-1"></i>${txt}</button>`;
@@ -3353,6 +3357,7 @@ function saAcctHtml() {
         (sig.length ? `<div class="flex flex-wrap gap-1.5">${sig.map(s => saChip(s[2], s[1])).join('')}</div>` : '') +
         `<div class="grid grid-cols-2 gap-2"><button type="button" data-act="sa-compose" data-acct="${a.id}" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-envelope mr-1.5"></i>Skriv mail</button>` +
         (a.company_id ? `<button type="button" data-act="sa-cust" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-sliders mr-1.5"></i>Indstillinger</button>` : `<button type="button" data-act="sa-make-customer" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-building mr-1.5"></i>Opret som kunde</button>`) + `</div>` +
+        (a.company_id ? `<button type="button" data-act="sa-map" class="w-full bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-map mr-1.5"></i>Byggepladskort</button>` : '') +
         `<div><span class="lbl">Fase</span><div class="flex flex-wrap gap-1.5">${stageBtns}</div></div>`;
     if (a.company_id) {
         h += `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 space-y-2.5"><span class="lbl">Aktivitet</span>` +
@@ -3430,6 +3435,34 @@ function saCustHtml() {
         `<button type="button" data-act="sa-save" class="w-full brand-orange text-white py-4 rounded-xl font-black">Gem</button>` +
         `<div class="border-t border-gray-800 pt-3 space-y-2"><span class="lbl">Admins</span>` + ((c.admins || []).map(x => `<p class="text-xs text-gray-300">${esc(x.name)} <span class="text-gray-500">${esc(x.email || '')}${x.draft ? ' · afventer' : ''}</span></p>`).join('') || '<p class="text-xs text-gray-500">Ingen endnu.</p>') +
         `<div class="grid grid-cols-2 gap-2"><input data-sa-f="inv_name" class="inp" maxlength="120" placeholder="Navn"><input data-sa-f="inv_email" type="email" class="inp" placeholder="E-mail"></div><button type="button" data-act="sa-invite" class="w-full bg-gray-800 border border-gray-700 text-gray-100 py-3 rounded-xl text-sm font-bold">Inviter admin</button></div>`;
+}
+
+/* ---- Byggepladskort for en kunde (opsætning fra superadmin) ---- */
+async function saMapOpen() {
+    const a = S.sa.list.find(x => x.id === S.sa.sel); if (!a || !a.company_id) return toast('Kunden har ingen virksomhed endnu.');
+    const r = await sb.rpc('sa_projects', { p_company: a.company_id });
+    if (r.error) { console.error(r.error); return toast('Kunne ikke hente kundens sager.'); }
+    const pj = r.data || [];
+    MP.sa = { company: a.company_id, name: a.name, projects: pj, project: pj.length ? pj[0].id : null, pts: [] };
+    MP.list = []; MP.cur = null; MP.loadedFor = null; MP.mode = 'view'; MP.pend = null; MP.draft = null; MP.sig = '';
+    await saMapPts(); saGo('map');
+}
+async function saMapPts() {
+    const s = MP.sa; if (!s) return;
+    if (!s.project) { s.pts = []; return; }
+    const r = await sb.rpc('sa_ks_points', { p_project: s.project });
+    s.pts = r.error ? [] : (r.data || []);
+}
+async function saMapProject(id) {
+    if (!MP.sa) return;
+    MP.sa.project = id; MP.list = []; MP.cur = null; MP.loadedFor = null; MP.mode = 'view'; MP.pend = null; MP.draft = null; MP.sig = '';
+    await saMapPts(); mapOpen();
+}
+function saMapHtml() {
+    const s = MP.sa; if (!s) return saBackTo('list', 'Tilbage');
+    return saBackTo('acct', esc(s.name)) + `<h3 class="font-black text-white text-base">Byggepladskort</h3><p class="text-xs text-gray-400">Opsætning for kunden. Kunden ser selv kortet i sin app, når det er justeret.</p>` +
+        (s.projects.length ? `<div><label class="lbl">Sag</label><select class="inp" onchange="saMapProject(this.value)">${s.projects.map(p => `<option value="${esc(p.id)}" ${p.id === s.project ? 'selected' : ''}>${esc((p.case_number ? p.case_number + ' – ' : '') + p.name)}${Number(p.n_maps) ? ' · ' + p.n_maps + ' kort' : ''}</option>`).join('')}</select></div><div id="sa-map-root"></div>`
+            : '<div class="bg-card border border-card rounded-2xl p-5 text-sm text-gray-400">Kunden har ingen sager endnu. Kunden skal først oprette en sag i appen.</div>');
 }
 
 /* ---- Handlinger ---- */
@@ -3586,6 +3619,7 @@ async function saAct(act, el) {
         case 'sa-new-lead': return saGo('lead');
         case 'sa-back': S.sa.view = S.sa.fromLead ? 'acct' : 'list'; S.sa.fromLead = null; S.sa.selThread = null; return saRender();
         case 'sa-acct-back': S.sa.view = 'acct'; return saRender();
+        case 'sa-map': return saMapOpen();
         case 'sa-acct': return saOpenAcct(d.id);
         case 'sa-cust': { const a = S.sa.list.find(x => x.id === S.sa.sel); if (a) await saLoadCompany(a.company_id); S.sa.al = null; saGo('cust'); saLoadAllow(); return saLoadLogo(); }
         case 'sa-logo-del': return saLogoDel();
@@ -5567,7 +5601,7 @@ function switchTab(tab) {
         const nav = $('nav-' + t); if (nav) { nav.className = 'flex flex-col items-center p-1.5 flex-1 shrink-0 min-w-[58px] whitespace-nowrap ' + (t === tab ? 'active-tab' : 'inactive-tab'); if (t === tab) { try { nav.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* ignore */ } } }
     });
     if (tab === 'ks') setTimeout(initMobileMap, 200);
-    if (tab === 'map') mapOpen(); else mapStopLocate();
+    if (tab === 'map') { if (MP.sa) mapSaReset(); mapOpen(); } else mapStopLocate();
     if (tab === 'overview') renderMobOverview();
     if (tab === 'plan') { U.week = 0; U.day = null; ugEnsure().then(scheduleRender).catch(() => {}); }
     const c = $('app-content'); if (c) c.scrollTop = 0;
@@ -5582,7 +5616,7 @@ function switchPcView(view) {
     });
     $('pc-header-title').textContent = titles[view] || 'Kontor Overblik';
     if (view === 'overview') { setTimeout(initPcMap, 150); scheduleRender(); }
-    if (view === 'map') mapOpen(); else mapStopLocate();
+    if (view === 'map') { if (MP.sa) mapSaReset(); mapOpen(); } else mapStopLocate();
     if (view === 'plan') { ugEnsure().then(() => isAdmin() ? ensureRange('time', ugMonday(), addDays(ugMonday(), 6)) : null).then(scheduleRender).catch(() => {}); scheduleRender(); }
 }
 function forceMobilePreview(on) {
@@ -9216,7 +9250,7 @@ function applyGlobalSettings() {
 }
 
 /* ---- Superadmin: overblik, markedsføring, indstillinger, log ---- */
-const SA_NEWV = ['ov', 'mkt', 'set', 'log'];
+const SA_NEWV = ['ov', 'mkt', 'set', 'log', 'map'];
 async function saLoadSettings() {
     const r = await sb.from('app_settings').select('key,value'); S.sa.set = {}; (r.data || []).forEach(x => { S.sa.set[x.key] = x.value; });
     const s = await sb.from('crm_accounts').select('source,stage').limit(2000); S.sa.srcs = s.error ? [] : (s.data || []);
@@ -9295,11 +9329,26 @@ async function saSetSave(k) {
    Tegning/luftfoto pr. sag, justeret med kontrolpunkter. KS-punkter lægges på tegningen ud fra de GPS-koordinater, de allerede har.
    Din egen position vises kun lokalt på din telefon og sendes aldrig – ingen sporing af medarbejdere. */
 const MB = 'site-maps';
-const MP = { list: [], loadedFor: null, cur: null, mode: 'view', pend: null, draft: null, map: null, layer: null, ctrlLayer: null, meLayer: null, me: null, meState: 'idle', watch: null, urls: {}, busy: false, missing: false, sig: '', pickMap: null, firstFix: true };
+const MP = { list: [], loadedFor: null, cur: null, mode: 'view', pend: null, draft: null, map: null, layer: null, ctrlLayer: null, meLayer: null, me: null, meState: 'idle', watch: null, urls: {}, busy: false, missing: false, sig: '', pickMap: null, firstFix: true, sa: null };
 const mapPcMode = () => { const e = $('pc-shell'); return !!e && getComputedStyle(e).display !== 'none'; };
-const mapRoot = () => $(mapPcMode() ? 'pc-map-root' : 'map-root');
-const mapActive = () => !!S.started && (mapPcMode() ? S.pcView === 'map' : S.mobTab === 'map');
+const mapRoot = () => MP.sa ? $('sa-map-root') : $(mapPcMode() ? 'pc-map-root' : 'map-root');
+const mapActive = () => MP.sa ? (!!$('sa-screen') && !$('sa-screen').classList.contains('hidden') && S.sa.view === 'map') : (!!S.started && (mapPcMode() ? S.pcView === 'map' : S.mobTab === 'map'));
 const mapCur = () => MP.list.find(x => x.id === MP.cur) || null;
+/* Kontekst: almindelig bruger (egen sag) eller superadmin, der opsætter for en kunde (MP.sa = { company, name, projects, project, pts }) */
+const mapProjectId = () => MP.sa ? MP.sa.project : S.currentProject;
+const mapCompanyId = () => MP.sa ? MP.sa.company : (S.profile && S.profile.company_id);
+const mapMgr = () => !!MP.sa || isManager();
+const mapProj = () => MP.sa ? (MP.sa.projects.find(x => x.id === MP.sa.project) || null) : curProj();
+const mapProjLabel = pr => MP.sa ? ((pr.case_number ? pr.case_number + ' – ' : '') + pr.name) : projLabel(pr);
+function mapSaReset() { MP.sa = null; mapStopLocate(); mapTeardown(); MP.list = []; MP.cur = null; MP.loadedFor = null; MP.mode = 'view'; MP.pend = null; MP.draft = null; MP.sig = ''; }
+function mapPts() {   // normaliserede KS-punkter: { all: antal i alt, list: dem med GPS, sorteret efter nummer }
+    if (MP.sa) {
+        const all = MP.sa.pts || [], num = {}; all.forEach((p, i) => { num[p.id] = i + 1; });
+        return { all: all.length, list: all.filter(p => p.lat != null && p.lng != null).map(p => ({ id: p.id, num: num[p.id], lat: p.lat, lng: p.lng, title: p.title || '', note: p.note || '', cat: catName(p.category), at: p.created_at, who: '', acc: null, status: '', color: '#FF5500', raw: null })) };
+    }
+    const nums = numbering(), all = photosOf('ks');
+    return { all: all.length, list: all.filter(p => p.lat != null && p.lng != null).map(p => ({ id: p.id, num: nums[p.id], lat: p.lat, lng: p.lng, title: p.title || '', note: p.note || '', cat: catName(p.category), at: p.created_at, who: userName(p.user_id), acc: p.gps_accuracy, status: isCasePt(p) ? (isClosed(p) ? 'Afsluttet' : 'Åben') : '', color: mapPinColor(p), raw: p })).sort((a, b) => (a.num || 0) - (b.num || 0)) };
+}
 
 /* ---- koordinater: ETRS89 / UTM zone 32 (EPSG:25832) og 33 (EPSG:25833) <-> WGS84 (Krüger-rækker; forskellen mellem ETRS89 og WGS84 er under 1 m) ---- */
 const GEO = (() => {
@@ -9367,12 +9416,13 @@ const mapInside = (m, q, pad) => { const k = pad == null ? 0.03 : pad; return q.
 
 /* ---- hent kort for den valgte sag ---- */
 async function mapLoad(force) {
-    if (!S.currentProject) { MP.list = []; MP.loadedFor = null; MP.cur = null; return; }
-    if (!force && MP.loadedFor === S.currentProject) return;
+    const pid = mapProjectId();
+    if (!pid) { MP.list = []; MP.loadedFor = null; MP.cur = null; return; }
+    if (!force && MP.loadedFor === pid) return;
     const keep = MP.cur;
-    const r = await sb.from('site_maps').select('*').eq('project_id', S.currentProject).order('created_at');
-    if (r.error) { console.error(r.error); MP.missing = /site_maps|schema cache|relation/i.test(r.error.message || ''); MP.list = []; MP.loadedFor = S.currentProject; MP.cur = null; return; }
-    MP.missing = false; MP.list = r.data || []; MP.loadedFor = S.currentProject;
+    const r = await sb.from('site_maps').select('*').eq('project_id', pid).order('created_at');
+    if (r.error) { console.error(r.error); MP.missing = /site_maps|schema cache|relation/i.test(r.error.message || ''); MP.list = []; MP.loadedFor = pid; MP.cur = null; return; }
+    MP.missing = false; MP.list = r.data || []; MP.loadedFor = pid;
     MP.cur = MP.list.some(x => x.id === keep) ? keep : (MP.list.length ? MP.list[0].id : null);
     if (MP.mode !== 'view' && !mapCur()) { MP.mode = 'view'; MP.pend = null; MP.draft = null; }
 }
@@ -9392,11 +9442,11 @@ async function mapOpen() {
 }
 function mapSync() {   // kaldes ved hver gentegning: følger sagsskift og nye KS-punkter, mens kortet er åbent
     if (!mapActive()) { if (MP.watch != null) mapStopLocate(); return; }
-    if (MP.loadedFor !== S.currentProject) { mapOpen(); return; }
+    if (MP.loadedFor !== mapProjectId()) { mapOpen(); return; }
     const sig = mapPinSig();
     if (sig !== MP.sig) { MP.sig = sig; if (MP.layer) mapPins(); }
 }
-const mapPinSig = () => S.currentProject + '|' + photosOf('ks').filter(p => p.lat != null).map(p => p.id + ':' + p.lat + ':' + (p.title || '') + (p.updated_at || '') + (isCasePt(p) ? (isClosed(p) ? 'c' : 'o') : '')).join(',');
+const mapPinSig = () => mapProjectId() + '|' + mapPts().list.map(p => p.id + ':' + p.lat + ':' + p.title + (p.raw && p.raw.updated_at || '') + p.status).join(',');
 function mapTeardown() {
     if (MP.map) { try { MP.map.remove(); } catch (e) { /* ignore */ } }
     MP.map = null; MP.layer = null; MP.ctrlLayer = null; MP.meLayer = null;
@@ -9419,24 +9469,24 @@ function mapStartLocate() {
 const mapInp = 'inp';
 function mapRender() {
     const root = mapRoot(); if (!root) return;
-    const other = $(mapPcMode() ? 'map-root' : 'pc-map-root'); if (other) other.innerHTML = '';
+    const other = MP.sa ? null : $(mapPcMode() ? 'map-root' : 'pc-map-root'); if (other) other.innerHTML = '';
     mapTeardown();
-    const pr = curProj(), mgr = isManager();
+    const pr = mapProj(), mgr = mapMgr();
     if (!pr) { root.innerHTML = `<div class="bg-card border border-card rounded-2xl p-5 text-sm text-gray-400">Vælg først en ${esc(placeW())}.</div>`; return; }
     if (MP.missing) { root.innerHTML = '<div class="bg-card border border-card rounded-2xl p-5 text-sm text-amber-300 font-bold">Kortfunktionen er ikke slået til i databasen endnu.</div>'; return; }
     const m = mapCur();
     if (!m || MP.mode === 'new') {
-        if (!mgr) { root.innerHTML = `<div class="bg-card border border-card rounded-2xl p-5 space-y-1"><p class="font-black text-white">Der er ikke lagt noget kort op endnu</p><p class="text-xs text-gray-400">Kontoret eller formanden kan lægge en tegning op på ${esc(projLabel(pr))}.</p></div>`; return; }
+        if (!mgr) { root.innerHTML = `<div class="bg-card border border-card rounded-2xl p-5 space-y-1"><p class="font-black text-white">Der er ikke lagt noget kort op endnu</p><p class="text-xs text-gray-400">Kontoret eller formanden kan lægge en tegning op på ${esc(mapProjLabel(pr))}.</p></div>`; return; }
         root.innerHTML = mapUploadHtml(!!m); return;
     }
     const fit = mapFitOf(m), setup = MP.mode === 'setup' && mgr;
     const sel = MP.list.length > 1 ? `<select onchange="mapPick(this.value)" class="${mapInp} min-w-0 flex-1">${MP.list.map(x => `<option value="${esc(x.id)}" ${x.id === m.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : `<p class="font-black text-white truncate flex-1 min-w-0">${esc(m.name)}</p>`;
     const mgrBtns = mgr ? (setup ? '' : `<button type="button" onclick="mapSetup()" class="shrink-0 bg-gray-800 border border-gray-700 text-gray-200 px-3 py-2.5 rounded-xl text-xs font-black"><i class="fa-solid fa-sliders mr-1"></i>${fit ? 'Juster' : 'Opsæt'}</button><button type="button" onclick="mapNew()" class="shrink-0 bg-gray-800 border border-gray-700 text-gray-200 px-3 py-2.5 rounded-xl text-xs font-black" aria-label="Nyt kort"><i class="fa-solid fa-plus"></i></button>`) : '';
-    const hCanvas = mapPcMode() ? 'calc(100vh - 300px)' : 'calc(100dvh - 330px)';
+    const hCanvas = MP.sa ? '60vh' : (mapPcMode() ? 'calc(100vh - 300px)' : 'calc(100dvh - 330px)');
     root.innerHTML = `<div class="space-y-3"><div class="flex items-center gap-2">${sel}${mgrBtns}</div>` +
         `<div class="relative"><div id="map-canvas" class="w-full rounded-2xl border border-gray-800 overflow-hidden bg-gray-900 z-0" style="height:${hCanvas};min-height:320px"></div><div id="map-me-txt" class="absolute left-2 bottom-2 right-2 z-[500] pointer-events-none"></div></div>` +
         (setup ? `<div id="map-sheet" class="space-y-3"></div>` :
-            `<div class="grid grid-cols-2 gap-2"><button type="button" onclick="mapCenterMe()" class="bg-gray-800 border border-gray-700 text-gray-200 py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-location-crosshairs mr-1.5"></i>Min position</button><button type="button" onclick="triggerCamera('ks')" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-camera mr-1.5"></i>Ny KS her</button></div>` +
+            (MP.sa ? '' : `<div class="grid grid-cols-2 gap-2"><button type="button" onclick="mapCenterMe()" class="bg-gray-800 border border-gray-700 text-gray-200 py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-location-crosshairs mr-1.5"></i>Min position</button><button type="button" onclick="triggerCamera('ks')" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-camera mr-1.5"></i>Ny KS her</button></div>`) +
             `<div class="flex items-center justify-between gap-2 text-[11px] text-gray-400"><span id="map-pin-txt"></span>${mgr ? `<button type="button" onclick="mapExportCsv()" class="shrink-0 text-sky-300 font-black underline">Eksportér koordinater</button>` : ''}</div>` +
             (fit ? '' : `<div class="bg-amber-950/40 border border-amber-700/50 text-amber-200 rounded-xl p-3 text-xs font-bold">${mgr ? 'Kortet er ikke justeret endnu. Tryk på Opsæt for at placere tegningen på kortet.' : 'Kortet er ikke justeret endnu, så KS-punkter og din position kan ikke vises. Bed kontoret opsætte det.'}</div>`)) + `</div>`;
     mapDraw(m, fit, setup);
@@ -9472,19 +9522,19 @@ function mapPinColor(p) { return isCasePt(p) ? (isClosed(p) ? '#16A34A' : '#DC26
 function mapPins() {
     const m = mapCur(); if (!MP.layer || !m) return;
     MP.layer.clearLayers();
-    const fit = MP.mode === 'setup' ? null : mapFitOf(m), nums = numbering(), pts = photosOf('ks').filter(p => p.lat != null && p.lng != null);
+    const fit = MP.mode === 'setup' ? null : mapFitOf(m), PT = mapPts(), pts = PT.list;
     let out = 0, inn = 0;
     if (fit) pts.forEach(p => {
         const q = fit.toPx(p.lat, p.lng);
         if (!mapInside(m, q)) { out++; return; }
         inn++;
-        const ic = L.divIcon({ className: '', iconSize: [28, 28], iconAnchor: [14, 14], html: `<div style="width:28px;height:28px;border-radius:50%;background:${mapPinColor(p)};color:#fff;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font:900 11px/1 system-ui">${esc(String(nums[p.id] || ''))}</div>` });
+        const ic = L.divIcon({ className: '', iconSize: [28, 28], iconAnchor: [14, 14], html: `<div style="width:28px;height:28px;border-radius:50%;background:${p.color};color:#fff;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font:900 11px/1 system-ui">${esc(String(p.num || ''))}</div>` });
         const mk = L.marker([-q.py, q.px], { icon: ic, keyboard: false }).addTo(MP.layer);
-        mk.bindTooltip(esc((p.title || catName(p.category) || 'KS') + ''), { direction: 'top', offset: [0, -12] });
-        mk.on('click', () => openPhoto(p.id));
+        mk.bindTooltip(esc((p.title || p.cat || 'KS') + ''), { direction: 'top', offset: [0, -12] });
+        if (!MP.sa) mk.on('click', () => openPhoto(p.id));
     });
     const t = $('map-pin-txt');
-    if (t) t.textContent = !fit ? '' : inn + ' KS-punkter på kortet' + (out ? ' · ' + out + ' ligger uden for tegningen' : '') + (pts.length < photosOf('ks').length ? ' · ' + (photosOf('ks').length - pts.length) + ' uden GPS' : '');
+    if (t) t.textContent = !fit ? '' : inn + ' KS-punkter på kortet' + (out ? ' · ' + out + ' ligger uden for tegningen' : '') + (pts.length < PT.all ? ' · ' + (PT.all - pts.length) + ' uden GPS' : '');
 }
 
 /* ---- din egen position (kun lokalt) ---- */
@@ -9517,7 +9567,7 @@ function mapCenterMe() {
 
 /* ---- opsætning (kontor/formand) ---- */
 function mapSetup() {
-    const m = mapCur(); if (!m || !isManager()) return;
+    const m = mapCur(); if (!m || !mapMgr()) return;
     MP.mode = 'setup'; MP.pend = null; MP.draft = { ctrl: (m.ctrl || []).map(p => ({ ...p })), crs: m.crs || 'EPSG:25832' };
     mapStopLocate(); MP.firstFix = false; MP.meState = 'idle'; mapRender(); mapStartLocate();
 }
@@ -9549,7 +9599,7 @@ function mapSheet() {
     }
     el.innerHTML = `<div class="bg-card border border-card rounded-2xl p-4 space-y-2.5"><p class="font-black text-white text-sm">Placér tegningen på kortet</p>${q}${list}</div>${pend}` +
         `<div class="grid grid-cols-2 gap-2"><button type="button" onclick="mapSetupSave()" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm disabled:opacity-40" ${fit ? '' : 'disabled'}>Gem justering</button><button type="button" onclick="mapSetupCancel()" class="bg-gray-800 border border-gray-700 text-gray-200 py-3.5 rounded-xl font-black text-sm">Annuller</button></div>` +
-        (isManager() ? `<button type="button" onclick="mapDelete()" class="w-full text-red-300 text-xs font-black py-2">Slet dette kort</button>` : '');
+        (mapMgr() ? `<button type="button" onclick="mapDelete()" class="w-full text-red-300 text-xs font-black py-2">Slet dette kort</button>` : '');
 }
 const mapGpsBtnTxt = me => '<i class="fa-solid fa-location-crosshairs mr-1.5"></i>Jeg står her nu' + (me ? ' (±' + Math.round(me.acc) + ' m)' : ' – venter på GPS');
 function mapGpsBtn() {   // opdaterer kun knappen (ikke hele panelet), så indtastede koordinater ikke går tabt
@@ -9579,7 +9629,7 @@ function mapAddUtm() {
 }
 function mapPickOpen() {
     if (typeof L === 'undefined' || !MP.pend) return;
-    const pr = curProj(), c = pr && pr.lat != null ? { lat: pr.lat, lng: pr.lng } : (MP.me ? { lat: MP.me.lat, lng: MP.me.lng } : DEFAULT_CENTER);
+    const pr = mapProj(), c = pr && pr.lat != null ? { lat: pr.lat, lng: pr.lng } : (MP.me ? { lat: MP.me.lat, lng: MP.me.lng } : DEFAULT_CENTER);
     const ov = document.createElement('div'); ov.id = 'map-pick'; ov.className = 'fixed inset-0 z-[90] bg-white flex flex-col';
     ov.innerHTML = `<div class="p-3 flex items-center justify-between gap-2 border-b border-gray-800 bg-white"><p class="font-black text-white text-sm">Tryk på det samme sted på kortet</p><button type="button" onclick="mapPickClose()" class="text-gray-300 font-black text-sm px-3 py-2">Luk</button></div><div id="map-pick-canvas" class="flex-1 min-h-0"></div><div class="p-3 bg-white border-t border-gray-800"><button id="map-pick-ok" type="button" disabled onclick="mapPickUse()" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm disabled:opacity-40">Brug dette sted</button></div>`;
     document.body.appendChild(ov);
@@ -9592,7 +9642,7 @@ function mapPickOpen() {
 function mapPickClose() { if (MP.pickMap) { try { MP.pickMap.remove(); } catch (e) { /* ignore */ } MP.pickMap = null; } const pk = $('map-pick'); if (pk) pk.remove(); }
 function mapPickUse() { const a = MP.pickAt; mapPickClose(); if (a) mapCtrlAdd({ lat: Math.round(a.lat * 1e7) / 1e7, lng: Math.round(a.lng * 1e7) / 1e7, src: 'osm' }); }
 async function mapSetupSave() {
-    const m = mapCur(), d = MP.draft; if (!m || !d || !isManager()) return;
+    const m = mapCur(), d = MP.draft; if (!m || !d || !mapMgr()) return;
     const fit = mapFit(d.ctrl); if (!fit) return toast('Vælg mindst to punkter, der ligger et stykke fra hinanden.');
     if (fit.span < 10) return toast('Punkterne ligger under 10 m fra hinanden. Vælg punkter længere fra hinanden.');
     const r = await sb.from('site_maps').update({ ctrl: d.ctrl, crs: d.crs }).eq('id', m.id).select().single();
@@ -9601,7 +9651,7 @@ async function mapSetupSave() {
     MP.mode = 'view'; MP.pend = null; MP.draft = null; toast('Kortet er justeret.', 'ok'); mapRender();
 }
 async function mapDelete() {
-    const m = mapCur(); if (!m || !isManager()) return;
+    const m = mapCur(); if (!m || !mapMgr()) return;
     if (!confirm('Slet kortet "' + m.name + '"? KS-punkterne bliver ikke slettet, men de vises ikke længere på dette kort.')) return;
     const r = await sb.from('site_maps').delete().eq('id', m.id);
     if (r.error) { console.error(r.error); return toast('Kunne ikke slette kortet.'); }
@@ -9647,7 +9697,7 @@ async function mapPdfToCanvas(file, page) {
     return c;
 }
 async function mapUpload() {
-    if (MP.busy || !isManager() || !S.currentProject) return;
+    if (MP.busy || !mapMgr() || !mapProjectId()) return;
     const file = $('map-file') && $('map-file').files[0], page = Math.max(1, parseInt($('map-page').value, 10) || 1);
     if (!file) return toast('Vælg en tegning (PDF eller billede).');
     const name = (($('map-name').value || '').trim() || file.name.replace(/\.[^.]+$/, '')).slice(0, 80) || 'Kort';
@@ -9660,10 +9710,10 @@ async function mapUpload() {
         if (!blob) throw new Error('Kunne ikke lave billedet.');
         if (blob.size > 14 * 1024 * 1024) throw new Error('Tegningen er for stor.');
         const id = crypto.randomUUID();
-        path = S.profile.company_id + '/' + S.currentProject + '/' + id + '.jpg';
+        path = mapCompanyId() + '/' + mapProjectId() + '/' + id + '.jpg';
         const up = await sb.storage.from(MB).upload(path, blob, { contentType: 'image/jpeg', upsert: false });
         if (up.error) throw up.error;
-        const r = await sb.from('site_maps').insert({ id, company_id: S.profile.company_id, project_id: S.currentProject, name, file_path: path, width: canvas.width, height: canvas.height }).select().single();
+        const r = await sb.from('site_maps').insert({ id, company_id: mapCompanyId(), project_id: mapProjectId(), name, file_path: path, width: canvas.width, height: canvas.height }).select().single();
         if (r.error) throw r.error;
         MP.list.push(r.data); MP.cur = r.data.id; MP.mode = 'view';
         toast('Tegningen er lagt op. Placér den nu på kortet.', 'ok');
@@ -9677,12 +9727,12 @@ async function mapUpload() {
 
 /* ---- eksport: KS-punkter med koordinater (til landmåler) ---- */
 function mapExportCsv() {
-    const m = mapCur(), pr = curProj(); if (!pr) return;
-    const crs = m && m.crs && m.crs !== 'WGS84' ? m.crs : 'EPSG:25832', zone = GEO.zoneOf(crs), nums = numbering();
-    const pts = photosOf('ks').filter(p => p.lat != null && p.lng != null).slice().sort((a, b) => (nums[a.id] || 0) - (nums[b.id] || 0));
+    const m = mapCur(), pr = mapProj(); if (!pr) return;
+    const crs = m && m.crs && m.crs !== 'WGS84' ? m.crs : 'EPSG:25832', zone = GEO.zoneOf(crs);
+    const pts = mapPts().list;
     if (!pts.length) return toast('Der er ingen KS-punkter med GPS.', 'info');
     const f = (v, d) => String(Number(v).toFixed(d)).replace('.', ',');
-    const rows = pts.map(p => { const u = GEO.toUtm(p.lat, p.lng, zone); return [nums[p.id], catName(p.category), [p.title, p.note].filter(Boolean).join(' – '), dkWhen(p.created_at), userName(p.user_id), f(p.lat, 7), f(p.lng, 7), f(u.e, 2), f(u.n, 2), crs, p.gps_accuracy != null ? Math.round(p.gps_accuracy) : '', isCasePt(p) ? (isClosed(p) ? 'Afsluttet' : 'Åben') : '']; });
+    const rows = pts.map(p => { const u = GEO.toUtm(p.lat, p.lng, zone); return [p.num, p.cat, [p.title, p.note].filter(Boolean).join(' – '), dkWhen(p.at), p.who, f(p.lat, 7), f(p.lng, 7), f(u.e, 2), f(u.n, 2), crs, p.acc != null ? Math.round(p.acc) : '', p.status]; });
     saveBytes(new TextEncoder().encode(csvOf(['Nr', 'Kategori', 'Beskrivelse', 'Oprettet', 'Oprettet af', 'Bredde (WGS84)', 'Længde (WGS84)', 'Øst', 'Nord', 'Koordinatsystem', 'GPS-præcision (m)', 'Status'], rows)), 'text/csv', 'UniSjak_KS_koordinater_' + safeName(pr.case_number || pr.name) + '.csv');
 }
 
