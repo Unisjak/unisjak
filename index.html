@@ -71,6 +71,18 @@
         .bg-card { background-color: #FFFFFF; box-shadow: 0 1px 2px rgba(18,35,63,.06); }
         @keyframes lpin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
         .lp-in { animation: lpin .35s ease both; }
+        @keyframes lppop { 0% { opacity: 0; transform: scale(.2); } 70% { opacity: 1; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes lpring { 0% { opacity: .55; transform: scale(.6); } 100% { opacity: 0; transform: scale(2.4); } }
+        @keyframes lpbob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        @keyframes lpwave { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
+        .lp-pin { opacity: 0; transform-box: fill-box; transform-origin: center; }
+        .lp-pin.on { animation: lppop .45s ease both; }
+        .lp-ring { transform-box: fill-box; transform-origin: center; animation: lpring 1.6s ease-out infinite; }
+        .lp-hand { transform-box: fill-box; transform-origin: 20% 90%; animation: lpwave 2.4s ease-in-out infinite; }
+        .lp-bob { animation: lpbob 2.2s ease-in-out infinite; }
+        .lp-scene { transition: opacity .5s ease; }
+        @media (prefers-reduced-motion: reduce) { .lp-pin.on, .lp-ring, .lp-hand, .lp-bob { animation: none; opacity: 1; } }
+
         @media (prefers-reduced-motion: reduce) { .lp-in { animation: none; } }
         .border-card { border-color: #E7E3DA; }
         .brand-orange { background-color: #FF5500; color: #fff; }
@@ -159,12 +171,13 @@
                 <div class="flex bg-white p-1 rounded-xl border border-[#E7E3DA] mb-5 w-full max-w-sm">
                     <button id="lp-tab-ks" onclick="lpDemoStart('ks')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg bg-[#12233F] text-white transition">KS med foto</button>
                     <button id="lp-tab-timer" onclick="lpDemoStart('timer')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-[#566070] hover:text-[#12233F] transition">Timer</button>
+                    <button id="lp-tab-kort" onclick="lpDemoStart('kort')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-[#566070] hover:text-[#12233F] transition">Kort</button>
                 </div>
                 <div class="relative" style="width:272px">
                     <div class="rounded-[2.4rem] border-[7px] border-[#12233F] bg-[#F7F5F1] shadow-2xl shadow-[#12233F]/30 overflow-hidden" style="height:540px">
                         <div class="flex justify-between items-center px-5 pt-3 pb-1 text-[10px] text-gray-400 font-bold"><span>9:41</span><span class="w-16 h-4 bg-gray-800 rounded-full"></span><span><i class="fa-solid fa-signal"></i> <i class="fa-solid fa-battery-full"></i></span></div>
                         <div class="px-4 pt-2 pb-2 flex items-center justify-between"><div class="flex items-center space-x-2"><img src="logo.png" alt="UniSjak" class="w-6 h-6 object-contain "><span id="lp-ph-title" class="text-xs font-black text-white">KS / Foto</span></div><span class="text-[9px] text-emerald-400 font-black"><i class="fa-solid fa-circle text-[6px] mr-1"></i>Live</span></div>
-                        <div class="px-4">
+                        <div class="px-4" id="lp-microw">
                             <button id="lp-mic" class="w-full rounded-2xl py-3.5 font-black text-xs text-white bg-red-600 flex items-center justify-center space-x-2 transition" tabindex="-1" aria-hidden="true"><i class="fa-solid fa-microphone text-base"></i><span id="lp-mic-label">Indtal KS-punkt</span></button>
                             <p id="lp-say" class="text-[11px] text-gray-300 mt-2.5 min-h-[58px] leading-snug italic"></p>
                         </div>
@@ -9299,6 +9312,55 @@ const LP_SCEN = {
             lpAt(end + 2900, () => { $('lp-result').innerHTML = S0.card(true); });
             return end + 6200;
         }
+    },
+    kort: {
+        title: 'Byggepladskort', idle: '', say: '',
+        scene(step) {
+            // step: 0 = arbejder, 1 = kort tomt, 2..4 = pins, 5 = position, 6 = kort-kort
+            const pin = (id, x, y, n, on) => `<g class="lp-pin ${on ? 'on' : ''}" id="${id}"><circle cx="${x}" cy="${y}" r="10" fill="#FF5500" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y + 4}" font-family="sans-serif" font-weight="800" font-size="11" fill="#fff" text-anchor="middle">${n}</text></g>`;
+            const worker = `<svg viewBox="0 0 258 400" class="w-full h-full"><defs><linearGradient id="lpsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E3ECFD"/><stop offset="1" stop-color="#F7F5F1"/></linearGradient></defs>
+                <rect width="258" height="400" fill="url(#lpsky)"/>
+                <g stroke="#B8C4D8" stroke-width="3" fill="none"><path d="M200 40V230M200 60H100M100 60L80 110M200 60L225 90M150 60V90"/><path d="M60 230V150H130V230" stroke="#C9D3E3"/><path d="M60 190H130M95 150V230" stroke="#C9D3E3"/></g>
+                <rect y="300" width="258" height="100" fill="#D9D2C3"/><rect y="300" width="258" height="6" fill="#C5BCA8"/>
+                <g transform="translate(129 0)"><ellipse cx="0" cy="372" rx="52" ry="9" fill="#000" opacity=".12"/>
+                  <rect x="-24" y="318" width="20" height="54" rx="6" fill="#2B3A55"/><rect x="4" y="318" width="20" height="54" rx="6" fill="#2B3A55"/>
+                  <rect x="-28" y="366" width="26" height="9" rx="4" fill="#1B2438"/><rect x="2" y="366" width="26" height="9" rx="4" fill="#1B2438"/>
+                  <rect x="-34" y="228" width="68" height="100" rx="18" fill="#12233F"/>
+                  <rect x="-34" y="258" width="68" height="14" fill="#FFB400"/><rect x="-34" y="292" width="68" height="14" fill="#FFB400"/>
+                  <path d="M-34 232L-34 330M34 232L34 330" stroke="#FF5500" stroke-width="0"/>
+                  <rect x="-34" y="228" width="22" height="100" rx="12" fill="#FF7A1A"/><rect x="12" y="228" width="22" height="100" rx="12" fill="#FF7A1A"/>
+                  <rect x="-6" y="212" width="12" height="18" fill="#E8B98F"/>
+                  <circle cx="0" cy="190" r="26" fill="#F1C9A5"/>
+                  <circle cx="-9" cy="188" r="2.6" fill="#1B2438"/><circle cx="9" cy="188" r="2.6" fill="#1B2438"/><path d="M-8 200Q0 207 8 200" stroke="#1B2438" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+                  <path d="M-30 178Q-30 146 0 146Q30 146 30 178Z" fill="#FF5500"/><rect x="-34" y="174" width="68" height="9" rx="4" fill="#E04A00"/><rect x="-5" y="146" width="10" height="14" rx="3" fill="#FF7A1A"/>
+                  <path d="M-34 246Q-52 270 -40 300" stroke="#12233F" stroke-width="16" stroke-linecap="round" fill="none"/>
+                  <g class="lp-hand"><path d="M34 246Q56 238 60 214" stroke="#12233F" stroke-width="16" stroke-linecap="round" fill="none"/>
+                    <g class="lp-bob"><rect x="46" y="150" width="34" height="58" rx="6" fill="#0B1424" stroke="#566070" stroke-width="2"/><rect x="50" y="156" width="26" height="46" rx="3" fill="#E3ECFD"/><circle cx="63" cy="176" r="4" fill="#1D4ED8"/><circle cx="58" cy="190" r="3" fill="#FF5500"/><circle cx="70" cy="186" r="3" fill="#FF5500"/><circle cx="63" cy="176" r="9" fill="#1D4ED8" opacity=".2" class="lp-ring"/></g>
+                    <circle cx="62" cy="212" r="8" fill="#F1C9A5"/></g></g>
+                <text x="129" y="40" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="13" fill="#12233F">Står på pladsen</text></svg>`;
+            const map = `<svg viewBox="0 0 258 400" class="w-full h-full"><rect width="258" height="400" fill="#F7F5F1"/>
+                <g stroke="#E2DDD0" stroke-width="1"><path d="M0 40H258M0 80H258M0 120H258M0 160H258M0 200H258M0 240H258M0 280H258M0 320H258M0 360H258M43 0V400M86 0V400M129 0V400M172 0V400M215 0V400"/></g>
+                <rect x="38" y="64" width="112" height="86" fill="#E3ECFD" stroke="#12233F" stroke-width="2.5"/>
+                <rect x="160" y="150" width="62" height="90" fill="#fff" stroke="#566070" stroke-width="2" stroke-dasharray="5 4"/>
+                <path d="M10 262H168L186 330" fill="none" stroke="#566070" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>
+                ${pin('lp-p1', 72, 96, 1, step >= 2)}${pin('lp-p2', 128, 120, 2, step >= 3)}${pin('lp-p3', 190, 184, 3, step >= 4)}
+                <g class="lp-pin ${step >= 5 ? 'on' : ''}" id="lp-me"><circle cx="96" cy="262" r="20" fill="#1D4ED8" opacity=".18" class="lp-ring"/><circle cx="96" cy="262" r="9" fill="#1D4ED8" stroke="#fff" stroke-width="3"/></g>
+                </svg>`;
+            const card = step >= 6 ? `<div class="lp-in absolute left-3 right-3 bottom-3 rounded-xl border border-emerald-600/60 bg-white p-3 shadow-lg"><div class="flex items-center justify-between"><span class="text-[9px] font-black bg-[#FF5500] text-white rounded px-1.5 py-0.5">KS #4</span><span class="text-[9px] font-black text-emerald-700">✓ Gemt på kortet</span></div><div class="text-xs font-black text-[#12233F] mt-1">Støbning søjle D</div><div class="text-[10px] text-[#566070]"><i class="fa-solid fa-location-dot text-[#FF5500] mr-1"></i>Placeret hvor du står</div></div>` : '';
+            return step === 0 ? `<div class="lp-scene relative w-full h-full">${worker}</div>` : `<div class="lp-scene relative w-full h-full">${map}${card}</div>`;
+        },
+        card(done) { return LP_SCEN.kort.scene(done ? 6 : 0); },
+        run() {
+            const K = LP_SCEN.kort, R = () => $('lp-result');
+            R().innerHTML = K.scene(0);
+            lpAt(3400, () => { R().innerHTML = K.scene(1); });
+            lpAt(4200, () => { const e = $('lp-p1'); if (e) e.classList.add('on'); });
+            lpAt(4900, () => { const e = $('lp-p2'); if (e) e.classList.add('on'); });
+            lpAt(5600, () => { const e = $('lp-p3'); if (e) e.classList.add('on'); });
+            lpAt(6600, () => { const e = $('lp-me'); if (e) e.classList.add('on'); });
+            lpAt(8000, () => { R().innerHTML = K.scene(6); });
+            return 12500;
+        }
     }
 };
 function lpDemoStart(mode) {
@@ -9307,6 +9369,9 @@ function lpDemoStart(mode) {
     const on = 'flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg bg-[#12233F] text-white transition', off = 'flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-[#566070] hover:text-[#12233F] transition';
     $('lp-tab-ks').className = mode === 'ks' ? on : off;
     $('lp-tab-timer').className = mode === 'timer' ? on : off;
+    $('lp-tab-kort').className = mode === 'kort' ? on : off;
+    $('lp-microw').style.display = mode === 'kort' ? 'none' : '';
+    $('lp-result').className = mode === 'kort' ? 'relative overflow-hidden' : 'px-4 pt-1 space-y-2'; $('lp-result').style.height = mode === 'kort' ? '438px' : '';
     $('lp-ph-title').textContent = sc.title;
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const cycle = () => {
