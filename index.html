@@ -109,6 +109,11 @@
         #hero-demo .h-cur b { position: absolute; inset: 0; border-radius: 50%; background: rgba(18,35,63,.28); border: 2.5px solid #fff; box-shadow: 0 3px 8px rgba(0,0,0,.3); }
         #hero-demo .h-cur i { position: absolute; inset: -6px; border-radius: 50%; border: 2.5px solid #FF5500; opacity: 0; }
         #hero-demo .h-cap { position: absolute; left: 20px; right: 20px; bottom: 16px; text-align: center; z-index: 8; opacity: 0; transform: translateY(8px); transition: opacity .4s ease, transform .4s ease; }
+        #hero-demo .h-world { position: absolute; inset: 0; z-index: 1; opacity: 0; transition: opacity .5s ease; overflow: hidden; }
+        #hero-demo .h-off { position: absolute; inset: 0; z-index: 2; opacity: 0; transition: opacity .5s ease; pointer-events: none; overflow: hidden; }
+        #hero-demo .h-cap.pill { left: 50%; right: auto; transform: translate(-50%, 8px); width: max-content; max-width: calc(100% - 36px); background: rgba(255,255,255,.93); border-radius: 16px; padding: 8px 16px; box-shadow: 0 6px 18px rgba(18,35,63,.18); }
+        #hero-demo .h-cap.pill.on { transform: translate(-50%, 0); }
+        #w-pin { transition: opacity .3s; }
         #hero-demo .h-cap.on { opacity: 1; transform: none; }
         #hero-demo .h-cap b { display: block; font-size: 22px; line-height: 1.15; font-weight: 900; letter-spacing: -.01em; color: #12233F; }
         #hero-demo .h-cap span { display: block; margin-top: 4px; font-size: 13px; font-weight: 800; color: #FF5500; }
@@ -9382,8 +9387,8 @@ function lpPrice(v) {
 const LP = { pack: null };
 /* ------------------------------ HERO-DEMO (samlet produktfilm, 5 kapitler) ------------------------------ */
 const HERO = { t: 0, playing: true, vis: true, raf: 0, last: 0, cur: -1, el: {}, reduce: false, built: false,
-    SC: [{ d: 7, n: 'Start' }, { d: 9, n: 'Timer & diæt' }, { d: 10, n: 'KS' }, { d: 10, n: 'Fejl & opgaver' }, { d: 14, n: 'Kontor & rapport' }],
-    CAP: ['Slut med løse sedler og dobbeltarbejde.', 'Timer & diæter på få sekunder.', 'KS med GPS, foto og stemme.', 'Fra fejl til løst opgave — uden opkald.', 'Klar til bygherre og løn med ét klik'] };
+    SC: [{ d: 8, n: 'Pladsen' }, { d: 9, n: 'Timer' }, { d: 10, n: 'KS' }, { d: 11, n: 'Sikkerhed' }, { d: 10, n: 'Kontor' }, { d: 9, n: 'Opgave' }, { d: 14, n: 'Rapport' }],
+    CAP: ['En dag på pladsen starter her.', 'Timer & diæter på få sekunder.', 'KS med GPS, foto og stemme.', 'Uheld? Opret sikkerhed på stedet.', 'Kontoret opretter fejl og mangler.', 'Opgaven lander lige i lommen.', 'Klar til bygherre og løn med ét klik'] };
 HERO.START = HERO.SC.map((s, i) => HERO.SC.slice(0, i).reduce((a, x) => a + x.d, 0));
 HERO.TOTAL = HERO.SC.reduce((a, x) => a + x.d, 0);
 const hC = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
@@ -9394,7 +9399,7 @@ function hOn(id, c) { const e = hE(id); if (e) e.classList.toggle('on', !!c); }
 function hCls(id, cls, c) { const e = hE(id); if (e) e.classList.toggle(cls, !!c); }
 function hTxt(id, t) { const e = hE(id); if (e && e.textContent !== t) e.textContent = t; }
 function hSty(id, p, v) { const e = hE(id); if (e) e.style[p] = v; }
-function hScr(name) { ['home', 'time', 'cam', 'ks', 'def', 'lock'].forEach(n => hOn('hs-' + n, n === name)); }
+function hScr(name) { ['home', 'time', 'cam', 'ks', 'def', 'lock', 'saf', 'tsk'].forEach(n => hOn('hs-' + n, n === name)); }
 /* Finger-markør: pts = [[t,x,y],…] i skærmkoordinater, taps = tidspunkter for tryk */
 function hCur(id, pts, taps, lt, ox, oy) {
     const e = hE(id); if (!e) return;
@@ -9410,6 +9415,48 @@ function hCur(id, pts, taps, lt, ox, oy) {
 }
 const H_TRENCH = (w, h) => `<svg viewBox="0 0 258 380" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="htg${w}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8B6B4A"/><stop offset="1" stop-color="#5E4630"/></linearGradient><linearGradient id="htp${w}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF8A3D"/><stop offset="1" stop-color="#C2410C"/></linearGradient></defs><rect width="258" height="380" fill="url(#htg${w})"/><path d="M0 70Q60 40 130 60T258 50V0H0Z" fill="#A9C98B"/><path d="M40 120L218 120L190 380H68Z" fill="#3B2A1B"/><path d="M60 250L198 250L192 330L66 330Z" fill="#D9C28F"/><rect x="30" y="262" width="198" height="34" rx="17" fill="url(#htp${w})"/><rect x="30" y="268" width="198" height="8" rx="4" fill="#fff" opacity=".35"/><g fill="#6B5238"><circle cx="20" cy="150" r="8"/><circle cx="238" cy="170" r="10"/><circle cx="14" cy="210" r="6"/></g></svg>`;
 const H_HDR = t => `<div class="h-sb"><span>9:41</span><span><i class="fa-solid fa-signal"></i> <i class="fa-solid fa-battery-full"></i></span></div><div class="h-hd"><img src="logo.png" alt=""><span>${t}</span><span class="live">● Live</span></div>`;
+const H_TIP = (w, h) => `<svg viewBox="0 0 230 108" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"><rect width="230" height="108" fill="#BFE0F5"/><rect y="78" width="230" height="30" fill="#B79F7A"/><g transform="rotate(-34 140 82)"><rect x="104" y="60" width="62" height="20" rx="3" fill="#F5A800"/><rect x="128" y="42" width="32" height="20" rx="3" fill="#F5A800"/><rect x="132" y="46" width="22" height="11" fill="#BFE0F5"/><rect x="100" y="80" width="74" height="11" rx="5" fill="#333"/><path d="M106 66 L74 44 L60 78" stroke="#F5A800" stroke-width="6" fill="none" stroke-linejoin="round"/></g><g fill="#D9CDB8" opacity=".85"><circle cx="64" cy="76" r="11"/><circle cx="50" cy="72" r="8"/><circle cx="78" cy="80" r="8"/></g></svg>`;
+const H_WORLD = (() => {
+    let mast = ''; for (let y = 84; y < 410; y += 26) mast += `<path d="M66 ${y} L78 ${y + 26} M78 ${y} L66 ${y + 26}" stroke="#E8A400" stroke-width="2" fill="none"/>`;
+    return `<svg viewBox="0 0 520 560" width="520" height="560" style="position:absolute;left:0;top:0"><defs><linearGradient id="hw-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FD0F5"/><stop offset=".8" stop-color="#FFF1DC"/></linearGradient><linearGradient id="hw-gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D5C19F"/><stop offset="1" stop-color="#A88F68"/></linearGradient></defs>
+<rect width="520" height="560" fill="url(#hw-sky)"/><circle cx="446" cy="72" r="30" fill="#FFE08A" opacity=".9"/>
+<g id="w-cl1" fill="#fff" opacity=".85"><ellipse cx="80" cy="70" rx="38" ry="12"/><ellipse cx="108" cy="62" rx="26" ry="11"/></g><g id="w-cl2" fill="#fff" opacity=".7"><ellipse cx="300" cy="124" rx="34" ry="10"/><ellipse cx="322" cy="117" rx="22" ry="9"/></g>
+<g><rect x="332" y="196" width="168" height="224" fill="#C4C8CE"/><rect x="332" y="248" width="168" height="9" fill="#8E949E"/><rect x="332" y="308" width="168" height="9" fill="#8E949E"/><rect x="332" y="368" width="168" height="9" fill="#8E949E"/><rect x="332" y="190" width="9" height="230" fill="#A3A9B2"/><rect x="412" y="190" width="9" height="230" fill="#A3A9B2"/><rect x="491" y="190" width="9" height="230" fill="#A3A9B2"/><rect x="341" y="378" width="71" height="42" fill="#C9704A"/><rect x="421" y="318" width="70" height="50" fill="#C9704A"/><path d="M341 378h71M341 392h71M341 406h71M421 332h70M421 346h70M421 360h70" stroke="#A9573A" stroke-width="1.5"/></g>
+<g><rect x="66" y="62" width="12" height="358" fill="#E8A400" opacity=".35"/>${mast}<rect x="64" y="60" width="16" height="8" fill="#E8A400"/><rect x="20" y="50" width="318" height="9" fill="#E8A400"/><rect x="20" y="59" width="318" height="3" fill="#B97F00"/><rect x="44" y="34" width="26" height="18" rx="3" fill="#F5C242"/><rect x="26" y="59" width="28" height="22" fill="#6B7280"/>
+<g id="w-hook"><line x1="270" y1="62" x2="270" y2="168" stroke="#374151" stroke-width="2"/><rect x="252" y="168" width="36" height="22" rx="2" fill="#B98A52"/><path d="M252 168h36M270 168v22" stroke="#8A6538" stroke-width="2"/></g></g>
+<rect y="420" width="520" height="140" fill="url(#hw-gr)"/><rect y="420" width="520" height="3" fill="#8F7A57"/>
+<g><rect x="20" y="352" width="6" height="68" fill="#6B7280"/><rect x="108" y="352" width="6" height="68" fill="#6B7280"/><rect x="14" y="338" width="106" height="34" rx="4" fill="#12233F"/><text x="67" y="360" text-anchor="middle" font-size="13" font-weight="900" fill="#FF5500" font-family="Inter,Arial,sans-serif">BYGGEPLADS</text></g>
+<g><rect x="262" y="440" width="250" height="40" rx="4" fill="#6B4F34"/><rect x="262" y="440" width="250" height="5" fill="#53391F"/><rect x="262" y="472" width="250" height="8" fill="#C9B07A"/><rect x="290" y="452" width="190" height="16" rx="8" fill="#9AA0A8"/><rect x="290" y="454" width="190" height="4" rx="2" fill="#C5CAD1"/></g>
+<g id="w-exc"><rect x="300" y="396" width="136" height="24" rx="12" fill="#2B2F36"/><circle cx="318" cy="408" r="7" fill="#6B7280"/><circle cx="368" cy="408" r="7" fill="#6B7280"/><circle cx="418" cy="408" r="7" fill="#6B7280"/><rect x="316" y="356" width="92" height="40" rx="5" fill="#F5A800"/><rect x="366" y="326" width="46" height="36" rx="5" fill="#F5A800"/><rect x="372" y="332" width="30" height="20" rx="2" fill="#BFE0F5"/><rect x="316" y="372" width="30" height="8" fill="#D48E00"/><path d="M322 368 L284 322 L262 372" stroke="#F5A800" stroke-width="9" fill="none" stroke-linejoin="round" stroke-linecap="round"/><path d="M254 366 L276 372 L268 396 L246 388 Z" fill="#6B7280"/></g>
+<g id="w-dust" opacity="0" fill="#E3D7BF"><circle id="wd1" cx="290" cy="410" r="14"/><circle id="wd2" cx="268" cy="414" r="11"/><circle id="wd3" cx="312" cy="414" r="12"/></g>
+<g id="w-warn" opacity="0"><path d="M390 322 L424 382 L356 382 Z" fill="#FFD21F" stroke="#B91C1C" stroke-width="5" stroke-linejoin="round"/><text x="390" y="371" text-anchor="middle" font-size="34" font-weight="900" fill="#B91C1C" font-family="Inter,Arial,sans-serif">!</text></g>
+<g id="w-pin" opacity="0"><path d="M360 352c-9 0-15 7-15 15 0 11 15 26 15 26s15-15 15-26c0-8-6-15-15-15z" fill="#FF5500"/><circle cx="360" cy="367" r="5.5" fill="#fff"/></g>
+<g id="w-man"><g id="w-mf"><g id="wm-l1"><line x1="0" y1="0" x2="0" y2="40" stroke="#1F2A44" stroke-width="9" stroke-linecap="round"/><rect x="-6" y="38" width="15" height="7" rx="3" fill="#3B2F25"/></g><g id="wm-l2"><line x1="0" y1="0" x2="0" y2="40" stroke="#2B3957" stroke-width="9" stroke-linecap="round"/><rect x="-6" y="38" width="15" height="7" rx="3" fill="#3B2F25"/></g>
+<g id="wm-a2"><line x1="0" y1="0" x2="0" y2="28" stroke="#E25B00" stroke-width="8" stroke-linecap="round"/><circle cx="0" cy="30" r="4.5" fill="#F2C29B"/></g>
+<rect x="-14" y="-86" width="28" height="46" rx="9" fill="#FF6A00"/><rect x="-14" y="-72" width="28" height="5" fill="#EAF25C"/><rect x="-14" y="-58" width="28" height="5" fill="#EAF25C"/>
+<circle cx="1" cy="-98" r="11" fill="#F2C29B"/><path d="M-12 -100a13 13 0 0 1 26 0z" fill="#FFD21F"/><rect x="-14" y="-101" width="32" height="4" rx="2" fill="#E8B800"/>
+<g id="wm-a1"><line x1="0" y1="0" x2="0" y2="28" stroke="#FF6A00" stroke-width="8" stroke-linecap="round"/><circle cx="0" cy="30" r="4.5" fill="#F2C29B"/><g id="wm-ph"><rect x="-8" y="26" width="16" height="10" rx="2" fill="#12233F"/><rect x="-6" y="28" width="12" height="6" rx="1" fill="#7FB4FF"/></g></g></g>
+<g id="w-tag"><rect x="-28" y="-136" width="56" height="17" rx="8.5" fill="#12233F"/><text x="0" y="-124" text-anchor="middle" font-size="10" font-weight="800" fill="#fff" font-family="Inter,Arial,sans-serif">Jeppe</text></g></g>
+</svg><div id="h-wflash" style="position:absolute;inset:0;background:#DC2626;opacity:0;pointer-events:none"></div>`;
+})();
+const H_OFF = `<svg viewBox="0 0 520 560" width="520" height="560" style="position:absolute;left:0;top:0"><rect width="520" height="560" fill="#EEE8DC"/>
+<rect x="22" y="36" width="112" height="140" rx="4" fill="#BFE0F5" stroke="#fff" stroke-width="8"/><path d="M78 36v140M22 106h112" stroke="#fff" stroke-width="5"/>
+<g><rect x="400" y="40" width="96" height="6" fill="#B5A98F"/><rect x="408" y="14" width="14" height="26" fill="#2563EB"/><rect x="424" y="10" width="14" height="30" fill="#FF5500"/><rect x="440" y="18" width="14" height="22" fill="#047857"/><rect x="456" y="12" width="14" height="28" fill="#12233F"/><rect x="472" y="20" width="14" height="20" fill="#B91C1C"/></g>
+<rect x="28" y="218" width="20" height="116" rx="8" fill="#3B4A63"/><rect x="50" y="206" width="54" height="124" rx="14" fill="#3E6FB5"/><circle cx="92" cy="172" r="22" fill="#F2C29B"/><path d="M70 166a22 22 0 0 1 44-6c-8-9-28-12-44 6z" fill="#4B3A2A"/><circle cx="104" cy="172" r="7" fill="none" stroke="#12233F" stroke-width="2"/><path d="M96 190q8 5 16 0" stroke="#A8665A" stroke-width="2" fill="none"/>
+<g id="wo-tag"><rect x="36" y="120" width="92" height="19" rx="9.5" fill="#12233F"/><text x="82" y="133" text-anchor="middle" font-size="10" font-weight="800" fill="#fff" font-family="Inter,Arial,sans-serif">Morten · Kontor</text></g>
+<rect x="0" y="318" width="520" height="14" fill="#8A6A47"/><rect x="0" y="332" width="520" height="228" fill="#A98558"/><rect x="0" y="332" width="520" height="4" fill="#00000018"/>
+<rect x="292" y="298" width="56" height="22" fill="#374151"/><rect x="170" y="306" width="150" height="12" rx="4" fill="#2B3445"/><path d="M178 311h134" stroke="#4B5565" stroke-width="3" stroke-dasharray="5 4"/>
+<g id="wo-arm"><path d="M84 232 L124 276 L176 304" stroke="#3E6FB5" stroke-width="15" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="180" cy="304" r="8" fill="#F2C29B"/></g>
+<rect x="430" y="286" width="26" height="32" rx="4" fill="#fff"/><path d="M456 294q12 2 0 16" stroke="#fff" stroke-width="4" fill="none"/><rect x="434" y="292" width="18" height="6" fill="#6B4F34"/></svg>
+<div id="ho-mon" style="position:absolute;left:150px;top:44px;width:340px;height:258px;border:8px solid #1F2937;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 14px 30px rgba(18,35,63,.3)">
+ <div style="position:absolute;left:0;right:0;top:0;height:26px;background:#12233F;display:flex;align-items:center;gap:6px;padding:0 10px;color:#fff;font-size:10px;font-weight:900"><img src="logo.png" alt="" style="width:16px;height:16px;object-fit:contain">UniSjak · Kontor</div>
+ <div style="position:absolute;left:12px;top:34px;font-size:13px;font-weight:900;color:#12233F">Fejl og mangler <span style="font-size:10px;font-weight:700;color:#8A93A3">Østergade 12</span></div>
+ ${[['1', 62, '#DC2626', 'RØD'], ['2', 106, '#F59E0B', 'GUL'], ['3', 150, '#F59E0B', 'GUL']].map(r => `<div class="h-ho" id="ho-r${r[0]}" style="position:absolute;left:12px;right:12px;top:${r[1]}px;height:38px;border-radius:10px;background:#F7F5F1;border:1px solid #E7E3DA;display:flex;align-items:center;gap:8px;padding:0 10px;font-size:11px;font-weight:800;color:#12233F"><i style="width:9px;height:9px;border-radius:50%;background:${r[2]};flex:none"></i><span id="ho-t${r[0]}" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>${r[0] === '1' ? '<span id="ho-caret" style="color:#FF5500">▍</span><span id="ho-as" style="flex:none;width:76px;height:24px;border-radius:8px;border:1.5px dashed #8A93A3;color:#566070;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:800">Tildel…</span>' : '<span style="font-size:9px;color:#8A93A3">Ikke tildelt</span>'}</div>`).join('')}
+ <div class="h-ho" id="ho-dd" style="position:absolute;right:12px;top:94px;width:150px;border-radius:12px;background:#fff;border:1px solid #E7E3DA;box-shadow:0 10px 24px rgba(18,35,63,.22);z-index:3;overflow:hidden"><div id="ho-o1" style="height:34px;display:flex;align-items:center;gap:7px;padding:0 10px;font-size:11px;font-weight:800;color:#12233F"><i class="fa-solid fa-user" style="color:#FF5500"></i>Jeppe Nielsen</div><div style="height:34px;display:flex;align-items:center;gap:7px;padding:0 10px;font-size:11px;font-weight:800;color:#12233F;border-top:1px solid #F0ECE3"><i class="fa-solid fa-helmet-safety" style="color:#566070"></i>Kasper VVS</div></div>
+ <div id="ho-btn" style="position:absolute;left:12px;right:12px;top:198px;height:34px;border-radius:11px;background:#FF5500;color:#fff;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .3s,transform .15s"><i class="fa-solid fa-paper-plane"></i><span id="ho-bt">Opret opgave</span></div>
+</div>
+<i class="fa-solid fa-paper-plane" id="ho-plane" style="position:absolute;left:0;top:0;font-size:26px;color:#FF5500;opacity:0;z-index:4"></i>
+<div class="h-cur" id="hc-o"><b></b><i></i></div>`;
 function lpHeroBuild() {
     const root = document.getElementById('hero-stage'); if (!root || HERO.built) return; HERO.built = true;
     const paper = (id, x, y, w, h, rot, gx, gy, gr, inner, cls, bg) => `<div class="h-paper ${cls || ''}" id="${id}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;transform:rotate(${rot}deg);${bg ? 'background:' + bg + ';' : ''}--gx:${gx}px;--gy:${gy}px;--gr:${gr}deg;animation-delay:${(x % 7) / 10}s">${inner}</div>`;
@@ -9417,7 +9464,8 @@ function lpHeroBuild() {
     const tile = (top, ic, bg, col, t, s, id) => `<div class="h-tile h-ho" id="${id}" style="top:${top}px"><i class="ic fa-solid ${ic}" style="background:${bg};color:${col}"></i><span>${t}<small>${s}</small></span></div>`;
     const wk = [['Man', '8,0', 80], ['Tir', '7,5', 75], ['Ons', '8,0', 80], ['Tor', '8,5', 85]].map((r, i) => `<div class="h-abs" style="left:14px;right:14px;top:${164 + i * 24}px;height:20px;display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;color:#566070"><span style="width:26px">${r[0]}</span><span style="flex:1;height:8px;border-radius:4px;background:#E7E3DA;overflow:hidden"><i style="display:block;height:100%;width:${r[2]}%;background:#12233F"></i></span><span style="width:34px;text-align:right;color:#12233F">${r[1]} t</span></div>`).join('');
     root.innerHTML = `
-    <div id="h-papers">
+    <div class="h-world" id="h-world">${H_WORLD}</div><div class="h-off" id="h-off">${H_OFF}</div>
+    <div id="h-papers" style="display:none">
       ${paper('hp1', 30, 70, 104, 130, -9, -420, -200, -70, '<b style="color:#12233F">Timeseddel</b><br>Uge 47 …<br>Man 7-15<br>Tir ?? <br>Ons 7-15,5<br>(diæt?)', 'h-lines')}
       ${paper('hp2', 140, 40, 96, 120, 7, 80, -420, 55, '<b style="color:#12233F">Følgeseddel</b><br>Silvan A/S<br>12 stk. gips<br>Nr. 48213', 'h-lines')}
       ${paper('hp3', 250, 80, 100, 128, -5, 520, -260, 80, '<b style="color:#12233F">Timer</b><br>mandag + tirsd.<br>glemt tirsdag!<br>kørsel 24 km?', 'h-lines')}
@@ -9493,6 +9541,33 @@ function lpHeroBuild() {
             <div class="h-abs" style="left:14px;right:14px;top:262px;min-height:86px;border-radius:14px;background:#fff;border:1px solid #E7E3DA;padding:10px 12px;font-size:13px;font-weight:700;color:#12233F;line-height:1.35"><div style="font-size:9px;font-weight:900;color:#8A93A3;letter-spacing:.06em;margin-bottom:4px">BESKRIVELSE</div><span id="h-type"></span><span id="h-caret" style="color:#FF5500">▍</span></div>
             <div class="h-abs h-ho" id="h-saved" style="left:14px;right:14px;top:366px;border-radius:14px;background:#ECFDF5;border:1px solid #A7F3D0;padding:10px 12px;font-size:12px;font-weight:900;color:#047857"><i class="fa-solid fa-circle-check mr-1"></i>Gemt som KS #12<small style="display:block;font-weight:700;color:#065F46;font-size:10px">Med foto, GPS og tidsstempel · klar til rapport</small></div>
           </div>
+          <div class="h-scr" id="hs-saf">${H_HDR('Sikkerhed')}
+            <div class="h-abs" style="left:14px;right:14px;top:68px;height:108px;border-radius:16px;overflow:hidden;border:1px solid #E7E3DA">${H_TIP(230, 108)}<div class="h-abs" style="left:8px;bottom:8px;background:#0B1424ee;color:#fff;border-radius:8px;padding:4px 7px;font-size:8px;font-weight:800"><i class="fa-solid fa-lock" style="color:#FF5500"></i> 55.54284, 9.51486 · 11:24</div><div class="h-abs" id="h-sfl" style="inset:0;background:#fff;opacity:0"></div></div>
+            <div class="h-abs" style="left:14px;top:186px;font-size:9px;font-weight:900;color:#566070;letter-spacing:.06em">TYPE</div>
+            ${[['hsc1', 14, 100, 'Maskine væltet'], ['hsc2', 120, 70, 'Nær-ulykke'], ['hsc3', 196, 48, 'Andet']].map(c => `<div class="h-abs" id="${c[0]}" style="left:${c[1]}px;width:${c[2]}px;top:200px;height:28px;border-radius:9px;border:1.5px solid #E7E3DA;background:#fff;font-size:10px;font-weight:800;color:#566070;display:flex;align-items:center;justify-content:center;transition:background .25s,border-color .25s,color .25s">${c[3]}</div>`).join('')}
+            <div class="h-abs" style="left:14px;top:238px;font-size:9px;font-weight:900;color:#566070;letter-spacing:.06em">ALVORLIGHED</div>
+            ${[['hsv1', 14, 70, 'Lav'], ['hsv2', 90, 70, 'Middel'], ['hsv3', 166, 78, 'Høj']].map(c => `<div class="h-abs" id="${c[0]}" style="left:${c[1]}px;width:${c[2]}px;top:252px;height:30px;border-radius:9px;border:1.5px solid #E7E3DA;background:#fff;font-size:11px;font-weight:900;color:#566070;display:flex;align-items:center;justify-content:center;transition:background .25s,border-color .25s,color .25s">${c[3]}</div>`).join('')}
+            <div class="h-abs" style="left:14px;right:14px;top:294px;height:84px;border-radius:12px;background:#fff;border:1px solid #E7E3DA;padding:8px 10px;font-size:12px;font-weight:700;color:#12233F;line-height:1.35"><div style="font-size:9px;font-weight:900;color:#8A93A3;letter-spacing:.06em;margin-bottom:3px">BESKRIVELSE</div><span id="h-stype"></span><span id="h-scaret" style="color:#DC2626">▍</span></div>
+            <div class="h-btn" id="h-sbtn" style="left:14px;right:14px;top:392px;height:48px;background:#DC2626;font-size:14px"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Opret sikkerhedssag</div>
+            <div class="h-abs h-ho" id="h-stoast" style="left:14px;right:14px;top:452px;border-radius:14px;background:#ECFDF5;border:1px solid #A7F3D0;padding:9px 12px;font-size:12px;font-weight:900;color:#047857"><i class="fa-solid fa-circle-check mr-1"></i>Sikkerhedssag oprettet<small style="display:block;font-weight:700;color:#065F46;font-size:10px">Sikkerhedsleder og kontor er underrettet</small></div>
+          </div>
+          <div class="h-scr" id="hs-lock" style="background:linear-gradient(160deg,#1B2B49,#0B1424)">
+            <div class="h-abs" style="left:0;right:0;top:54px;text-align:center;color:#fff"><div style="font-size:11px;font-weight:700;opacity:.8">lørdag 28. november</div><div style="font-size:54px;font-weight:300;line-height:1.1">11:24</div></div>
+            <div class="h-abs h-pop" id="h-push2" style="left:12px;right:12px;top:170px;border-radius:18px;background:#fffffff2;padding:11px 12px;box-shadow:0 12px 26px rgba(0,0,0,.35);border-left:5px solid #10B981;transform-origin:center top">
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;color:#566070"><img src="logo.png" alt="" style="width:16px;height:16px;object-fit:contain"><span>UniSjak</span><span style="margin-left:auto">nu</span><i class="fa-solid fa-circle" style="color:#10B981;font-size:7px"></i></div>
+              <div style="font-size:13px;font-weight:900;color:#12233F;margin-top:5px">Ny opgave til dig</div>
+              <div style="font-size:12px;font-weight:700;color:#12233F">Mangler afslutning ved brønd</div>
+              <div style="font-size:10px;color:#566070;margin-top:2px">Østergade 12 · fra Morten</div></div>
+          </div>
+          <div class="h-scr" id="hs-tsk">${H_HDR('Opgaver')}
+            <div class="h-abs" id="h-tcard" style="left:14px;right:14px;top:72px;height:158px;border-radius:16px;background:#fff;border:1.5px solid #FF5500;padding:12px;transition:background .3s,border-color .3s">
+              <span id="h-tbadge" style="font-size:9px;font-weight:900;background:#FF5500;color:#fff;border-radius:5px;padding:2px 7px;transition:background .3s">NY · FRA MORTEN</span>
+              <div style="font-size:15px;font-weight:900;color:#12233F;margin-top:9px">Mangler afslutning ved brønd</div>
+              <div style="font-size:10px;color:#566070;margin-top:3px"><i class="fa-solid fa-location-dot" style="color:#FF5500"></i> Østergade 12 · Fejl og mangler</div>
+              <div style="margin-top:10px;font-size:10px;font-weight:800;color:#566070"><i class="fa-regular fa-clock"></i> Frist i dag kl. 15:00</div></div>
+            <div class="h-btn" id="h-tdone" style="left:14px;right:14px;top:252px;height:56px;background:#047857;font-size:15px"><i class="fa-solid fa-check mr-2"></i>Markér som løst</div>
+            <div class="h-abs h-ho" id="h-tok" style="left:14px;right:14px;top:326px;border-radius:14px;background:#ECFDF5;border:1px solid #A7F3D0;padding:10px 12px;font-size:12px;font-weight:900;color:#047857"><i class="fa-solid fa-circle-check mr-1"></i>Løst<small style="display:block;font-weight:700;color:#065F46;font-size:10px">Kontoret kan se det med det samme</small></div>
+          </div>
           <div class="h-scr" id="hs-def">${H_HDR('KS-punkter')}
             <div class="h-abs" style="left:14px;right:14px;top:68px;height:44px;border-radius:12px;background:#fff;border:1px solid #E7E3DA;display:flex;align-items:center;gap:8px;padding:0 12px;font-size:12px;font-weight:800;color:#12233F"><i class="fa-solid fa-circle-check" style="color:#047857"></i>Støbning søjle A<span style="margin-left:auto;font-size:9px;color:#8A93A3">i går</span></div>
             <div class="h-abs h-ho" id="h-defc" style="left:14px;right:14px;top:122px;height:124px;border-radius:16px;background:#FEF2F2;border:1.5px solid #DC2626;padding:10px 12px">
@@ -9538,20 +9613,36 @@ function lpHeroFit() {
     w.style.setProperty('--hs', k); const box = document.getElementById('hero-box'); if (box) { box.style.height = Math.round(560 * k) + 'px'; box.style.width = Math.round(520 * k) + 'px'; }
 }
 /* ---- Scener: hver update(lt) sætter hele tilstanden ud fra tiden (så play/pause/spring altid er korrekt) ---- */
+function hAttr(id, n, v) { const e = hE(id); if (e) e.setAttribute(n, v); }
+function hLerp(a, b, k) { return a + (b - a) * k; }
+function hPh(s) { hCls('h-p1', 'fold', s === 'fold'); hCls('h-p1', 'side', s === 'side'); hCls('h-p1', 'gone', s === 'gone'); hCls('h-p2', 'on', false); }
+function hWorld(v) { hSty('h-world', 'opacity', v ? 1 : 0); hSty('h-off', 'opacity', v === 0 ? 1 : 0); if (v !== 1) hSty('h-world', 'transform', ''); }
+/* Byggemanden: x = position på jorden, o = {w:går, face:±1, ph:telefon løftet 0..1, up:arme op 0..1, t:lokal tid} */
+function hMan(x, o) {
+    const ph = o.t * 9, sw = o.w ? Math.sin(ph) : 0, bob = o.w ? -Math.abs(Math.sin(ph)) * 2.5 : 0, raise = o.ph || 0, up = o.up || 0;
+    hAttr('w-man', 'transform', 'translate(' + x + ',' + (420 + bob) + ')'); hAttr('w-mf', 'transform', 'scale(' + (o.face || 1) + ',1)');
+    hAttr('wm-l1', 'transform', 'translate(0,-42) rotate(' + (sw * 26) + ')'); hAttr('wm-l2', 'transform', 'translate(0,-42) rotate(' + (-sw * 26) + ')');
+    let a = hLerp(-sw * 28, -98, raise); a = hLerp(a, -168, up); let b = hLerp(sw * 28, -14, raise); b = hLerp(b, -172, up);
+    hAttr('wm-a1', 'transform', 'translate(3,-80) rotate(' + a + ')'); hAttr('wm-a2', 'transform', 'translate(-3,-80) rotate(' + b + ')');
+    hAttr('wm-ph', 'opacity', raise > .05 && up < .5 ? 1 : 0);
+}
+function hAmbient() {
+    const t = HERO.t; hAttr('w-cl1', 'transform', 'translate(' + ((t * 4) % 560 - 40) + ',0)'); hAttr('w-cl2', 'transform', 'translate(' + (-((t * 3) % 560) + 40) + ',0)');
+    hAttr('w-hook', 'transform', 'rotate(' + (Math.sin(t * 1.3) * 3.5) + ' 270 62)');
+}
 const HU = [
-    function (lt) { // 1: problem -> løsning
-        hSty('h-papers', 'opacity', hK(lt, 0, .7)); hSty('h-papers', 'display', '');
-        const gone = lt >= 2.4; for (let i = 1; i <= 10; i++) hCls('hp' + i, 'gone', lt >= 2.4 + i * .04);
-        const sk = hK(lt, 2.0, 2.9); hSty('h-streak', 'left', (-200 + sk * 760) + 'px'); hSty('h-streak', 'opacity', sk > 0 && sk < 1 ? 1 : 0);
-        hCls('h-p1', 'fold', lt < 3.0); hCls('h-p1', 'side', false); hCls('h-p2', 'on', false); hCls('h-p1', 'gone', false);
-        hScr(lt >= 3.0 ? 'home' : '');
-        [['ht1', 3.6], ['ht2', 3.8], ['ht3', 4.0], ['ht4', 4.2]].forEach(a => hOn(a[0], lt >= a[1]));
-        hCap(0, lt >= 3.2);
+    function (lt) { // 1: Pladsen – byggemanden går ind på byggepladsen
+        hSty('h-papers', 'display', 'none'); hWorld(1); hPh(lt >= 6.2 ? 'side' : 'fold'); hScr(lt >= 6.2 ? 'home' : '');
+        hCls('h-cap', 'pill', true); hCap(0, lt >= .6);
+        const mv = hK(lt, .2, 5.6); hMan(-30 + 500 * mv, { w: mv > 0 && mv < 1, t: lt, ph: hK(lt, 5.7, 6.3) });
+        hAttr('w-exc', 'transform', ''); hAttr('w-dust', 'opacity', 0); hAttr('w-warn', 'opacity', 0); hAttr('w-pin', 'opacity', 0); hSty('h-wflash', 'opacity', 0);
         hCur('hc-p', [[9, 0, 0], [10, 0, 0]], [], lt, 7, 7);
+        [['ht1', 6.9], ['ht2', 7.1], ['ht3', 7.3], ['ht4', 7.5]].forEach(a => hOn(a[0], lt >= a[1]));
     },
     function (lt) { // 2: Registrér timer (som i appen)
-        hSty('h-papers', 'opacity', 0);
-        hCls('h-p1', 'fold', false); hCls('h-p1', 'side', false); hCls('h-p2', 'on', false); hCls('h-p1', 'gone', false);
+        hSty('h-papers', 'display', 'none'); hWorld(1); hPh('side'); hCls('h-cap', 'pill', true);
+        hMan(470, { t: lt, ph: 1, face: 1 }); hAttr('w-exc', 'transform', ''); hAttr('w-pin', 'opacity', 0);
+        ['ht1', 'ht2', 'ht3', 'ht4'].forEach(a => hOn(a, true));
         hScr('time'); hCap(1, lt >= .5);
         const open = lt >= .8 && lt < 6.7; hSty('h-tmod', 'transform', open ? 'translateY(0)' : 'translateY(500px)');
         const st = lt >= 2.0; hTxt('h-t-start', st ? '07:00' : '06:00'); hTxt('h-t-sum', st ? '8,0 t' : '9,0 t');
@@ -9563,10 +9654,10 @@ const HU = [
         hOn('hwk5', lt >= 7.0); hOn('hwk6', lt >= 7.8);
         hCur('hc-p', [[.2, 220, 150], [.6, 129, 96], [1.0, 129, 96], [1.7, 70, 209], [2.5, 70, 209], [3.2, 70, 325], [3.6, 70, 325], [5.8, 150, 400], [6.2, 129, 453], [6.8, 129, 453], [7.4, 220, 430]], [.7, 1.9, 3.3, 6.3], lt, 7, 7);
     },
-    function (lt) { // 3: KS m. GPS + stemme
-        hSty('h-papers', 'opacity', 0);
-        hCls('h-p1', 'fold', false); hCls('h-p1', 'side', false); hCls('h-p2', 'on', false); hCls('h-p1', 'gone', false);
-        hCap(2, lt >= .5);
+    function (lt) { // 3: KS m. GPS + stemme – han går hen til grøften
+        hSty('h-papers', 'display', 'none'); hWorld(1); hPh('side'); hCls('h-cap', 'pill', true);
+        const mv = hK(lt, 0, 1.7); hMan(hLerp(470, 372, mv), { w: mv > 0 && mv < 1, t: lt, ph: 1, face: -1 });
+        hAttr('w-exc', 'transform', ''); hAttr('w-pin', 'opacity', lt >= 2.7 ? 1 : 0); hCap(2, lt >= .5);
         if (lt < 4.3) {
             hScr('cam'); hSty('h-flash', 'opacity', lt >= 1.7 && lt < 2.2 ? (1 - hK(lt, 1.7, 2.2)) : 0);
             hSty('h-shut', 'transform', lt >= 1.65 && lt < 1.85 ? 'scale(.8)' : 'scale(1)'); hOn('h-gps', lt >= 2.7);
@@ -9579,22 +9670,63 @@ const HU = [
         hCur('hc-p', [[.5, 220, 400], [1.4, 129, 462], [2.0, 129, 462], [2.3, 220, 400], [4.5, 200, 330], [4.9, 129, 224], [5.6, 129, 224], [6.0, 200, 400]], [1.7, 5.0], lt, 7, 7);
         if (lt < .5) hCur('hc-p', [[9, 0, 0], [10, 0, 0]], [], lt, 7, 7);
     },
-    function (lt) { // 4: fejl -> opgave -> push
-        hSty('h-papers', 'opacity', 0); hCls('h-p1', 'fold', false); hCls('h-p1', 'gone', false);
-        hScr('def'); hCap(3, lt >= .5);
-        hOn('h-defc', lt >= 1.0);
-        hSty('h-sheet', 'transform', lt >= 3.0 ? 'translateY(0)' : 'translateY(270px)');
-        const sel = lt >= 4.8; hSty('hsh1', 'background', sel ? '#FFF3EA' : '#fff'); hSty('hsh1', 'borderColor', sel ? '#FF5500' : '#E7E3DA'); hOn('hsh-ok', lt >= 5.2);
-        hCls('h-p1', 'side', lt >= 6.2); hCls('h-p2', 'on', lt >= 6.2); hOn('h-push', lt >= 7.2);
-        const shake = lt >= 7.2 && lt < 7.6 ? Math.sin((lt - 7.2) * 60) * 3 : 0; hSty('h-push', 'marginLeft', shake + 'px');
-        hCur('hc-p', [[1.2, 230, 300], [2.5, 129, 215], [3.2, 129, 215], [4.4, 129, 343], [5.4, 129, 343], [5.9, 210, 430]], [2.8, 4.7], lt, 7, 7);
+    function (lt) { // 4: Uheld – maskinen vælter, byggemanden opretter sikkerhed
+        hSty('h-papers', 'display', 'none'); hWorld(1); hPh('side'); hCls('h-cap', 'pill', true); hAttr('w-pin', 'opacity', 0);
+        const mv = hK(lt, 0, 1.4), walkL = mv > 0 && mv < 1;
+        const raise = lt < 1.4 ? 1 : (lt < 2.0 ? 1 - hK(lt, 1.4, 2.0) : (lt < 4.4 ? 0 : hK(lt, 4.4, 5.0)));
+        const upk = lt >= 3.5 && lt < 5.0 ? Math.min(hK(lt, 3.5, 3.9), 1 - hK(lt, 4.4, 5.0)) : 0;
+        const jump = lt >= 3.5 && lt < 3.8 ? 8 * Math.sin(hK(lt, 3.5, 3.8) * Math.PI) : 0;
+        hMan(hLerp(372, 480, mv) + (lt >= 3.5 ? 6 : 0), { w: walkL, t: lt, ph: raise, up: upk, face: 1 });
+        if (jump) hAttr('w-man', 'transform', 'translate(' + (hLerp(372, 480, mv) + 6) + ',' + (420 - jump) + ')');
+        let ang = 0, sh = 0;
+        if (lt >= 1.7 && lt < 2.6) ang = -1.8 * Math.sin((lt - 1.7) * 26) * hK(lt, 1.7, 2.1);
+        else if (lt >= 2.6) { const k = hK(lt, 2.6, 3.5); ang = -36 * k * k; if (lt >= 3.5) ang += 5 * Math.abs(Math.sin((lt - 3.5) * 8)) * (1 - hK(lt, 3.5, 4.1)); }
+        hAttr('w-exc', 'transform', 'rotate(' + ang + ' 300 420)');
+        const dk = hK(lt, 3.5, 4.8); hAttr('w-dust', 'opacity', dk > 0 ? .75 * (1 - dk) : 0);
+        hAttr('wd1', 'r', 14 + dk * 24); hAttr('wd2', 'r', 11 + dk * 20); hAttr('wd3', 'r', 12 + dk * 22); hAttr('wd1', 'cy', 410 - dk * 24); hAttr('wd2', 'cy', 414 - dk * 14); hAttr('wd3', 'cy', 414 - dk * 18);
+        hAttr('w-warn', 'opacity', lt >= 4.3 ? 1 : 0);
+        hSty('h-wflash', 'opacity', lt >= 3.5 && lt < 4.0 ? .32 * (1 - hK(lt, 3.5, 4.0)) : 0);
+        if (lt >= 3.5 && lt < 4.1) sh = Math.sin((lt - 3.5) * 70) * 4 * (1 - hK(lt, 3.5, 4.1)); hSty('h-world', 'transform', sh ? 'translate(0,' + sh + 'px)' : '');
+        hCap(3, lt >= .6);
+        if (lt < 4.2) { hScr('home'); } else { hScr('saf'); }
+        hSty('h-sfl', 'opacity', lt >= 4.2 && lt < 4.7 ? 1 - hK(lt, 4.2, 4.7) : 0);
+        const c1 = lt >= 5.6, c3 = lt >= 6.4;
+        hSty('hsc1', 'background', c1 ? '#FEF2F2' : '#fff'); hSty('hsc1', 'borderColor', c1 ? '#DC2626' : '#E7E3DA'); hSty('hsc1', 'color', c1 ? '#B91C1C' : '#566070');
+        hSty('hsv3', 'background', c3 ? '#FEF2F2' : '#fff'); hSty('hsv3', 'borderColor', c3 ? '#DC2626' : '#E7E3DA'); hSty('hsv3', 'color', c3 ? '#B91C1C' : '#566070');
+        const T = 'Rendegraver væltet. Ingen tilskadekomne. Området er spærret af.', n = Math.floor(hK(lt, 6.9, 8.7) * T.length); hTxt('h-stype', T.slice(0, n)); hSty('h-scaret', 'opacity', n < T.length ? 1 : 0);
+        hSty('h-sbtn', 'transform', lt >= 9.2 && lt < 9.4 ? 'scale(.95)' : 'scale(1)'); hOn('h-stoast', lt >= 9.6);
+        hCur('hc-p', [[4.8, 210, 470], [5.5, 64, 214], [6.0, 64, 214], [6.3, 205, 266], [6.9, 205, 266], [8.8, 170, 350], [9.1, 129, 416], [9.9, 129, 416], [10.5, 210, 470]], [5.6, 6.4, 9.2], lt, 7, 7);
     },
-    function (lt) { // 5: kontor + PDF + CTA
-        hSty('h-papers', 'opacity', 0); hCls('h-p2', 'on', false); hCls('h-p1', 'side', false); hCls('h-p1', 'gone', lt >= .2); hScr('');
+    function (lt) { // 5: Kontoret opretter fejl og mangler og tildeler opgave
+        hSty('h-papers', 'display', 'none'); hPh('fold'); hWorld(0); hCls('h-cap', 'pill', true); hCap(4, lt >= .6);
+        hSty('h-wflash', 'opacity', 0);
+        const N = 'Mangler afslutning ved brønd', n = Math.floor(hK(lt, 1.1, 2.5) * N.length);
+        hOn('ho-r1', lt >= .9); hOn('ho-r2', lt >= 2.8); hOn('ho-r3', lt >= 3.1);
+        hTxt('ho-t1', N.slice(0, n)); hTxt('ho-t2', 'Fuge ved dørtrin utæt'); hTxt('ho-t3', 'Maling skal rettes i stuen'); hSty('ho-caret', 'display', lt >= 1.0 && lt < 2.7 ? '' : 'none');
+        const typing = lt >= 1.1 && lt < 3.4; hAttr('wo-arm', 'transform', 'translate(0,' + (typing ? Math.sin(lt * 22) * 2.2 : 0) + ')');
+        const dd = lt >= 4.4 && lt < 5.8; hOn('ho-dd', dd); hSty('ho-o1', 'background', lt >= 5.3 ? '#FFF3EA' : '#fff');
+        const asg = lt >= 5.8; hTxt('ho-as', asg ? 'Jeppe' : 'Tildel…');
+        const ae = hE('ho-as'); if (ae) { ae.style.border = asg ? '1.5px solid #047857' : '1.5px dashed #8A93A3'; ae.style.background = asg ? '#ECFDF5' : 'transparent'; ae.style.color = asg ? '#047857' : '#566070'; }
+        const sent = lt >= 7.0; hSty('ho-btn', 'background', sent ? '#047857' : '#FF5500'); hTxt('ho-bt', sent ? 'Sendt til Jeppe ✓' : 'Opret opgave'); hSty('ho-btn', 'transform', lt >= 6.95 && lt < 7.15 ? 'scale(.95)' : 'scale(1)');
+        const pk = hK(lt, 7.2, 8.8), pe = hE('ho-plane'); if (pe) { pe.style.opacity = pk > 0 && pk < 1 ? 1 : 0; pe.style.transform = 'translate(' + (440 + pk * 150) + 'px,' + (250 - pk * 200) + 'px) rotate(' + (-20 - pk * 10) + 'deg)'; }
+        hCur('hc-o', [[3.6, 480, 230], [4.3, 431, 133], [4.9, 431, 133], [5.4, 408, 166], [6.0, 408, 166], [6.8, 320, 267], [7.4, 320, 267], [8.2, 440, 330]], [4.4, 5.5, 7.0], lt, 0, 0);
+    },
+    function (lt) { // 6: Opgaven lander hos byggemanden (push)
+        hSty('h-papers', 'display', 'none'); hPh('side'); hWorld(1); hCls('h-cap', 'pill', true); hAttr('w-exc', 'transform', 'rotate(-36 300 420)'); hAttr('w-warn', 'opacity', 1); hAttr('w-dust', 'opacity', 0); hAttr('w-pin', 'opacity', 0); hSty('h-wflash', 'opacity', 0);
+        const raise = hK(lt, 1.4, 2.0) * (1 - hK(lt, 6.4, 6.9)), upk = Math.min(hK(lt, 5.8, 6.1), 1 - hK(lt, 6.6, 7.0));
+        hMan(480, { t: lt, ph: raise, up: upk, face: 1 }); hCap(5, lt >= .5);
+        hScr(lt < 2.9 ? 'lock' : 'tsk'); hOn('h-push2', lt >= 1.2);
+        const shake = lt >= 1.2 && lt < 1.7 ? Math.sin((lt - 1.2) * 70) * 3 : 0; hSty('h-phw', 'marginLeft', shake + 'px');
+        const dn = lt >= 5.6; hSty('h-tcard', 'background', dn ? '#ECFDF5' : '#fff'); hSty('h-tcard', 'borderColor', dn ? '#047857' : '#FF5500'); hSty('h-tbadge', 'background', dn ? '#047857' : '#FF5500'); hTxt('h-tbadge', dn ? 'LØST' : 'NY · FRA MORTEN');
+        hSty('h-tdone', 'transform', lt >= 5.1 && lt < 5.3 ? 'scale(.95)' : 'scale(1)'); hOn('h-tok', dn);
+        hCur('hc-p', [[2.0, 200, 330], [2.5, 129, 215], [3.0, 129, 215], [4.2, 200, 300], [4.9, 129, 280], [5.5, 129, 280], [6.3, 210, 420]], [2.6, 5.1], lt, 7, 7);
+    },
+    function (lt) { // 7: kontor + PDF + CTA
+        hSty('h-papers', 'display', 'none'); hCls('h-p2', 'on', false); hCls('h-p1', 'side', false); hCls('h-p1', 'fold', false); hCls('h-p1', 'gone', true); hScr(''); hSty('h-world', 'opacity', 0); hSty('h-off', 'opacity', 0); hCls('h-cap', 'pill', false);
         const desk = lt >= .3 && lt < 9.2; hOn('h-desk', desk);
         [0, 1, 2].forEach(i => hOn('hd-ok' + i, lt >= 3.0 + i * .12)); hOn('hd-pay', lt >= 3.4);
         hSty('hd-appr', 'background', lt >= 2.9 ? '#047857' : '#12233F'); hSty('hd-appr', 'transform', lt >= 2.55 && lt < 2.75 ? 'scale(.94)' : 'scale(1)'); hSty('hd-pdfb', 'transform', lt >= 4.45 && lt < 4.65 ? 'scale(.94)' : 'scale(1)');
-        hOn('h-pdf', lt >= 4.7 && lt < 9.2); hCap(4, lt >= .8); hTxt('h-cap-s', lt >= 9.6 ? 'Prøv UniSjak gratis på unisjak.dk' : '');
+        hOn('h-pdf', lt >= 4.7 && lt < 9.2); hCap(6, lt >= .8); hTxt('h-cap-s', lt >= 9.6 ? 'Prøv UniSjak gratis på unisjak.dk' : '');
         const fin = lt >= 9.2; hOn('h-fin', fin);
         hOn('h-flogo', lt >= 9.5); hOn('h-fname', lt >= 10.1); hOn('h-cta', lt >= 10.6); hOn('h-cta2', lt >= 11.1);
         const rk = hK(lt, 9.5, 10.4); hSty('h-ring', 'opacity', rk > 0 && rk < 1 ? .7 * (1 - rk) : 0); hSty('h-ring', 'transform', 'scale(' + (.5 + rk * 1.8) + ')');
@@ -9611,7 +9743,7 @@ function lpHeroRender() {
     const t = HERO.t; let i = HERO.SC.length - 1; while (i > 0 && t < HERO.START[i]) i--;
     const lt = t - HERO.START[i];
     if (HERO.cur !== i) { HERO.cur = i; hE('h-cap').dataset.i = ''; document.querySelectorAll('#hero-segs .h-seg').forEach((b, k) => b.classList.toggle('act', k === i)); }
-    HU[i](lt);
+    HU[i](lt); hAmbient();
     document.querySelectorAll('#hero-segs .h-seg').forEach((b, k) => { const f = k < i ? 1 : (k === i ? lt / HERO.SC[k].d : 0); b.querySelector('.bar i').style.width = (hC(f) * 100) + '%'; });
     const s = Math.floor(t), tm = document.getElementById('hero-time'); if (tm) tm.textContent = '0:' + String(s).padStart(2, '0') + ' / 0:' + String(Math.round(HERO.TOTAL)).padStart(2, '0');
 }
