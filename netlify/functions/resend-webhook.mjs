@@ -5,6 +5,7 @@
 // Webhook-adresse i Resend:  https://unisjak.dk/.netlify/functions/resend-webhook
 // Events: email.sent, email.delivered, email.bounced, email.complained, email.opened, email.received
 
+import { notifySuper } from './_lib/notify-super.mjs';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { draftReply } from './_lib/ai-draft.mjs';
 
@@ -73,6 +74,7 @@ export default async (req) => {
         p_in_reply_to: hdr(m.headers, 'in-reply-to') || null, p_thread: thread,
         p_from: from, p_to: tos, p_subject: String(m.subject || d.subject || ''), p_text: text, p_attachments: atts
       });
+      await notifySuper(env, { title: (STOP.test(text) ? 'Afmelding fra ' : 'Svar fra ') + from, body: String(m.subject || d.subject || '') + (text ? ' – ' + text.replace(/\s+/g, ' ').slice(0, 110) : ''), tag: 'mail-' + String(d.email_id) });
       if (STOP.test(text)) {   // modtageren beder om at blive fjernet
         await fetch(`${base}/rest/v1/mail_suppressions?on_conflict=email`, { method: 'POST', headers: { ...S, Prefer: 'resolution=ignore-duplicates,return=minimal' }, body: JSON.stringify({ email: from, reason: 'afmeldt' }) });
       } else if (env.ANTHROPIC_API_KEY && msgId) {

@@ -1,6 +1,7 @@
 // Netlify Function: lead-notify  (kaldes af forsiden lige efter en henvendelse)
 // Sender én mail til Morten og en kort bekræftelse til leadet. Kan kun udløses én gang pr. lead (lead_notify_claim).
 // Miljø: RESEND_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+import { notifySuper } from './_lib/notify-super.mjs';
 import { FROM_SYSTEM, REPLY_MAIN, json, UUID, serviceRpc, esc } from './_lib/crm-auth.mjs';
 
 const hits = new Map();
@@ -29,6 +30,7 @@ export default async (req) => {
   const line = (k, v) => v ? `<p style="margin:4px 0"><b>${k}:</b> ${esc(v)}</p>` : '';
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#12233F">${line('Navn', l.name)}${line('Virksomhed', l.company)}${line('E-mail', l.email)}${line('Telefon', l.phone)}${line('Kilde', l.source)}<p style="margin:14px 0 4px"><b>Besked</b></p><p style="white-space:pre-wrap;margin:0">${esc(String(l.text || '').replace(/^Henvendelse fra forsiden:?\s*/, ''))}</p><p style="color:#566070;font-size:12px;margin-top:18px">Ligger nu som lead i Kontrolcenteret.</p></div>`;
   const a = await send(env, { to: 'morten@unisjak.dk', reply_to: l.email, subject: `Nyt lead: ${l.company} – ${l.name}`, html });
+  await notifySuper(env, { title: 'Nyt lead: ' + (l.company || l.name || ''), body: [l.name, l.phone, l.email].filter(Boolean).join(' · '), tag: 'lead-' + b.id });
   const first = String(l.name || '').trim().split(/\s+/)[0] || 'der';
   await send(env, { to: l.email, reply_to: REPLY_MAIN, subject: 'Tak for din henvendelse til UniSjak', html: `<div style="font-family:Arial,Helvetica,sans-serif;color:#12233F"><p>Hej ${esc(first)},</p><p>Tak for din henvendelse. Vi vender tilbage samme dag.</p><p>Du kan altid svare direkte på denne mail.</p><p>Mvh<br>UniSjak</p></div>` });
   return json({ ok: true, sent: a });

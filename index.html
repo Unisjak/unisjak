@@ -1504,20 +1504,21 @@ async function pushSubscribeNow() {
     const r = await sb.rpc('push_register', { p_endpoint: j.endpoint, p_p256dh: k.p256dh, p_auth: k.auth, p_ua: (navigator.userAgent || '').slice(0, 280) });
     if (r.error) throw r.error;
 }
+function pushRerender() { const sa = $('sa-screen'); if (sa && !sa.classList.contains('hidden') && typeof saRender === 'function') saRender(); else if (typeof renderTeam === 'function') renderTeam(); }
 async function pushEnable() {
     try {
-        if (!pushSupported()) { await pushRefresh(); return renderTeam(); }
+        if (!pushSupported()) { await pushRefresh(); return pushRerender(); }
         const perm = await Notification.requestPermission();
-        if (perm !== 'granted') { await pushRefresh(); renderTeam(); return toast('Notifikationer er ikke slået til. Du kan tillade dem i telefonens indstillinger.', 'info'); }
-        await pushSubscribeNow(); await pushRefresh(); renderTeam(); toast('Notifikationer er slået til på denne enhed.', 'ok');
-    } catch (e) { console.error(e); toast('Kunne ikke slå notifikationer til.'); await pushRefresh(); renderTeam(); }
+        if (perm !== 'granted') { await pushRefresh(); pushRerender(); return toast('Notifikationer er ikke slået til. Du kan tillade dem i telefonens indstillinger.', 'info'); }
+        await pushSubscribeNow(); await pushRefresh(); pushRerender(); toast('Notifikationer er slået til på denne enhed.', 'ok');
+    } catch (e) { console.error(e); toast('Kunne ikke slå notifikationer til.'); await pushRefresh(); pushRerender(); }
 }
 async function pushDisable() {
     try {
         const reg = await navigator.serviceWorker.getRegistration('/'); const sub = reg && await reg.pushManager.getSubscription();
         if (sub) { const ep = sub.endpoint; await sub.unsubscribe(); await sb.from('push_subscriptions').delete().eq('endpoint', ep); }
     } catch (e) { console.error(e); }
-    await pushRefresh(); renderTeam(); toast('Notifikationer er slået fra på denne enhed.', 'ok');
+    await pushRefresh(); pushRerender(); toast('Notifikationer er slået fra på denne enhed.', 'ok');
 }
 /* Efter login: har enheden allerede tilladelse, kobles den til den aktuelle bruger (samme telefon kan skifte bruger) */
 async function pushSync() {
@@ -1525,12 +1526,23 @@ async function pushSync() {
     await pushRefresh();
 }
 /* Giv kolleger besked (kun i samme virksomhed; serveren tjekker). Fejl er stille – opgaven er gemt uanset. */
+async function notifySignup() {   // giver superadmin besked om ny virksomhed (serveren henter selv teksten)
+    try { const ses = await sb.auth.getSession(), tok = ses && ses.data && ses.data.session && ses.data.session.access_token; if (!tok) return; fetch('/.netlify/functions/super-notify', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: '{}' }).catch(() => {}); } catch (e) { /* stille */ }
+}
 async function pushAssign(ids, title, body, open, managers) {
     try {
         const to = [...new Set((ids || []).filter(x => x && x !== myId()))]; if (!to.length && !managers) return;
         const ses = await sb.auth.getSession(), tok = ses && ses.data && ses.data.session && ses.data.session.access_token; if (!tok) return;
         await fetch('/.netlify/functions/push-notify', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ user_ids: to, managers: !!managers, title, body: String(body || '').slice(0, 180), url: '/?open=' + (open || 'tasks') }) });
     } catch (e) { /* stille */ }
+}
+function saPushHtml() {
+    const st = S.push.state;
+    if (st === 'checking') return '';
+    const msg = { 'ios-install': 'På iPhone skal UniSjak først lægges på hjemmeskærmen (Del-knappen → "Føj til hjemmeskærm"). Åbn derefter appen derfra og slå notifikationer til her.', unsupported: 'Denne browser understøtter ikke notifikationer.', denied: 'Notifikationer er blokeret. Tillad dem for UniSjak i telefonens indstillinger.', off: 'Få besked på telefonen ved nye leads, svar på mails og nye virksomheder.', on: 'Slået til på denne enhed: nye leads, svar på mails og nye virksomheder.' }[st] || '';
+    const btn = st === 'off' ? `<button type="button" data-act="push-on" class="w-full brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-bell mr-1.5"></i>Slå notifikationer til</button>` : st === 'on' ? `<button type="button" data-act="push-off" class="shrink-0 bg-gray-800 border border-gray-700 text-gray-200 px-4 py-2.5 rounded-xl font-bold text-xs">Slå fra</button>` : '';
+    if (st === 'on') return `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-3 flex items-center justify-between gap-3"><p class="text-xs text-gray-300 min-w-0"><i class="fa-solid fa-bell text-emerald-400 mr-1.5"></i>${esc(msg)}</p>${btn}</div>`;
+    return `<div class="bg-gray-900/80 border border-gray-800 rounded-xl p-3.5 space-y-3"><p class="text-sm text-gray-200 font-bold"><i class="fa-solid fa-bell-slash text-orange-500 mr-1.5"></i>Notifikationer</p><p class="text-xs text-gray-400">${esc(msg)}</p>${btn}</div>`;
 }
 function pushOpen(where) {
     if (!where || !S.started) return;
@@ -1686,7 +1698,7 @@ async function resolveProfile(user) {
             const r = await sb.rpc('create_company', { p_company_name: meta.company_name, p_full_name: meta.full_name, p_source: leadSource() });
             if (!r.error) {
                 prof = await loadMyProfile(user.id);
-                if (prof) await setCompanyIndustry(prof.company_id, meta.industry);
+                if (prof) { await setCompanyIndustry(prof.company_id, meta.industry); notifySignup(); }
             }
             else console.error(r.error);
         }
@@ -1723,6 +1735,7 @@ async function doOnboard(btn) {
         showScreen('boot');
         S.profile = await loadMyProfile(myId());
         await setCompanyIndustry(S.profile.company_id, $('ob-industry').value);
+        notifySignup();
         await startApp();
         showScreen('app');
     } catch (e) { fail(e); showScreen('onboard'); }
@@ -3135,6 +3148,7 @@ async function saEnter() {
     if (!S.profile || S.profile.is_superadmin !== true) return;
     S.sa.tab = 'idag'; S.sa.view = 'list'; S.sa.sel = null; S.sa.selThread = null;
     S.saMode = true; showScreen('sa'); saRender();
+    pushSync().then(() => { if (S.saMode) saRender(); }).catch(() => {});
     saLoadSettings().catch(() => {});
     await saReload();
     saSubscribe();
@@ -3293,8 +3307,9 @@ function saPipelineHtml() {
 }
 function saTodayHtml() {
     const c = S.sa.counts || {}, T = S.sa.today || [];
+    const pushCard = saPushHtml();
     const tile = (n, t, cls, k) => `<button type="button" data-act="sa-kpi" data-k="${k}" class="bg-gray-900/80 border border-gray-800 rounded-xl md:rounded-2xl p-3 md:p-5 text-left active:scale-[.98]"><p class="text-2xl md:text-4xl font-black ${cls}">${Number(n) || 0}</p><p class="text-[10px] md:text-xs text-gray-400 font-bold leading-tight mt-0.5 md:mt-1">${t}</p></button>`;
-    return `<div class="grid grid-cols-4 gap-2">${tile(c.new_30d, 'Nye<br>30 dage', 'text-white', 'nye')}${tile(c.active, 'Aktive<br>kunder', 'text-emerald-400', 'groen')}${tile(c.at_risk, 'I fare', 'text-red-400', 'roed')}${tile(c.churned_30d, 'Sprunget<br>fra', 'text-gray-300', 'inaktiv')}</div>` +
+    return pushCard + `<div class="grid grid-cols-4 gap-2">${tile(c.new_30d, 'Nye<br>30 dage', 'text-white', 'nye')}${tile(c.active, 'Aktive<br>kunder', 'text-emerald-400', 'groen')}${tile(c.at_risk, 'I fare', 'text-red-400', 'roed')}${tile(c.churned_30d, 'Sprunget<br>fra', 'text-gray-300', 'inaktiv')}</div>` +
         `<div class="grid grid-cols-2 gap-2 md:max-w-md"><button type="button" data-act="sa-new-lead" class="bg-gray-800 border border-gray-700 text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-user-plus mr-1.5"></i>Nyt lead</button><button type="button" data-act="sa-new" class="brand-orange text-white py-3.5 rounded-xl font-black text-sm"><i class="fa-solid fa-building-circle-check mr-1.5"></i>Ny kunde</button></div>` + saPipelineHtml() +
         ((S.sa.queue || []).length ? `<button type="button" data-act="sa-tab" data-tab="godkend" class="w-full bg-violet-950/60 border border-violet-700/50 text-violet-200 rounded-xl p-3.5 text-left font-black text-sm"><i class="fa-solid fa-circle-check mr-1.5"></i>${S.sa.queue.length} udkast venter på dit ok</button>` : '') +
         (T.length ? `<h3 class="font-black text-white text-sm pt-1">${T.length >= 40 ? '40+' : T.length} ting kræver dig</h3>` : '') +

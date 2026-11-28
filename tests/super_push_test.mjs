@@ -1,0 +1,37 @@
+import { notifySuper } from '/home/claude/unisjak/netlify/functions/_lib/notify-super.mjs';
+import sn from '/home/claude/unisjak/netlify/functions/super-notify.mjs';
+let ok = 0, bad = 0; const check = (n, c, x) => { if (c) ok++; else bad++; console.log((c ? 'OK   ' : 'FAIL ') + n + (c ? '' : ' -> ' + (x || ''))); };
+const env = { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_ANON_KEY: 'a', SUPABASE_SERVICE_ROLE_KEY: 's', VAPID_PUBLIC_KEY: 'p', VAPID_PRIVATE_KEY: 'k' };
+const J = (o, st = 200) => ({ ok: st < 400, status: st, json: async () => o, text: async () => JSON.stringify(o) });
+const calls = [];
+const mk = (over = {}) => async (url, o = {}) => { calls.push([url, o.method || 'GET']);
+  if (over[url.split('?')[0].split('/').pop()]) return over[url.split('?')[0].split('/').pop()](url, o);
+  if (url.includes('/profiles?is_superadmin=eq.true')) return J([{ id: 'sa1' }]);
+  if (url.includes('/push_subscriptions?user_id=in.(sa1)')) return J([{ id: 'sub1', endpoint: 'https://e/1', p256dh: 'x', auth: 'y' }, { id: 'sub2', endpoint: 'https://e/2', p256dh: 'x', auth: 'y' }]);
+  if (url.includes('/push_subscriptions?id=in.')) return J({});
+  return J({}, 404); };
+let sent = [];
+const send = async (s, p) => { sent.push([s.id, p]); return s.id === 'sub2' ? { ok: false, gone: true } : { ok: true }; };
+let n = await notifySuper(env, { title: 'Nyt lead: Firma\nA/S', body: 'Anna · 12345678', tag: 'lead-1' }, mk(), send);
+check('S1 sender til alle superadmins enheder, døde fjernes', n === 1 && sent.length === 2 && calls.some(c => c[0].includes('id=in.(sub2)') && c[1] === 'DELETE'));
+check('S2 titel renses for linjeskift, url peger på sa', sent[0][1].title === 'Nyt lead: Firma A/S' && sent[0][1].url === '/?open=sa' && sent[0][1].tag === 'lead-1');
+check('S3 uden VAPID-nøgler: 0, ingen fejl', await notifySuper({ ...env, VAPID_PRIVATE_KEY: '' }, { title: 'x' }, mk(), send) === 0);
+check('S4 fejl i database kaster ikke', await notifySuper(env, { title: 'x' }, async () => { throw new Error('net'); }, send) === 0);
+// super-notify
+const req = (tok = 'T') => new Request('https://u/.netlify/functions/super-notify', { method: 'POST', headers: tok ? { authorization: 'Bearer ' + tok } : {}, body: '{}' });
+const rec = []; const notify = async (e, p) => { rec.push(p); return 1; };
+const fe = (comp, prof) => async (url) => {
+  if (url.endsWith('/auth/v1/user')) return J({ id: 'u1' });
+  if (url.includes('/profiles?id=eq.u1')) return J([prof]);
+  if (url.includes('/companies?id=eq.')) return J([comp]);
+  return J({}, 404); };
+let r = await sn(req(''), null, { env, fetch: fe({}, {}), notify }); check('N1 uden token: 401', r.status === 401);
+r = await sn(req(), null, { env, fetch: fe({ name: 'Byg ApS', created_at: new Date(Date.now() - 60000).toISOString() }, { company_id: 'c1', is_superadmin: false, full_name: 'Lars' }), notify });
+check('N2 ny virksomhed: push med navn hentet fra databasen', (await r.json()).sent === 1 && rec[0].title === 'Ny virksomhed: Byg ApS' && /Lars/.test(rec[0].body), JSON.stringify(rec));
+r = await sn(req(), null, { env, fetch: fe({ name: 'Byg ApS', created_at: new Date(Date.now() - 60000).toISOString() }, { company_id: 'c1', is_superadmin: false }), notify });
+check('N3 samme virksomhed to gange: kun én push', rec.length === 1);
+r = await sn(req(), null, { env, fetch: fe({ name: 'Gammel A/S', created_at: new Date(Date.now() - 3 * 3600e3).toISOString() }, { company_id: 'c2', is_superadmin: false }), notify });
+check('N4 gammel virksomhed: ingen push', rec.length === 1 && (await r.json()).sent === 0);
+r = await sn(req(), null, { env, fetch: fe({ name: 'X', created_at: new Date().toISOString() }, { company_id: 'c3', is_superadmin: true }), notify });
+check('N5 superadmin selv udløser ikke push', rec.length === 1);
+console.log(ok + '/' + (ok + bad)); process.exit(bad ? 1 : 0);
