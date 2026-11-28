@@ -71,17 +71,62 @@
         .bg-card { background-color: #FFFFFF; box-shadow: 0 1px 2px rgba(18,35,63,.06); }
         @keyframes lpin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
         .lp-in { animation: lpin .35s ease both; }
-        @keyframes lppop { 0% { opacity: 0; transform: scale(.2); } 70% { opacity: 1; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes lpring { 0% { opacity: .55; transform: scale(.6); } 100% { opacity: 0; transform: scale(2.4); } }
-        @keyframes lpbob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        @keyframes lpwave { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
-        .lp-pin { opacity: 0; transform-box: fill-box; transform-origin: center; }
-        .lp-pin.on { animation: lppop .45s ease both; }
-        .lp-ring { transform-box: fill-box; transform-origin: center; animation: lpring 1.6s ease-out infinite; }
-        .lp-hand { transform-box: fill-box; transform-origin: 20% 90%; animation: lpwave 2.4s ease-in-out infinite; }
-        .lp-bob { animation: lpbob 2.2s ease-in-out infinite; }
-        .lp-scene { transition: opacity .5s ease; }
-        @media (prefers-reduced-motion: reduce) { .lp-pin.on, .lp-ring, .lp-hand, .lp-bob { animation: none; opacity: 1; } }
+        /* ---- Hero-demo (60 sek., 6 kapitler) ---- */
+        #hero-demo { --hs: 1; }
+        #hero-demo .h-stage { position: relative; width: 520px; height: 560px; transform: scale(var(--hs)); transform-origin: top left; overflow: hidden; border-radius: 28px; background: radial-gradient(120% 90% at 50% 0%, #fff 0%, #F3EFE7 70%); border: 1px solid #E7E3DA; font-family: inherit; }
+        #hero-demo .h-ho { opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease; }
+        #hero-demo .h-ho.on { opacity: 1; transform: none; }
+        #hero-demo .h-pop { opacity: 0; transform: scale(.4); transition: opacity .3s ease, transform .4s cubic-bezier(.3,1.6,.5,1); }
+        #hero-demo .h-pop.on { opacity: 1; transform: scale(1); }
+        #hero-demo .h-paper { position: absolute; border-radius: 6px; background: #fff; box-shadow: 0 6px 14px rgba(18,35,63,.18); transition: transform .95s cubic-bezier(.5,0,.9,.4), opacity .95s ease; animation: hjit 1.4s ease-in-out infinite; font-size: 9px; color: #566070; padding: 8px; overflow: hidden; }
+        #hero-demo .h-paper.gone { transform: translate(var(--gx), var(--gy)) rotate(var(--gr)) !important; opacity: 0; animation: none; }
+        #hero-demo .h-lines { background-image: repeating-linear-gradient(#fff 0 9px, #D9DEE8 9px 10px); }
+        @keyframes hjit { 0%,100% { margin-top: 0; } 50% { margin-top: -3px; } }
+        #hero-demo .h-streak { position: absolute; top: 0; bottom: 0; width: 140px; background: linear-gradient(90deg, rgba(255,85,0,0), rgba(255,85,0,.28) 55%, rgba(255,255,255,.9)); filter: blur(2px); opacity: 0; pointer-events: none; z-index: 6; }
+        #hero-demo .h-phw { position: absolute; left: 146px; top: 8px; width: 228px; height: 454px; z-index: 3; }
+        #hero-demo .h-ph { position: absolute; left: 0; top: 0; width: 272px; height: 540px; transform-origin: top left; transition: transform .8s cubic-bezier(.3,1.2,.5,1), opacity .6s ease; }
+        #hero-demo .h-ph.p1 { transform: scale(.84); }
+        #hero-demo .h-ph.p1.fold { transform: scale(.3) rotate(-10deg); opacity: 0; }
+        #hero-demo .h-ph.p1.side { transform: translate(-122px, 0) scale(.78); }
+        #hero-demo .h-ph.p2 { transform: translate(420px, 0) scale(.78); }
+        #hero-demo .h-ph.p2.on { transform: translate(122px, 0) scale(.78); }
+        #hero-demo .h-ph.gone { opacity: 0; transform: translate(0, 40px) scale(.7); pointer-events: none; }
+        #hero-demo .h-ph .h-body { position: absolute; inset: 0; border-radius: 38px; border: 7px solid #12233F; background: #F7F5F1; overflow: hidden; box-shadow: 0 24px 40px -12px rgba(18,35,63,.45); }
+        #hero-demo .h-scr { position: absolute; left: 0; right: 0; top: 0; bottom: 0; opacity: 0; transition: opacity .35s ease; pointer-events: none; }
+        #hero-demo .h-scr.on { opacity: 1; }
+        #hero-demo .h-sb { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px 0; font-size: 9px; font-weight: 800; color: #8A93A3; height: 22px; }
+        #hero-demo .h-hd { position: absolute; top: 24px; left: 14px; right: 14px; display: flex; align-items: center; gap: 8px; font-weight: 900; color: #12233F; font-size: 13px; }
+        #hero-demo .h-hd img { width: 22px; height: 22px; object-fit: contain; }
+        #hero-demo .h-hd .live { margin-left: auto; font-size: 8px; color: #047857; }
+        #hero-demo .h-abs { position: absolute; }
+        #hero-demo .h-btn { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; border-radius: 16px; transition: background .3s ease, transform .15s ease; }
+        #hero-demo .h-tile { position: absolute; left: 14px; right: 14px; height: 78px; border-radius: 20px; background: #fff; border: 1px solid #E7E3DA; display: flex; align-items: center; gap: 12px; padding: 0 14px; font-weight: 900; color: #12233F; font-size: 14px; box-shadow: 0 4px 10px rgba(18,35,63,.06); }
+        #hero-demo .h-tile i.ic { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        #hero-demo .h-tile small { display: block; font-weight: 600; font-size: 10px; color: #566070; }
+        #hero-demo .h-cur { position: absolute; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; z-index: 20; pointer-events: none; opacity: 0; }
+        #hero-demo .h-cur b { position: absolute; inset: 0; border-radius: 50%; background: rgba(18,35,63,.28); border: 2.5px solid #fff; box-shadow: 0 3px 8px rgba(0,0,0,.3); }
+        #hero-demo .h-cur i { position: absolute; inset: -6px; border-radius: 50%; border: 2.5px solid #FF5500; opacity: 0; }
+        #hero-demo .h-cap { position: absolute; left: 20px; right: 20px; bottom: 16px; text-align: center; z-index: 8; opacity: 0; transform: translateY(8px); transition: opacity .4s ease, transform .4s ease; }
+        #hero-demo .h-cap.on { opacity: 1; transform: none; }
+        #hero-demo .h-cap b { display: block; font-size: 22px; line-height: 1.15; font-weight: 900; letter-spacing: -.01em; color: #12233F; }
+        #hero-demo .h-cap span { display: block; margin-top: 4px; font-size: 13px; font-weight: 800; color: #FF5500; }
+        #hero-demo .h-wave { display: flex; align-items: center; gap: 3px; height: 30px; }
+        #hero-demo .h-wave i { width: 4px; border-radius: 3px; background: #FF5500; animation: hwave .9s ease-in-out infinite; }
+        @keyframes hwave { 0%,100% { height: 6px; } 50% { height: 26px; } }
+        #hero-demo .h-desk { position: absolute; left: 10px; top: 14px; width: 500px; height: 440px; border-radius: 14px; background: #fff; border: 1px solid #D9D3C6; box-shadow: 0 24px 40px -14px rgba(18,35,63,.4); overflow: hidden; opacity: 0; transform: translateY(24px) scale(.96); transition: opacity .6s ease, transform .7s cubic-bezier(.3,1.1,.5,1); z-index: 2; }
+        #hero-demo .h-desk.on { opacity: 1; transform: none; }
+        #hero-demo .h-pdf { position: absolute; right: 26px; top: 86px; width: 210px; height: 290px; background: #fff; border-radius: 6px; box-shadow: 0 18px 36px rgba(18,35,63,.35); border: 1px solid #E7E3DA; padding: 14px; z-index: 5; opacity: 0; transform: translate(40px, 30px) rotate(3deg); transition: opacity .5s ease, transform .6s cubic-bezier(.3,1.2,.5,1); }
+        #hero-demo .h-pdf.on { opacity: 1; transform: rotate(-2deg); }
+        #hero-demo .h-fin { position: absolute; inset: 0; z-index: 7; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding-bottom: 80px; background: radial-gradient(70% 60% at 50% 40%, #fff, rgba(247,245,241,.96)); opacity: 0; pointer-events: none; transition: opacity .6s ease; }
+        #hero-demo .h-fin.on { opacity: 1; pointer-events: auto; }
+        #hero-demo .h-fin .ring { position: absolute; width: 150px; height: 150px; border-radius: 50%; border: 3px solid #FF5500; opacity: 0; }
+        #hero-demo .h-ctl { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+        #hero-demo .h-seg { flex: 1; text-align: left; padding: 6px 2px 0; cursor: pointer; background: none; border: 0; color: #566070; font-weight: 800; font-size: 11px; min-width: 0; }
+        #hero-demo .h-seg .bar { display: block; height: 5px; border-radius: 3px; background: #E2DDD0; overflow: hidden; margin-bottom: 6px; }
+        #hero-demo .h-seg .bar i { display: block; height: 100%; width: 0; background: #FF5500; }
+        #hero-demo .h-seg.act { color: #12233F; }
+        #hero-demo .h-seg span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (prefers-reduced-motion: reduce) { #hero-demo .h-paper, #hero-demo .h-wave i { animation: none; } }
 
         @media (prefers-reduced-motion: reduce) { .lp-in { animation: none; } }
         .border-card { border-color: #E7E3DA; }
@@ -167,24 +212,16 @@
                 <p id="lp-from-line" class="text-sm text-[#566070]">Fra 249 kr. pr. måned – derefter 89 kr. pr. ekstra medarbejder.</p>
             </div>
 
-            <div class="flex flex-col items-center">
-                <div class="flex bg-white p-1 rounded-xl border border-[#E7E3DA] mb-5 w-full max-w-sm">
-                    <button id="lp-tab-ks" onclick="lpDemoStart('ks')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg bg-[#12233F] text-white transition">KS med foto</button>
-                    <button id="lp-tab-timer" onclick="lpDemoStart('timer')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-[#566070] hover:text-[#12233F] transition">Timer</button>
-                    <button id="lp-tab-kort" onclick="lpDemoStart('kort')" class="flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-[#566070] hover:text-[#12233F] transition">Kort</button>
-                </div>
-                <div class="relative" style="width:272px">
-                    <div class="rounded-[2.4rem] border-[7px] border-[#12233F] bg-[#F7F5F1] shadow-2xl shadow-[#12233F]/30 overflow-hidden" style="height:540px">
-                        <div class="flex justify-between items-center px-5 pt-3 pb-1 text-[10px] text-gray-400 font-bold"><span>9:41</span><span class="w-16 h-4 bg-gray-800 rounded-full"></span><span><i class="fa-solid fa-signal"></i> <i class="fa-solid fa-battery-full"></i></span></div>
-                        <div class="px-4 pt-2 pb-2 flex items-center justify-between"><div class="flex items-center space-x-2"><img src="logo.png" alt="UniSjak" class="w-6 h-6 object-contain "><span id="lp-ph-title" class="text-xs font-black text-white">KS / Foto</span></div><span class="text-[9px] text-emerald-400 font-black"><i class="fa-solid fa-circle text-[6px] mr-1"></i>Live</span></div>
-                        <div class="px-4" id="lp-microw">
-                            <button id="lp-mic" class="w-full rounded-2xl py-3.5 font-black text-xs text-white bg-red-600 flex items-center justify-center space-x-2 transition" tabindex="-1" aria-hidden="true"><i class="fa-solid fa-microphone text-base"></i><span id="lp-mic-label">Indtal KS-punkt</span></button>
-                            <p id="lp-say" class="text-[11px] text-gray-300 mt-2.5 min-h-[58px] leading-snug italic"></p>
-                        </div>
-                        <div id="lp-result" class="px-4 pt-1 space-y-2"></div>
+            <div class="flex flex-col items-center w-full min-w-0">
+                <div id="hero-demo" class="w-full" style="max-width:520px">
+                    <div id="hero-box" style="position:relative;margin:0 auto;width:100%;max-width:520px;height:560px"><div id="hero-stage" class="h-stage" role="img" aria-label="Produktdemo: fra løse sedler til timer, KS, fejl og opgaver og færdig rapport"></div></div>
+                    <div class="h-ctl">
+                        <button type="button" id="hero-play" onclick="lpHeroToggle()" aria-label="Pause" class="shrink-0 w-10 h-10 rounded-full bg-[#12233F] text-white flex items-center justify-center active:scale-95"><i class="fa-solid fa-pause"></i></button>
+                        <div id="hero-segs" class="flex gap-2 flex-1 min-w-0"></div>
                     </div>
+                    <p id="hero-time" class="text-[11px] text-[#566070] text-right mt-1 tabular-nums"></p>
                 </div>
-                <p class="text-xs text-[#566070] mt-4 text-center max-w-xs">Selvkørende demo: en talt sætning bliver til et færdigt KS-punkt eller en udfyldt timeseddel.</p>
+                <p class="text-xs text-[#566070] mt-2 text-center max-w-sm">Fra pladsen til kontoret på under et minut. Tryk på et kapitel for at hoppe direkte dertil.</p>
             </div>
         </section>
 
@@ -1457,7 +1494,7 @@ function showScreen(which) {
     show('boot-screen', which === 'boot');
     show('auth-screen', which === 'auth');
     show('landing-screen', which === 'landing');
-    if (which === 'landing') { if (!LP.timers.length) lpDemoStart(LP.mode || 'ks'); } else if (typeof lpDemoStop === 'function') lpDemoStop();
+    if (which === 'landing') { if (!HERO.raf) lpHeroStart(); } else if (typeof lpHeroStop === 'function') lpHeroStop();
     show('onboard-screen', which === 'onboard');
     show('app-root', which === 'app');
     show('sa-screen', which === 'sa');
@@ -9246,7 +9283,7 @@ document.addEventListener('keydown', e => {
 })();
 
 /* ------------------------------ LANDINGSSIDE ------------------------------ */
-function lpGo(tab) { lpDemoStop(); showScreen('auth'); switchAuthTab(tab); }
+function lpGo(tab) { lpHeroStop(); showScreen('auth'); switchAuthTab(tab); }
 function lpScroll(e, id) { e.preventDefault(); const el = $(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 const LP_PACKS = {
     alt: { name: 'Alt inkluderet', p: 89, first: 249, list: ['Timeregistrering på sekunder – også med tale', 'Diæt og kørsel pr. virksomhed', 'Ugegodkendelse og løn-eksport som CSV og PDF', 'KS med foto og GPS', 'Sikkerhed i grøn, gul og rød', 'Fejl og mangler med ansvarlig og status', 'Ekstraarbejde der kan faktureres', 'KS-rapport som PDF til bygherre', 'Opgaver og pakkelister', 'Materialemodtagelse med foto og oplagssted', 'Udenlandske sjak på dansk, engelsk, tjekkisk og polsk'] }
@@ -9264,124 +9301,258 @@ function lpPrice(v) {
     $('lp-calc').textContent = n === 1 ? '1 medarbejder: ' + pk.first + ' kr.' : pk.first + ' kr. for den første + ' + (n - 1) + ' × ' + pk.p + ' kr.';
     $('lp-ex').innerHTML = [1, 5, 10, 25].map(m => `<div class="bg-white/10 rounded-xl p-2"><p class="text-[10px] text-[#D5DCE8]">${m} pers.</p><p class="font-black text-white text-sm">${lpTotal(k, m)} kr.</p></div>`).join('');
 }
-const LP = { timers: [], mode: null };
-const lpAt = (ms, fn) => { LP.timers.push(setTimeout(fn, ms)); };
-function lpDemoStop() { LP.timers.forEach(clearTimeout); LP.timers = []; }
-function lpType(text, startMs, perWord, done) {
-    const w = text.split(' '); let t = startMs;
-    w.forEach((_, i) => { t += perWord; lpAt(t, () => { $('lp-say').textContent = '“' + w.slice(0, i + 1).join(' ') + (i === w.length - 1 ? '”' : ' ▍'); }); });
-    return t;
+const LP = { pack: null };
+/* ------------------------------ HERO-DEMO (samlet produktfilm, 5 kapitler) ------------------------------ */
+const HERO = { t: 0, playing: true, vis: true, raf: 0, last: 0, cur: -1, el: {}, reduce: false, built: false,
+    SC: [{ d: 7, n: 'Start' }, { d: 9, n: 'Timer & diæt' }, { d: 10, n: 'KS' }, { d: 10, n: 'Fejl & opgaver' }, { d: 14, n: 'Kontor & rapport' }],
+    CAP: ['Slut med løse sedler og dobbeltarbejde.', 'Timer & diæter på få sekunder.', 'KS med GPS, foto og stemme.', 'Fra fejl til løst opgave — uden opkald.', 'Klar til bygherre og løn med ét klik'] };
+HERO.START = HERO.SC.map((s, i) => HERO.SC.slice(0, i).reduce((a, x) => a + x.d, 0));
+HERO.TOTAL = HERO.SC.reduce((a, x) => a + x.d, 0);
+const hC = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const hK = (lt, a, b) => hC((lt - a) / (b - a));
+const hEase = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+function hE(id) { return HERO.el[id] || (HERO.el[id] = document.getElementById(id)); }
+function hOn(id, c) { const e = hE(id); if (e) e.classList.toggle('on', !!c); }
+function hCls(id, cls, c) { const e = hE(id); if (e) e.classList.toggle(cls, !!c); }
+function hTxt(id, t) { const e = hE(id); if (e && e.textContent !== t) e.textContent = t; }
+function hSty(id, p, v) { const e = hE(id); if (e) e.style[p] = v; }
+function hScr(name) { ['home', 'time', 'cam', 'ks', 'def', 'lock'].forEach(n => hOn('hs-' + n, n === name)); }
+/* Finger-markør: pts = [[t,x,y],…] i skærmkoordinater, taps = tidspunkter for tryk */
+function hCur(id, pts, taps, lt, ox, oy) {
+    const e = hE(id); if (!e) return;
+    if (lt < pts[0][0] || lt > pts[pts.length - 1][0] + .3) { e.style.opacity = 0; return; }
+    let x = pts[0][1], y = pts[0][2];
+    for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1]; if (lt >= a[0] && lt <= b[0]) { const k = hEase(hK(lt, a[0], b[0])); x = a[1] + (b[1] - a[1]) * k; y = a[2] + (b[2] - a[2]) * k; break; } if (lt > b[0]) { x = b[1]; y = b[2]; } }
+    e.style.opacity = hC(Math.min(hK(lt, pts[0][0], pts[0][0] + .3), 1 - hK(lt, pts[pts.length - 1][0], pts[pts.length - 1][0] + .3)));
+    e.style.transform = 'translate(' + (x + ox) + 'px,' + (y + oy) + 'px)';
+    let press = 0, ring = 0; taps.forEach(t => { const d = lt - t; if (d >= -.08 && d <= .5) { press = Math.max(press, d < .1 ? 1 : 0); ring = Math.max(ring, hK(d, 0, .5)); } });
+    const b = e.querySelector('b'), r = e.querySelector('i');
+    b.style.transform = press ? 'scale(.78)' : 'scale(1)';
+    r.style.opacity = ring > 0 && ring < 1 ? (1 - ring) : 0; r.style.transform = 'scale(' + (0.6 + ring * 1.6) + ')';
 }
-function lpMic(state, label) {
-    const m = $('lp-mic'); if (!m) return;
-    m.className = 'w-full rounded-2xl py-3.5 font-black text-xs text-white flex items-center justify-center space-x-2 transition ' + (state === 'listen' ? 'bg-emerald-600 animate-pulse' : (state === 'think' ? 'bg-gray-600' : 'bg-red-600'));
-    $('lp-mic-label').textContent = label;
+const H_TRENCH = (w, h) => `<svg viewBox="0 0 258 380" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="htg${w}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8B6B4A"/><stop offset="1" stop-color="#5E4630"/></linearGradient><linearGradient id="htp${w}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF8A3D"/><stop offset="1" stop-color="#C2410C"/></linearGradient></defs><rect width="258" height="380" fill="url(#htg${w})"/><path d="M0 70Q60 40 130 60T258 50V0H0Z" fill="#A9C98B"/><path d="M40 120L218 120L190 380H68Z" fill="#3B2A1B"/><path d="M60 250L198 250L192 330L66 330Z" fill="#D9C28F"/><rect x="30" y="262" width="198" height="34" rx="17" fill="url(#htp${w})"/><rect x="30" y="268" width="198" height="8" rx="4" fill="#fff" opacity=".35"/><g fill="#6B5238"><circle cx="20" cy="150" r="8"/><circle cx="238" cy="170" r="10"/><circle cx="14" cy="210" r="6"/></g></svg>`;
+const H_HDR = t => `<div class="h-sb"><span>9:41</span><span><i class="fa-solid fa-signal"></i> <i class="fa-solid fa-battery-full"></i></span></div><div class="h-hd"><img src="logo.png" alt=""><span>${t}</span><span class="live">● Live</span></div>`;
+function lpHeroBuild() {
+    const root = document.getElementById('hero-stage'); if (!root || HERO.built) return; HERO.built = true;
+    const paper = (id, x, y, w, h, rot, gx, gy, gr, inner, cls, bg) => `<div class="h-paper ${cls || ''}" id="${id}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;transform:rotate(${rot}deg);${bg ? 'background:' + bg + ';' : ''}--gx:${gx}px;--gy:${gy}px;--gr:${gr}deg;animation-delay:${(x % 7) / 10}s">${inner}</div>`;
+    const sms = (id, x, y, rot, txt, gx, gy) => `<div class="h-paper" id="${id}" style="left:${x}px;top:${y}px;width:150px;height:46px;border-radius:16px;background:#DCF8C6;transform:rotate(${rot}deg);--gx:${gx}px;--gy:${gy}px;--gr:40deg;color:#1F3A2B;font-weight:700;font-size:10px;line-height:1.25;padding:7px 10px">${txt}</div>`;
+    const tile = (top, ic, bg, col, t, s, id) => `<div class="h-tile h-ho" id="${id}" style="top:${top}px"><i class="ic fa-solid ${ic}" style="background:${bg};color:${col}"></i><span>${t}<small>${s}</small></span></div>`;
+    const wk = [['Man', '8,0', 80], ['Tir', '7,5', 75], ['Ons', '8,0', 80], ['Tor', '8,5', 85]].map((r, i) => `<div class="h-abs" style="left:14px;right:14px;top:${356 + i * 24}px;height:20px;display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;color:#566070"><span style="width:26px">${r[0]}</span><span style="flex:1;height:8px;border-radius:4px;background:#E7E3DA;overflow:hidden"><i style="display:block;height:100%;width:${r[2]}%;background:#12233F"></i></span><span style="width:34px;text-align:right;color:#12233F">${r[1]} t</span></div>`).join('');
+    root.innerHTML = `
+    <div id="h-papers">
+      ${paper('hp1', 30, 70, 104, 130, -9, -420, -200, -70, '<b style="color:#12233F">Timeseddel</b><br>Uge 47 …<br>Man 7-15<br>Tir ?? <br>Ons 7-15,5<br>(diæt?)', 'h-lines')}
+      ${paper('hp2', 140, 40, 96, 120, 7, 80, -420, 55, '<b style="color:#12233F">Følgeseddel</b><br>Silvan A/S<br>12 stk. gips<br>Nr. 48213', 'h-lines')}
+      ${paper('hp3', 250, 80, 100, 128, -5, 520, -260, 80, '<b style="color:#12233F">Timer</b><br>mandag + tirsd.<br>glemt tirsdag!<br>kørsel 24 km?', 'h-lines')}
+      ${paper('hp4', 360, 40, 110, 120, 12, 520, -200, 100, '<b style="color:#92400E">Husk!!</b><br>ring til Jeppe<br>om brønden', '', '#FDE68A')}
+      ${paper('hp5', 60, 250, 112, 124, 8, -460, 120, -90, '<b style="color:#12233F">Mangelliste</b><br>1. brønd<br>2. fuge …<br>3. ?', 'h-lines')}
+      ${paper('hp6', 330, 230, 106, 126, -10, 520, 200, 70, '<b style="color:#12233F">Ugeseddel</b><br>tillæg: ???<br>kørsel: ???', 'h-lines')}
+      ${sms('hp7', 190, 190, -4, 'Kan du sende timerne? Regnskab skal bruge dem i dag', -520, 80)}
+      ${sms('hp8', 20, 175, 5, 'Hvor blev det af billedet fra i går?', -420, -60)}
+      ${sms('hp9', 300, 330, 4, 'Mangler stadig følgeseddel…', 520, 300)}
+      ${paper('hp10', 160, 330, 96, 110, -7, 0, 520, -60, '<b style="color:#12233F">Ekstra</b><br>2 t. grave<br>aftalt m. bygh.<br>(uden foto)', 'h-lines')}
+    </div>
+    <div class="h-streak" id="h-streak"></div>
+    <div class="h-desk" id="h-desk">
+      <div class="h-abs" style="left:0;right:0;top:0;height:30px;background:#EFEBE2;display:flex;align-items:center;gap:6px;padding:0 12px"><i style="width:9px;height:9px;border-radius:50%;background:#EF4444"></i><i style="width:9px;height:9px;border-radius:50%;background:#F59E0B"></i><i style="width:9px;height:9px;border-radius:50%;background:#10B981"></i><span style="margin-left:14px;font-size:10px;font-weight:700;color:#566070;background:#fff;border-radius:6px;padding:3px 14px">unisjak.dk/kontor</span></div>
+      <div class="h-abs" style="left:0;top:30px;bottom:0;width:96px;background:#12233F;padding:12px 10px;color:#C9D3E3;font-size:10px;font-weight:800;display:flex;flex-direction:column;gap:12px"><img src="logo.png" alt="" style="width:26px;height:26px;object-fit:contain"><span style="color:#fff"><i class="fa-solid fa-chart-column mr-1"></i> Overblik</span><span><i class="fa-solid fa-clock mr-1"></i> Timer</span><span><i class="fa-solid fa-camera mr-1"></i> KS</span><span><i class="fa-solid fa-list-check mr-1"></i> Opgaver</span></div>
+      <div class="h-abs" style="left:112px;top:42px;font-size:15px;font-weight:900;color:#12233F">Kontor Overblik</div>
+      ${[['Timer i ugen', '312,5 t', '#12233F', 112], ['KS-punkter', '48', '#12233F', 242], ['Åbne fejl', '1', '#DC2626', 372]].map(c => `<div class="h-abs" style="left:${c[3]}px;top:72px;width:118px;height:62px;border-radius:12px;background:#F7F5F1;border:1px solid #E7E3DA;padding:9px 11px"><div style="font-size:9px;font-weight:800;color:#566070">${c[0]}</div><div style="font-size:21px;font-weight:900;color:${c[2]}">${c[1]}</div></div>`).join('')}
+      <div class="h-abs" style="left:112px;top:148px;font-size:10px;font-weight:900;color:#566070;letter-spacing:.06em">TIMER TIL GODKENDELSE</div>
+      ${[['Jeppe Nielsen', '40,0 t'], ['Kasper Holm', '38,5 t'], ['Morten', '41,0 t']].map((r, i) => `<div class="h-abs" style="left:112px;right:16px;top:${166 + i * 32}px;height:28px;border-radius:8px;background:#fff;border:1px solid #E7E3DA;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11px;font-weight:800;color:#12233F"><span>${r[0]}</span><span>${r[1]} <i id="hd-ok${i}" class="fa-solid fa-circle-check h-pop" style="color:#047857;margin-left:6px"></i></span></div>`).join('')}
+      <div class="h-btn" id="hd-appr" style="left:112px;top:278px;width:130px;height:40px;background:#12233F;font-size:12px">Godkend uge</div>
+      <div class="h-btn" id="hd-pdfb" style="left:252px;top:278px;width:150px;height:40px;background:#FF5500;font-size:12px"><i class="fa-solid fa-file-pdf mr-1.5"></i>KS-rapport (PDF)</div>
+      <div class="h-abs h-ho" id="hd-pay" style="left:112px;top:332px;font-size:11px;font-weight:900;color:#047857;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;padding:8px 12px"><i class="fa-solid fa-circle-check mr-1"></i>Løngrundlag klar · 312,5 timer</div>
+      <div class="h-cur" id="hc-d"><b></b><i></i></div>
+    </div>
+    <div class="h-pdf" id="h-pdf">
+      <div style="display:flex;align-items:center;gap:6px"><img src="logo.png" alt="" style="width:22px;height:22px;object-fit:contain"><div><div style="font-size:12px;font-weight:900;color:#12233F;line-height:1.1">Munck Havne og Anlæg</div><div style="font-size:8px;color:#8A93A3">Genereret af UniSjak.dk</div></div></div>
+      <div style="height:2px;background:#FF5500;margin:8px 0"></div>
+      <div style="font-size:9px;font-weight:900;color:#12233F;margin-bottom:6px">10 KS-punkter · Fejl og mangler: 1</div>
+      ${[['Punkt #1', 'Rør lagt i sandbed'], ['Punkt #2', 'Mangler afslutning ved brønd']].map(p => `<div style="display:flex;gap:8px;margin-bottom:7px"><div style="width:62px;height:62px;border-radius:4px;overflow:hidden;flex:none">${H_TRENCH(62, 62)}</div><div style="font-size:9px;line-height:1.3;color:#566070"><b style="color:#12233F;font-size:10px">${p[0]}</b><br>${p[1]}<br><span style="color:#2563EB">GPS 55.54284, 9.51486</span></div></div>`).join('')}
+      <div style="position:absolute;left:14px;right:14px;bottom:12px;background:#FF5500;color:#fff;font-weight:900;font-size:9px;border-radius:6px;padding:6px 8px;text-align:center">✓ Klar til bygherre</div>
+    </div>
+    <div class="h-phw" id="h-phw">
+      <div class="h-ph p1 fold" id="h-p1">
+        <div class="h-body">
+          <div class="h-scr" id="hs-home">${H_HDR('Hjem')}
+            ${tile(70, 'fa-camera', '#FFE9DC', '#FF5500', 'KS / Foto', 'Foto med GPS, tale eller tast', 'ht1')}
+            ${tile(156, 'fa-stopwatch', '#E3ECFD', '#1D4ED8', 'Registrér timer', 'Dagens arbejdstid', 'ht2')}
+            ${tile(242, 'fa-list-check', '#E3F6EC', '#047857', 'Opgaver', 'Dine opgaver i dag', 'ht3')}
+            ${tile(328, 'fa-map', '#FDF1D8', '#B45309', 'Byggepladskort', 'Se, hvor du står', 'ht4')}
+          </div>
+          <div class="h-scr" id="hs-time">${H_HDR('Registrér timer')}
+            <div class="h-abs" style="left:14px;right:14px;top:70px;height:40px;border-radius:12px;background:#fff;border:1px solid #E7E3DA;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:900;color:#12233F"><span style="flex:1">6000 – Østergade 12</span><i class="fa-solid fa-chevron-down" style="font-size:10px;color:#8A93A3"></i></div>
+            <div class="h-btn" id="h-stamp" style="left:14px;right:14px;top:128px;height:84px;background:#12233F;font-size:19px"><i class="fa-solid fa-play mr-2" id="h-stamp-i"></i><span id="h-stamp-t">Stempl ind</span></div>
+            <div class="h-abs" id="h-clock" style="left:0;right:0;top:224px;text-align:center;font:900 34px/1 ui-monospace,Menlo,monospace;color:#12233F">00:00:00</div>
+            <div class="h-abs h-ho" id="hch1" style="left:14px;top:278px;width:112px;height:34px;border-radius:12px;background:#fff;border:1.5px solid #D9D3C6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#12233F"><span id="hch1t">Diæt: ligger ude</span></div>
+            <div class="h-abs h-ho" id="hch2" style="left:132px;top:278px;width:112px;height:34px;border-radius:12px;background:#fff;border:1.5px solid #D9D3C6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#12233F">Kørsel 24 km</div>
+            <div class="h-abs" style="left:14px;top:332px;font-size:9px;font-weight:900;color:#566070;letter-spacing:.06em">DENNE UGE</div>
+            ${wk}
+            <div class="h-abs h-ho" id="hwk5" style="left:14px;right:14px;top:452px;height:20px;display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;color:#12233F;background:#FFF3EA;border-radius:6px;padding:0 4px"><span style="width:26px">Fre</span><span style="flex:1;height:8px;border-radius:4px;background:#E7E3DA;overflow:hidden"><i style="display:block;height:100%;width:80%;background:#FF5500"></i></span><span style="width:34px;text-align:right">8,0 t</span></div>
+            <div class="h-abs h-ho" id="hwk6" style="left:14px;right:14px;top:480px;font-size:11px;font-weight:900;color:#047857;text-align:center">I alt 40,0 t · klar til godkendelse ✓</div>
+          </div>
+          <div class="h-scr" id="hs-cam" style="background:#0B1424"><div class="h-abs" style="inset:0">${H_TRENCH(258, 526)}</div>
+            <div class="h-abs" style="left:0;right:0;top:0;height:60px;background:linear-gradient(#000a,#0000)"></div>
+            <div class="h-hd" style="color:#fff"><img src="logo.png" alt=""><span>KS / Foto</span></div>
+            <div class="h-abs" style="left:26px;right:26px;top:96px;bottom:130px;border:2px solid #fff6;border-radius:10px"></div>
+            <div class="h-abs h-pop" id="h-gps" style="left:30px;top:106px;background:#0B1424ee;border:1px solid #FF5500;color:#fff;border-radius:10px;padding:6px 9px;font-size:9px;font-weight:800;line-height:1.35;transform-origin:left top"><i class="fa-solid fa-lock" style="color:#FF5500"></i> GPS låst<br>55.54284, 9.51486<br><span style="color:#C9D3E3">28.11.2026 · 11:20</span></div>
+            <div class="h-abs" style="left:101px;top:434px;width:56px;height:56px;border-radius:50%;border:4px solid #fff;display:flex;align-items:center;justify-content:center"><i id="h-shut" style="width:40px;height:40px;border-radius:50%;background:#fff;transition:transform .15s"></i></div>
+            <div class="h-abs" id="h-flash" style="inset:0;background:#fff;opacity:0"></div>
+          </div>
+          <div class="h-scr" id="hs-ks">${H_HDR('Nyt KS-punkt')}
+            <div class="h-abs" style="left:14px;right:14px;top:68px;height:116px;border-radius:16px;overflow:hidden;border:1px solid #E7E3DA">${H_TRENCH(230, 116)}<div class="h-abs" style="left:8px;bottom:8px;background:#0B1424ee;color:#fff;border-radius:8px;padding:4px 7px;font-size:8px;font-weight:800;line-height:1.3"><i class="fa-solid fa-lock" style="color:#FF5500"></i> 55.54284, 9.51486 · 11:20</div></div>
+            <div class="h-btn" id="h-mic" style="left:14px;right:14px;top:198px;height:52px;background:#DC2626;font-size:14px;gap:10px"><i class="fa-solid fa-microphone"></i><span id="h-mic-t">Indtal</span><span class="h-wave" id="h-wave"><i style="animation-delay:0s"></i><i style="animation-delay:.15s"></i><i style="animation-delay:.3s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.25s"></i><i style="animation-delay:.05s"></i></span></div>
+            <div class="h-abs" style="left:14px;right:14px;top:262px;min-height:86px;border-radius:14px;background:#fff;border:1px solid #E7E3DA;padding:10px 12px;font-size:13px;font-weight:700;color:#12233F;line-height:1.35"><div style="font-size:9px;font-weight:900;color:#8A93A3;letter-spacing:.06em;margin-bottom:4px">BESKRIVELSE</div><span id="h-type"></span><span id="h-caret" style="color:#FF5500">▍</span></div>
+            <div class="h-abs h-ho" id="h-saved" style="left:14px;right:14px;top:366px;border-radius:14px;background:#ECFDF5;border:1px solid #A7F3D0;padding:10px 12px;font-size:12px;font-weight:900;color:#047857"><i class="fa-solid fa-circle-check mr-1"></i>Gemt som KS #12<small style="display:block;font-weight:700;color:#065F46;font-size:10px">Med foto, GPS og tidsstempel · klar til rapport</small></div>
+          </div>
+          <div class="h-scr" id="hs-def">${H_HDR('KS-punkter')}
+            <div class="h-abs" style="left:14px;right:14px;top:68px;height:44px;border-radius:12px;background:#fff;border:1px solid #E7E3DA;display:flex;align-items:center;gap:8px;padding:0 12px;font-size:12px;font-weight:800;color:#12233F"><i class="fa-solid fa-circle-check" style="color:#047857"></i>Støbning søjle A<span style="margin-left:auto;font-size:9px;color:#8A93A3">i går</span></div>
+            <div class="h-abs h-ho" id="h-defc" style="left:14px;right:14px;top:122px;height:124px;border-radius:16px;background:#FEF2F2;border:1.5px solid #DC2626;padding:10px 12px">
+              <span style="font-size:9px;font-weight:900;background:#DC2626;color:#fff;border-radius:5px;padding:2px 7px">FEJL · RØD</span>
+              <div style="font-size:14px;font-weight:900;color:#12233F;margin-top:7px">Mangler afslutning ved brønd</div>
+              <div style="font-size:10px;color:#566070;margin-top:2px"><i class="fa-solid fa-location-dot" style="color:#FF5500"></i> Østergade 12 · i dag 11:24</div>
+              <div class="h-btn" id="h-mkt" style="left:12px;right:12px;bottom:10px;height:34px;background:#FF5500;font-size:12px;border-radius:11px">Opret tilknyttet opgave</div></div>
+            <div class="h-abs" id="h-sheet" style="left:0;right:0;top:262px;height:264px;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -10px 30px rgba(18,35,63,.22);transform:translateY(270px);transition:transform .5s cubic-bezier(.3,1.1,.5,1);padding:14px">
+              <div style="font-size:13px;font-weight:900;color:#12233F;margin-bottom:10px">Tildel opgave</div>
+              <div id="hsh1" class="h-abs" style="left:14px;right:14px;top:46px;height:42px;border-radius:12px;border:1.5px solid #E7E3DA;display:flex;align-items:center;gap:10px;padding:0 12px;font-size:12px;font-weight:800;color:#12233F;transition:background .25s,border-color .25s"><i class="fa-solid fa-user" style="color:#FF5500"></i>Jeppe Nielsen<small style="margin-left:auto;color:#8A93A3;font-weight:700">Sjak 2</small></div>
+              <div class="h-abs" style="left:14px;right:14px;top:96px;height:42px;border-radius:12px;border:1.5px solid #E7E3DA;display:flex;align-items:center;gap:10px;padding:0 12px;font-size:12px;font-weight:800;color:#12233F"><i class="fa-solid fa-helmet-safety" style="color:#566070"></i>Kasper VVS<small style="margin-left:auto;color:#8A93A3;font-weight:700">Underentreprenør</small></div>
+              <div class="h-abs h-ho" id="hsh-ok" style="left:14px;right:14px;top:158px;border-radius:12px;background:#ECFDF5;border:1px solid #A7F3D0;padding:10px 12px;font-size:11px;font-weight:900;color:#047857"><i class="fa-solid fa-paper-plane mr-1"></i>Opgave oprettet og sendt til Jeppe</div>
+            </div>
+          </div>
+        </div>
+        <div class="h-cur" id="hc-p"><b></b><i></i></div>
+      </div>
+      <div class="h-ph p2" id="h-p2"><div class="h-body" style="background:linear-gradient(160deg,#1B2B49,#0B1424)">
+        <div class="h-abs" style="left:0;right:0;top:54px;text-align:center;color:#fff"><div style="font-size:11px;font-weight:700;opacity:.8">lørdag 28. november</div><div style="font-size:54px;font-weight:300;line-height:1.1">11:24</div></div>
+        <div class="h-abs h-pop" id="h-push" style="left:12px;right:12px;top:170px;border-radius:18px;background:#fffffff2;padding:11px 12px;box-shadow:0 12px 26px rgba(0,0,0,.35);border-left:5px solid #10B981;transform-origin:center top">
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;color:#566070"><img src="logo.png" alt="" style="width:16px;height:16px;object-fit:contain"><span>UniSjak</span><span style="margin-left:auto">nu</span><i class="fa-solid fa-circle" style="color:#10B981;font-size:7px"></i></div>
+          <div style="font-size:13px;font-weight:900;color:#12233F;margin-top:5px">Ny opgave til dig</div>
+          <div style="font-size:12px;font-weight:700;color:#12233F">Mangler afslutning ved brønd</div>
+          <div style="font-size:10px;color:#566070;margin-top:2px">Østergade 12 · fra Morten</div></div>
+      </div></div>
+    </div>
+    <div class="h-fin" id="h-fin">
+      <i class="ring" id="h-ring"></i>
+      <img src="logo.png" alt="UniSjak" id="h-flogo" class="h-pop" style="width:96px;height:96px;object-fit:contain;position:relative">
+      <div class="h-ho" id="h-fname" style="font-size:30px;font-weight:900;color:#12233F;letter-spacing:-.02em;position:relative">Uni<span style="color:#FF5500">Sjak</span></div>
+      <button type="button" id="h-cta" class="h-ho" onclick="lpGo('signup')" style="position:relative;background:#FF5500;color:#fff;font-weight:900;font-size:16px;border-radius:16px;padding:15px 28px;box-shadow:0 10px 24px rgba(255,85,0,.4)">Prøv UniSjak gratis</button>
+      <div class="h-ho" id="h-cta2" style="font-size:11px;font-weight:700;color:#566070;position:relative">14 dage gratis · ingen binding</div>
+    </div>
+    <div class="h-cap" id="h-cap"><b id="h-cap-b"></b><span id="h-cap-s"></span></div>`;
+    root.querySelectorAll('.h-ph').forEach(p => { if (p.id === 'h-p1') p.classList.add('p1'); });
+    const bar = document.getElementById('hero-segs');
+    if (bar) bar.innerHTML = HERO.SC.map((s, i) => `<button type="button" class="h-seg" data-i="${i}" aria-label="Kapitel ${i + 1}: ${s.n}" onclick="lpHeroSeek(${i})"><span class="bar"><i></i></span><span>${i + 1}. ${s.n}</span></button>`).join('');
+    lpHeroFit();
 }
-const LP_SCEN = {
-    ks: {
-        title: 'KS / Foto', idle: 'Indtal KS-punkt',
-        say: 'Revne i væg ved køkkenet, sikkerhed rød, tag foto',
-        card: (done) => `<div class="lp-in rounded-xl border ${done ? 'border-red-600/60 bg-red-950/20' : 'border-gray-700 bg-gray-900'} p-3 space-y-2">` +
-            `<div class="flex items-center justify-between"><span class="text-[9px] font-black bg-red-600 text-white rounded px-1.5 py-0.5">${done ? 'SIK-001 · RØD' : 'Opretter…'}</span><span class="text-[9px] font-black ${done ? 'text-amber-300' : 'text-gray-400'}">${done ? 'Åbent i dag' : ''}</span></div>` +
-            `<div class="h-20 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-500"><i class="fa-solid fa-camera text-xl"></i></div>` +
-            `<div class="text-xs font-black text-white">Revne i væg ved køkkenet</div>` +
-            `<div class="text-[10px] text-gray-300"><i class="fa-solid fa-location-dot text-orange-400 mr-1"></i>${done ? 'Østergade 12, 8900 Randers' : 'Henter position…'}</div>` +
-            (done ? `<div class="text-[10px] font-black text-emerald-400">✓ Gemt og klar til KS-rapport</div>` : '') + `</div>`,
-        run() {
-            const S0 = LP_SCEN.ks; const end = lpType(S0.say, 700, 260);
-            lpAt(300, () => lpMic('listen', 'Lytter… tryk når du er færdig'));
-            lpAt(end + 500, () => lpMic('think', 'Udfylder…'));
-            lpAt(end + 1300, () => { lpMic('idle', S0.idle); $('lp-result').innerHTML = S0.card(false); });
-            lpAt(end + 2900, () => { $('lp-result').innerHTML = S0.card(true); });
-            return end + 6200;
-        }
+function lpHeroFit() {
+    const w = document.getElementById('hero-demo'); if (!w) return;
+    const k = Math.min(1, w.clientWidth / 520) || 1;
+    w.style.setProperty('--hs', k); const box = document.getElementById('hero-box'); if (box) { box.style.height = Math.round(560 * k) + 'px'; box.style.width = Math.round(520 * k) + 'px'; }
+}
+/* ---- Scener: hver update(lt) sætter hele tilstanden ud fra tiden (så play/pause/spring altid er korrekt) ---- */
+const HU = [
+    function (lt) { // 1: problem -> løsning
+        hSty('h-papers', 'opacity', hK(lt, 0, .7)); hSty('h-papers', 'display', '');
+        const gone = lt >= 2.4; for (let i = 1; i <= 10; i++) hCls('hp' + i, 'gone', lt >= 2.4 + i * .04);
+        const sk = hK(lt, 2.0, 2.9); hSty('h-streak', 'left', (-200 + sk * 760) + 'px'); hSty('h-streak', 'opacity', sk > 0 && sk < 1 ? 1 : 0);
+        hCls('h-p1', 'fold', lt < 3.0); hCls('h-p1', 'side', false); hCls('h-p2', 'on', false); hCls('h-p1', 'gone', false);
+        hScr(lt >= 3.0 ? 'home' : '');
+        [['ht1', 3.6], ['ht2', 3.8], ['ht3', 4.0], ['ht4', 4.2]].forEach(a => hOn(a[0], lt >= a[1]));
+        hCap(0, lt >= 3.2);
+        hCur('hc-p', [[9, 0, 0], [10, 0, 0]], [], lt, 7, 7);
     },
-    timer: {
-        title: 'Registrér timer', idle: 'Indtal timer',
-        say: 'Dagens timer 7 til 15 på Østergade, ligger ude',
-        card: (done) => `<div class="lp-in rounded-xl border ${done ? 'border-emerald-600/60 bg-emerald-950/30' : 'border-gray-700 bg-gray-900'} p-3 space-y-2">` +
-            `<div class="flex items-center justify-between"><span class="text-xs font-black text-white">${done ? 'Fredag' : 'Opretter…'}</span><span class="text-lg font-black ${done ? 'text-emerald-300' : 'text-gray-500'}">${done ? '8,0 t' : '– t'}</span></div>` +
-            `<div class="text-[11px] text-gray-200 font-mono">07:00–15:00</div>` +
-            `<div class="flex flex-wrap gap-1.5"><span class="text-[9px] font-black bg-gray-800 text-orange-300 rounded px-1.5 py-0.5">Østergade 12</span>${done ? '<span class="text-[9px] font-black bg-blue-600 text-white rounded-full px-2 py-0.5">Diæt: ligger ude</span>' : ''}</div>` +
-            (done ? `<div class="text-[10px] font-black text-emerald-400">✓ Gemt – til godkendelse i ugen</div>` : '') + `</div>`,
-        run() {
-            const S0 = LP_SCEN.timer; const end = lpType(S0.say, 700, 260);
-            lpAt(300, () => lpMic('listen', 'Lytter… tryk når du er færdig'));
-            lpAt(end + 500, () => lpMic('think', 'Udfylder…'));
-            lpAt(end + 1300, () => { lpMic('idle', S0.idle); $('lp-result').innerHTML = S0.card(false); });
-            lpAt(end + 2900, () => { $('lp-result').innerHTML = S0.card(true); });
-            return end + 6200;
-        }
+    function (lt) { // 2: timer + diæt
+        hSty('h-papers', 'opacity', 0);
+        hCls('h-p1', 'fold', false); hCls('h-p1', 'side', false); hCls('h-p2', 'on', false); hCls('h-p1', 'gone', false);
+        hScr('time'); hCap(1, lt >= .5);
+        const run = lt >= 1.75, el = run ? hC((lt - 2.0) / 3.6) * 8 : 0, hh = Math.floor(el), mm = Math.floor((el - hh) * 60), ss = Math.floor((((el - hh) * 60) - mm) * 60);
+        const p2 = n => String(n).padStart(2, '0'), done = lt >= 5.6;
+        hSty('h-stamp', 'background', run ? '#047857' : '#12233F');
+        hTxt('h-stamp-t', done ? 'Dagen gemt' : (run ? 'Stemplet ind 07:00' : 'Stempl ind'));
+        hE('h-stamp-i').className = 'fa-solid mr-2 ' + (done ? 'fa-check' : (run ? 'fa-circle-play' : 'fa-play'));
+        hTxt('h-clock', p2(hh) + ':' + p2(mm) + ':' + p2(ss));
+        hOn('hch1', lt >= 2.4); hOn('hch2', lt >= 2.6);
+        const dae = lt >= 4.1; hSty('hch1', 'background', dae ? '#1D4ED8' : '#fff'); hSty('hch1', 'borderColor', dae ? '#1D4ED8' : '#D9D3C6'); hSty('hch1', 'color', dae ? '#fff' : '#12233F'); hTxt('hch1t', dae ? '✓ Diæt: ligger ude' : 'Diæt: ligger ude');
+        hOn('hwk5', lt >= 5.8); hOn('hwk6', lt >= 6.4);
+        hCur('hc-p', [[.3, 230, 300], [1.3, 129, 170], [3.1, 129, 170], [3.9, 70, 295], [5.0, 70, 295], [5.8, 220, 440]], [1.7, 4.1], lt, 7, 7);
     },
-    kort: {
-        title: 'Byggepladskort', idle: '', say: '',
-        scene(step) {
-            // step: 0 = arbejder, 1 = kort tomt, 2..4 = pins, 5 = position, 6 = kort-kort
-            const pin = (id, x, y, n, on) => `<g class="lp-pin ${on ? 'on' : ''}" id="${id}"><circle cx="${x}" cy="${y}" r="10" fill="#FF5500" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y + 4}" font-family="sans-serif" font-weight="800" font-size="11" fill="#fff" text-anchor="middle">${n}</text></g>`;
-            const worker = `<svg viewBox="0 0 258 400" class="w-full h-full"><defs><linearGradient id="lpsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E3ECFD"/><stop offset="1" stop-color="#F7F5F1"/></linearGradient></defs>
-                <rect width="258" height="400" fill="url(#lpsky)"/>
-                <g stroke="#B8C4D8" stroke-width="3" fill="none"><path d="M200 40V230M200 60H100M100 60L80 110M200 60L225 90M150 60V90"/><path d="M60 230V150H130V230" stroke="#C9D3E3"/><path d="M60 190H130M95 150V230" stroke="#C9D3E3"/></g>
-                <rect y="300" width="258" height="100" fill="#D9D2C3"/><rect y="300" width="258" height="6" fill="#C5BCA8"/>
-                <g transform="translate(129 0)"><ellipse cx="0" cy="372" rx="52" ry="9" fill="#000" opacity=".12"/>
-                  <rect x="-24" y="318" width="20" height="54" rx="6" fill="#2B3A55"/><rect x="4" y="318" width="20" height="54" rx="6" fill="#2B3A55"/>
-                  <rect x="-28" y="366" width="26" height="9" rx="4" fill="#1B2438"/><rect x="2" y="366" width="26" height="9" rx="4" fill="#1B2438"/>
-                  <rect x="-34" y="228" width="68" height="100" rx="18" fill="#12233F"/>
-                  <rect x="-34" y="258" width="68" height="14" fill="#FFB400"/><rect x="-34" y="292" width="68" height="14" fill="#FFB400"/>
-                  <path d="M-34 232L-34 330M34 232L34 330" stroke="#FF5500" stroke-width="0"/>
-                  <rect x="-34" y="228" width="22" height="100" rx="12" fill="#FF7A1A"/><rect x="12" y="228" width="22" height="100" rx="12" fill="#FF7A1A"/>
-                  <rect x="-6" y="212" width="12" height="18" fill="#E8B98F"/>
-                  <circle cx="0" cy="190" r="26" fill="#F1C9A5"/>
-                  <circle cx="-9" cy="188" r="2.6" fill="#1B2438"/><circle cx="9" cy="188" r="2.6" fill="#1B2438"/><path d="M-8 200Q0 207 8 200" stroke="#1B2438" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-                  <path d="M-30 178Q-30 146 0 146Q30 146 30 178Z" fill="#FF5500"/><rect x="-34" y="174" width="68" height="9" rx="4" fill="#E04A00"/><rect x="-5" y="146" width="10" height="14" rx="3" fill="#FF7A1A"/>
-                  <path d="M-34 246Q-52 270 -40 300" stroke="#12233F" stroke-width="16" stroke-linecap="round" fill="none"/>
-                  <g class="lp-hand"><path d="M34 246Q56 238 60 214" stroke="#12233F" stroke-width="16" stroke-linecap="round" fill="none"/>
-                    <g class="lp-bob"><rect x="46" y="150" width="34" height="58" rx="6" fill="#0B1424" stroke="#566070" stroke-width="2"/><rect x="50" y="156" width="26" height="46" rx="3" fill="#E3ECFD"/><circle cx="63" cy="176" r="4" fill="#1D4ED8"/><circle cx="58" cy="190" r="3" fill="#FF5500"/><circle cx="70" cy="186" r="3" fill="#FF5500"/><circle cx="63" cy="176" r="9" fill="#1D4ED8" opacity=".2" class="lp-ring"/></g>
-                    <circle cx="62" cy="212" r="8" fill="#F1C9A5"/></g></g>
-                <text x="129" y="40" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="13" fill="#12233F">Står på pladsen</text></svg>`;
-            const map = `<svg viewBox="0 0 258 400" class="w-full h-full"><rect width="258" height="400" fill="#F7F5F1"/>
-                <g stroke="#E2DDD0" stroke-width="1"><path d="M0 40H258M0 80H258M0 120H258M0 160H258M0 200H258M0 240H258M0 280H258M0 320H258M0 360H258M43 0V400M86 0V400M129 0V400M172 0V400M215 0V400"/></g>
-                <rect x="38" y="64" width="112" height="86" fill="#E3ECFD" stroke="#12233F" stroke-width="2.5"/>
-                <rect x="160" y="150" width="62" height="90" fill="#fff" stroke="#566070" stroke-width="2" stroke-dasharray="5 4"/>
-                <path d="M10 262H168L186 330" fill="none" stroke="#566070" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>
-                ${pin('lp-p1', 72, 96, 1, step >= 2)}${pin('lp-p2', 128, 120, 2, step >= 3)}${pin('lp-p3', 190, 184, 3, step >= 4)}
-                <g class="lp-pin ${step >= 5 ? 'on' : ''}" id="lp-me"><circle cx="96" cy="262" r="20" fill="#1D4ED8" opacity=".18" class="lp-ring"/><circle cx="96" cy="262" r="9" fill="#1D4ED8" stroke="#fff" stroke-width="3"/></g>
-                </svg>`;
-            const card = step >= 6 ? `<div class="lp-in absolute left-3 right-3 bottom-3 rounded-xl border border-emerald-600/60 bg-white p-3 shadow-lg"><div class="flex items-center justify-between"><span class="text-[9px] font-black bg-[#FF5500] text-white rounded px-1.5 py-0.5">KS #4</span><span class="text-[9px] font-black text-emerald-700">✓ Gemt på kortet</span></div><div class="text-xs font-black text-[#12233F] mt-1">Støbning søjle D</div><div class="text-[10px] text-[#566070]"><i class="fa-solid fa-location-dot text-[#FF5500] mr-1"></i>Placeret hvor du står</div></div>` : '';
-            return step === 0 ? `<div class="lp-scene relative w-full h-full">${worker}</div>` : `<div class="lp-scene relative w-full h-full">${map}${card}</div>`;
-        },
-        card(done) { return LP_SCEN.kort.scene(done ? 6 : 0); },
-        run() {
-            const K = LP_SCEN.kort, R = () => $('lp-result');
-            R().innerHTML = K.scene(0);
-            lpAt(3400, () => { R().innerHTML = K.scene(1); });
-            lpAt(4200, () => { const e = $('lp-p1'); if (e) e.classList.add('on'); });
-            lpAt(4900, () => { const e = $('lp-p2'); if (e) e.classList.add('on'); });
-            lpAt(5600, () => { const e = $('lp-p3'); if (e) e.classList.add('on'); });
-            lpAt(6600, () => { const e = $('lp-me'); if (e) e.classList.add('on'); });
-            lpAt(8000, () => { R().innerHTML = K.scene(6); });
-            return 12500;
+    function (lt) { // 3: KS m. GPS + stemme
+        hSty('h-papers', 'opacity', 0);
+        hCls('h-p1', 'fold', false); hCls('h-p1', 'side', false); hCls('h-p2', 'on', false); hCls('h-p1', 'gone', false);
+        hCap(2, lt >= .5);
+        if (lt < 4.3) {
+            hScr('cam'); hSty('h-flash', 'opacity', lt >= 1.7 && lt < 2.2 ? (1 - hK(lt, 1.7, 2.2)) : 0);
+            hSty('h-shut', 'transform', lt >= 1.65 && lt < 1.85 ? 'scale(.8)' : 'scale(1)'); hOn('h-gps', lt >= 2.7);
+        } else {
+            hScr('ks');
+            const mic = lt >= 5.0 && lt < 8.2; hSty('h-wave', 'display', mic ? 'flex' : 'none'); hTxt('h-mic-t', mic ? 'Lytter…' : 'Indtal'); hSty('h-mic', 'background', mic ? '#10B981' : '#DC2626');
+            const T = 'Rør lagt i sandbed, fald kontrolleret og målt', n = Math.floor(hK(lt, 5.4, 8.0) * T.length); hTxt('h-type', T.slice(0, n)); hSty('h-caret', 'opacity', n < T.length ? 1 : 0);
+            hOn('h-saved', lt >= 8.5);
         }
+        hCur('hc-p', [[.5, 220, 400], [1.4, 129, 462], [2.0, 129, 462], [2.3, 220, 400], [4.5, 200, 330], [4.9, 129, 224], [5.6, 129, 224], [6.0, 200, 400]], [1.7, 5.0], lt, 7, 7);
+        if (lt < .5) hCur('hc-p', [[9, 0, 0], [10, 0, 0]], [], lt, 7, 7);
+    },
+    function (lt) { // 4: fejl -> opgave -> push
+        hSty('h-papers', 'opacity', 0); hCls('h-p1', 'fold', false); hCls('h-p1', 'gone', false);
+        hScr('def'); hCap(3, lt >= .5);
+        hOn('h-defc', lt >= 1.0);
+        hSty('h-sheet', 'transform', lt >= 3.0 ? 'translateY(0)' : 'translateY(270px)');
+        const sel = lt >= 4.8; hSty('hsh1', 'background', sel ? '#FFF3EA' : '#fff'); hSty('hsh1', 'borderColor', sel ? '#FF5500' : '#E7E3DA'); hOn('hsh-ok', lt >= 5.2);
+        hCls('h-p1', 'side', lt >= 6.2); hCls('h-p2', 'on', lt >= 6.2); hOn('h-push', lt >= 7.2);
+        const shake = lt >= 7.2 && lt < 7.6 ? Math.sin((lt - 7.2) * 60) * 3 : 0; hSty('h-push', 'marginLeft', shake + 'px');
+        hCur('hc-p', [[1.2, 230, 300], [2.5, 129, 215], [3.2, 129, 215], [4.4, 129, 343], [5.4, 129, 343], [5.9, 210, 430]], [2.8, 4.7], lt, 7, 7);
+    },
+    function (lt) { // 5: kontor + PDF + CTA
+        hSty('h-papers', 'opacity', 0); hCls('h-p2', 'on', false); hCls('h-p1', 'side', false); hCls('h-p1', 'gone', lt >= .2); hScr('');
+        const desk = lt >= .3 && lt < 9.2; hOn('h-desk', desk);
+        [0, 1, 2].forEach(i => hOn('hd-ok' + i, lt >= 3.0 + i * .12)); hOn('hd-pay', lt >= 3.4);
+        hSty('hd-appr', 'background', lt >= 2.9 ? '#047857' : '#12233F'); hSty('hd-appr', 'transform', lt >= 2.55 && lt < 2.75 ? 'scale(.94)' : 'scale(1)'); hSty('hd-pdfb', 'transform', lt >= 4.45 && lt < 4.65 ? 'scale(.94)' : 'scale(1)');
+        hOn('h-pdf', lt >= 4.7 && lt < 9.2); hCap(4, lt >= .8); hTxt('h-cap-s', lt >= 9.6 ? 'Prøv UniSjak gratis på unisjak.dk' : '');
+        const fin = lt >= 9.2; hOn('h-fin', fin);
+        hOn('h-flogo', lt >= 9.5); hOn('h-fname', lt >= 10.1); hOn('h-cta', lt >= 10.6); hOn('h-cta2', lt >= 11.1);
+        const rk = hK(lt, 9.5, 10.4); hSty('h-ring', 'opacity', rk > 0 && rk < 1 ? .7 * (1 - rk) : 0); hSty('h-ring', 'transform', 'scale(' + (.5 + rk * 1.8) + ')');
+        hSty('h-fin', 'opacity', lt >= 13.1 ? (1 - hK(lt, 13.1, 14)) : '');
+        hCur('hc-d', [[1.6, 380, 120], [2.5, 177, 298], [3.4, 177, 298], [4.3, 327, 298], [5.2, 327, 298], [6.0, 420, 380]], [2.6, 4.5], lt, 0, 0);
+        if (lt < 1.6) hCur('hc-d', [[9, 0, 0], [10, 0, 0]], [], lt, 0, 0);
     }
-};
-function lpDemoStart(mode) {
-    lpDemoStop(); LP.mode = mode;
-    const sc = LP_SCEN[mode];
-    const on = 'flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg bg-[#12233F] text-white transition', off = 'flex-1 py-2.5 text-xs sm:text-sm font-black rounded-lg text-[#566070] hover:text-[#12233F] transition';
-    $('lp-tab-ks').className = mode === 'ks' ? on : off;
-    $('lp-tab-timer').className = mode === 'timer' ? on : off;
-    $('lp-tab-kort').className = mode === 'kort' ? on : off;
-    $('lp-microw').style.display = mode === 'kort' ? 'none' : '';
-    $('lp-result').className = mode === 'kort' ? 'relative overflow-hidden' : 'px-4 pt-1 space-y-2'; $('lp-result').style.height = mode === 'kort' ? '438px' : '';
-    $('lp-ph-title').textContent = sc.title;
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const cycle = () => {
-        $('lp-say').textContent = ''; $('lp-result').innerHTML = ''; lpMic('idle', sc.idle);
-        if (reduce) { $('lp-say').textContent = '“' + sc.say + '”'; $('lp-result').innerHTML = sc.card(true); return; }
-        const total = sc.run();
-        lpAt(total, cycle);
-    };
-    cycle();
+];
+function hCap(i, show) {
+    if (hE('h-cap').dataset.i !== String(i)) { hE('h-cap').dataset.i = i; hTxt('h-cap-b', HERO.CAP[i]); hTxt('h-cap-s', ''); }
+    hOn('h-cap', show);
 }
+function lpHeroRender() {
+    const t = HERO.t; let i = HERO.SC.length - 1; while (i > 0 && t < HERO.START[i]) i--;
+    const lt = t - HERO.START[i];
+    if (HERO.cur !== i) { HERO.cur = i; hE('h-cap').dataset.i = ''; document.querySelectorAll('#hero-segs .h-seg').forEach((b, k) => b.classList.toggle('act', k === i)); }
+    HU[i](lt);
+    document.querySelectorAll('#hero-segs .h-seg').forEach((b, k) => { const f = k < i ? 1 : (k === i ? lt / HERO.SC[k].d : 0); b.querySelector('.bar i').style.width = (hC(f) * 100) + '%'; });
+    const s = Math.floor(t), tm = document.getElementById('hero-time'); if (tm) tm.textContent = '0:' + String(s).padStart(2, '0') + ' / 0:' + String(Math.round(HERO.TOTAL)).padStart(2, '0');
+}
+function lpHeroTick(now) {
+    HERO.raf = requestAnimationFrame(lpHeroTick);
+    const dt = Math.min(.1, (now - HERO.last) / 1000); HERO.last = now;
+    if (!HERO.playing || !HERO.vis || document.hidden) return;
+    const w0 = document.getElementById('hero-demo'); if (w0 && w0.clientWidth !== HERO.w) { HERO.w = w0.clientWidth; lpHeroFit(); }
+    HERO.t += dt; if (HERO.t >= HERO.TOTAL) HERO.t -= HERO.TOTAL;
+    lpHeroRender();
+}
+function lpHeroSeek(i) {
+    HERO.t = HERO.START[i] + (HERO.reduce ? HERO.SC[i].d * .85 : 0.02); lpHeroRender();
+}
+function lpHeroToggle() {
+    HERO.playing = !HERO.playing; const b = document.getElementById('hero-play');
+    if (b) { b.innerHTML = HERO.playing ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>'; b.setAttribute('aria-label', HERO.playing ? 'Pause' : 'Afspil'); }
+}
+function lpHeroStart() {
+    lpHeroBuild(); if (!HERO.built) return;
+    HERO.reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    cancelAnimationFrame(HERO.raf); HERO.last = performance.now();
+    if (HERO.reduce && HERO.playing) { HERO.t = HERO.START[1] - .1; lpHeroToggle(); }
+    lpHeroFit(); lpHeroRender();
+    if (!HERO.io && window.IntersectionObserver) { HERO.io = new IntersectionObserver(es => { HERO.vis = es[0].isIntersecting; }, { threshold: .15 }); HERO.io.observe(document.getElementById('hero-demo')); window.addEventListener('resize', lpHeroFit); }
+    HERO.raf = requestAnimationFrame(lpHeroTick);
+}
+function lpHeroStop() { cancelAnimationFrame(HERO.raf); HERO.raf = 0; }
 
 /* ---- Globale indstillinger (styres fra Kontrolcenteret → Markedsføring / Indstillinger) ---- */
 const UNISJAK_PDF_LOGO = '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';
