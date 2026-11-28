@@ -172,6 +172,7 @@
         .vstat:empty { display: none; }
         .lbl { display: block; font-size: 10px; font-weight: 700; color: #c7c2bd; text-transform: uppercase; margin-bottom: 0.25rem; }
         @media (max-width: 767px) { input, select, textarea { font-size: 16px !important; } }
+        @media (min-width: 768px) { body.tilsyn-wide #mobile-shell { max-width: 1040px !important; } body.tilsyn-wide #ks-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; align-items: start; } body.tilsyn-wide #ks-list > * { margin: 0; } }
         body.force-mobile #pc-shell { display: none !important; }
         body.force-mobile #mobile-shell { display: flex !important; }
         .active\:scale-98:active { transform: scale(0.98); }
@@ -1391,7 +1392,7 @@ function applyIndustry() {
     if (!tk && S.pcView === 'tasks') switchPcView('overview');
     if (!tm && S.mobTab === 'timer') switchTab('home');
     if (!tk && S.mobTab === 'tasks') switchTab('home');
-    if (g) { document.body.classList.add('force-mobile'); const bb = $('btn-back-to-pc'); if (bb) bb.classList.add('hidden'); if (S.mobTab !== 'tasks' && S.mobTab !== 'admin' && !(S.mobTab === 'ks' && ks)) switchTab(ks && !S.tasks.length ? 'ks' : 'tasks'); [$('ks-head-btns'), $('ks-export-btn')].forEach(el => set(el, el === $('ks-export-btn') && isTilsyn() && ks)); }
+    if (g) { document.body.classList.toggle('tilsyn-wide', isTilsyn()); document.body.classList.add('force-mobile'); const bb = $('btn-back-to-pc'); if (bb) bb.classList.add('hidden'); if (S.mobTab !== 'tasks' && S.mobTab !== 'admin' && !(S.mobTab === 'ks' && ks)) switchTab(ks && !S.tasks.length ? 'ks' : 'tasks'); [$('ks-head-btns'), $('ks-export-btn')].forEach(el => set(el, el === $('ks-export-btn') && isTilsyn() && ks)); }
     const nl = (id, t) => { const el = $(id); const sp = el && (el.tagName === 'SPAN' ? el : el.lastElementChild); if (sp && sp.tagName === 'SPAN' && !sp.children.length && t) sp.textContent = t; };
     nl('nav-ks', g ? 'Sager' : lbl('ks', 'KS')); nl('pc-nav-ks', lbl('ks', 'Kvalitetssikring')); nl('nav-tasks', lbl('opgaver', 'Opgaver')); nl('pc-nav-tasks', lbl('opgaver', 'Opgaver'));
     set(document.querySelector('#pc-shell header button[onclick*="triggerCamera(\'ks\')"]'), ks);
@@ -2971,8 +2972,6 @@ function teamHtml() {
     if (admin) h += `<div class="${box} md:col-span-2"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-image text-orange-500 mr-2"></i>Virksomhedslogo</h3>` +
         logoBoxHtml(S.logo && S.logo.b64, 'logo-file', 'logo-del', 'Vises øverst på alle PDF\'er sammen med virksomhedsnavnet og teksten "Genereret af UniSjak.dk". PNG eller JPG.') + `</div>`;
     if (mgr) {
-        h += `<div class="${box} md:col-span-2"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-store text-orange-500 mr-2"></i>Branche</h3>` +
-            `<div class="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl p-4"><div><p class="font-black text-white text-sm">${hasShifts() ? 'Butik &amp; Restaurant' : 'Håndværk &amp; Byggeri'}</p><p class="text-[11px] text-gray-400">${hasShifts() ? 'Vagtplan, timer/stempelur, opgaver og medarbejdere' : 'Sager, timer, KS, materialer og opgaver'}</p></div><span class="text-[10px] font-black text-amber-300 bg-amber-950/40 border border-amber-700/40 rounded-lg px-2.5 py-1.5"><i class="fa-solid fa-lock mr-1"></i>Låst</span></div></div>`;
         if (admin && hasShifts()) {
             h += `<div class="${box} md:col-span-2"><h3 class="font-black text-white flex items-center"><i class="fa-solid fa-people-group text-orange-500 mr-2"></i>Vagtroller</h3>` +
                 `<p class="text-xs text-gray-400">Opret og tilpas roller som Åbne, Lukke, Bar, Køkken og Opvask – med tider og behov pr. dag. Bruges af auto-planen.</p>` +
@@ -3071,6 +3070,8 @@ function openEmpNew() {
 function empNewRole(r) {
     S.empNewRole = r; $('emp-n-roles').innerHTML = empRoleBtns();
     const m = limitMsg(r); $('emp-n-limit').textContent = m;
+    const gh = $('emp-n-guesthint');
+    gh.textContent = r === 'tilsyn' ? 'Bygherre/tilsyn ser kun de punkter og opdateringer, du som admin deler eller tildeler. Kan oprette fejl og mangler og sikkerhed, godkende eller afvise udbedring og se byggepladskortet.' : 'Gæstebrugere er til eksterne samarbejdspartnere. De ser kun opgaver, de er tildelt, og kan dokumentere arbejdet med billeder, kommentar og status.';
     show('emp-n-guesthint', r === 'gaest' || r === 'tilsyn');
 }
 async function empCreate() {
@@ -5087,6 +5088,13 @@ const caseNo = p => p.safety_level ? sfNo(p) : (p.dev_no ? devNo(p) : '');
 const caseUpdatesOf = p => S.ksUpdates.filter(u => u.photo_id === p.id);
 const canEditPt = p => isManager() || (!!p && p.user_id === myId() && !isCasePt(p));
 const caseAuthor = u => u.user_id === myId() ? 'Dig' : caseWho(u.user_id);
+const tilsynTxt = p => {   // status for bygherre-godkendelse til rapporter
+    const who = p.tilsyn_decision_by ? userName(p.tilsyn_decision_by) : (tilsynIdsOf(p).map(userName).join(', ') || 'bygherre');
+    if (p.tilsyn_decision === 'godkendt') return ['Godkendt af ' + who + ' ' + dkWhen(p.tilsyn_decision_at) + (p.tilsyn_decision_note ? ' – ' + p.tilsyn_decision_note : ''), [20, 130, 60]];
+    if (p.tilsyn_decision === 'afvist') return ['Afvist af ' + who + ' ' + dkWhen(p.tilsyn_decision_at) + (p.tilsyn_decision_note ? ' – ' + p.tilsyn_decision_note : ''), [190, 40, 40]];
+    if (p.tilsyn_sent_at) return ['Sendt til godkendelse ' + dkWhen(p.tilsyn_sent_at), [30, 110, 180]];
+    return tilsynIdsOf(p).length ? ['Ikke sendt til bygherre endnu', [130, 130, 130]] : null;
+};
 function caseThreadLines(p) {
     return caseUpdatesOf(p).map(u => dkWhen(u.created_at) + ' · ' + userName(u.user_id) + (u.kind === 'status' ? ' (status)' : '') + (u.text ? ': ' + u.text.replace(/\s+/g, ' ') : '') + ((u.image_paths || []).length ? ' [' + u.image_paths.length + (u.image_paths.length === 1 ? ' billede]' : ' billeder]') : ''));
 }
@@ -5330,8 +5338,8 @@ async function buildSafetyReport(fmt, opt) {
     const subject = comp + ' – Fejl og mangler / Sikkerhed – ' + projLabel(pr);
     const periodTxt = ($('ex-from').value || $('ex-to').value) ? (($('ex-from').value ? dkFull($('ex-from').value) : '…') + ' – ' + ($('ex-to').value ? dkFull($('ex-to').value) : '…')) : 'Alle datoer';
     if (fmt === 'csv') {
-        const rows = list.map(p => [numOf(p), typeOf(p), isClosed(p) ? 'Afsluttet' : 'Åben', dkWhen(p.created_at), userName(p.user_id), (p.note || '').replace(/\s+/g, ' '), closedAt(p) ? dkWhen(closedAt(p)) : '', closedBy(p) ? userName(closedBy(p)) : '', (closeNoteOf(p) || '').replace(/\s+/g, ' '), (p.case_assignees || []).map(userName).join(', '), ageDays(p), photoPaths(p).length, caseUpdatesOf(p).filter(u => u.kind !== 'status').length, caseThreadLines(p).join(' | '), p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.lat != null ? mapsUrl(p.lat, p.lng) : '']);
-        return { bytes: enc(csvOf(['Nr', 'Type', 'Status', 'Oprettet', 'Oprettet af', 'Beskrivelse', 'Afsluttet', 'Afsluttet af', 'Afslutningskommentar', 'Ansvarlig', 'Dage åben', 'Billeder', 'Indlæg i tråd', 'Tråd', 'Lat', 'Lng', 'Google Maps'], rows)), mime: 'text/csv', filename: 'UniSjak_FejlOgSikkerhed_' + safeName(pr.case_number || pr.name) + '.csv', subject };
+        const rows = list.map(p => [numOf(p), typeOf(p), isClosed(p) ? 'Afsluttet' : 'Åben', dkWhen(p.created_at), userName(p.user_id), (p.note || '').replace(/\s+/g, ' '), closedAt(p) ? dkWhen(closedAt(p)) : '', closedBy(p) ? userName(closedBy(p)) : '', (closeNoteOf(p) || '').replace(/\s+/g, ' '), (p.case_assignees || []).map(userName).join(', '), ageDays(p), photoPaths(p).length, caseUpdatesOf(p).filter(u => u.kind !== 'status').length, caseThreadLines(p).join(' | '), p.lat != null ? p.lat : '', p.lng != null ? p.lng : '', p.lat != null ? mapsUrl(p.lat, p.lng) : '', (tilsynTxt(p) || [''])[0]]);
+        return { bytes: enc(csvOf(['Nr', 'Type', 'Status', 'Oprettet', 'Oprettet af', 'Beskrivelse', 'Afsluttet', 'Afsluttet af', 'Afslutningskommentar', 'Ansvarlig', 'Dage åben', 'Billeder', 'Indlæg i tråd', 'Tråd', 'Lat', 'Lng', 'Google Maps', 'Bygherre-godkendelse'], rows)), mime: 'text/csv', filename: 'UniSjak_FejlOgSikkerhed_' + safeName(pr.case_number || pr.name) + '.csv', subject };
     }
     const doc = newReport({ company: comp, title: 'Fejl og mangler / Sikkerhed', sub: placeCap() + ': ' + projLabel(pr), sub2: 'Periode: ' + periodTxt + ' · pr. ' + dkFull(fmtDate(new Date())) }, false);
     doc.paragraph(list.length + (list.length === 1 ? ' punkt' : ' punkter') + ' – ' + openN(list) + ' åbne, ' + (list.length - openN(list)) + ' afsluttede', { size: 10, bold: true });
@@ -5341,6 +5349,18 @@ async function buildSafetyReport(fmt, opt) {
     doc.table([{ title: 'Type', w: 140 }, { title: 'Åbne', w: 80, align: 'right' }, { title: 'Afsluttede', w: 80, align: 'right' }, { title: 'I alt', w: 80, align: 'right' }],
         groups.map(g => [{ t: g.k, bold: true, color: g.rgb }, String(openN(g.items)), String(g.items.length - openN(g.items)), { t: String(g.items.length), bold: true }]));
     doc.y += 8;
+    const tl = list.filter(p => tilsynTxt(p));
+    if (tl.length) {
+        const cnt = f => tl.filter(f).length;
+        doc.paragraph('Bygherre/tilsyn: ' + cnt(p => p.tilsyn_decision === 'godkendt') + ' godkendt  ·  ' + cnt(p => p.tilsyn_decision === 'afvist') + ' afvist  ·  ' + cnt(p => p.tilsyn_sent_at && !p.tilsyn_decision) + ' afventer svar  ·  ' + cnt(p => !p.tilsyn_sent_at) + ' ikke sendt', { size: 10, bold: true });
+        doc.y += 4;
+        const dec = tl.filter(p => p.tilsyn_decision);
+        if (dec.length) {
+            doc.table([{ title: 'Nr', w: 52 }, { title: 'Beslutning', w: 62 }, { title: 'Af', w: 96 }, { title: 'Tidspunkt', w: 86 }, { title: 'Kommentar', w: 179.28 }],
+                dec.map(p => [{ t: numOf(p), bold: true }, { t: p.tilsyn_decision === 'godkendt' ? 'Godkendt' : 'Afvist', bold: true, color: p.tilsyn_decision === 'godkendt' ? [20, 130, 60] : [190, 40, 40] }, p.tilsyn_decision_by ? userName(p.tilsyn_decision_by) : '', dkWhen(p.tilsyn_decision_at), (p.tilsyn_decision_note || '').replace(/\s+/g, ' ')]));
+        }
+        doc.y += 8;
+    }
     doc.table([{ title: 'Nr', w: 52 }, { title: 'Type', w: 78 }, { title: 'Beskrivelse', w: 220 }, { title: 'Status', w: 110 }, { title: 'Indlæg', w: 53.28, align: 'right' }],
         list.map(p => [{ t: numOf(p), bold: true }, { t: typeOf(p), bold: true, color: rgbOf(p) }, (p.note || '').replace(/\s+/g, ' ').slice(0, 110), ageTxt(p), String(caseUpdatesOf(p).filter(u => u.kind !== 'status').length)]));
     const usePhotos = opt.photos !== false;
@@ -5391,6 +5411,8 @@ async function buildSafetyReport(fmt, opt) {
             doc.ensure(30);
             doc.paragraph('Afsluttet ' + dkWhen(closedAt(p)) + (closedBy(p) ? ' af ' + userName(closedBy(p)) : '') + (closeNoteOf(p) ? ': ' + closeNoteOf(p) : ''), { size: 9, color: [20, 110, 60], bold: true });
         }
+        const tt = tilsynTxt(p);
+        if (tt) { doc.ensure(24); doc.paragraph('Bygherre/tilsyn: ' + tt[0], { size: 9, bold: true, color: tt[1] }); }
         doc.y += 4; doc.line(doc.margin, doc.y, doc.W - doc.margin, doc.y, { color: [225, 228, 232] }); doc.y += 10;
     }
     return { bytes: doc.build(), mime: 'application/pdf', filename: 'UniSjak_FejlOgSikkerhed_' + safeName(pr.case_number || pr.name) + '.pdf', subject };
