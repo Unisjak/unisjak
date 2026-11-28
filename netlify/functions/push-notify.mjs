@@ -1,5 +1,5 @@
 // Netlify Function: push-notify  (sender push-notifikation til kolleger i SAMME virksomhed, fx når en opgave tildeles)
-// POST { user_ids: [uuid], title, body, url?, tag? }  – kræver indlogget, aktiv bruger.
+// POST { user_ids: [uuid], managers?: true (send også til virksomhedens admins), title, body, url?, tag? }  – kræver indlogget, aktiv bruger.
 // Miljø: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY (+ VAPID_SUBJECT)
 import { json, UUID } from './_lib/crm-auth.mjs';
 import { sendPush } from './_lib/webpush.mjs';
@@ -31,11 +31,15 @@ export default async (req, _ctx, deps = {}) => {
   let b; try { b = await req.json(); } catch { return json({ error: 'json' }, 400); }
   const ids = [...new Set((Array.isArray(b.user_ids) ? b.user_ids : []).filter(x => UUID.test(String(x)) && x !== user.id))].slice(0, 20);
   const title = clean(b.title, 80), body = clean(b.body, 200);
-  if (!ids.length || !title) return json({ error: 'input' }, 400);
+  const wantMgr = b.managers === true;
+  if ((!ids.length && !wantMgr) || !title) return json({ error: 'input' }, 400);
   let url = String(b.url || '/'); if (!/^\/[^/\\]*$/.test(url) && url !== '/') url = '/';
   try {
     // kun kolleger i samme virksomhed og aktive
-    const q = `${base}/rest/v1/profiles?id=in.(${ids.join(',')})&company_id=eq.${me.company_id}&active=eq.true&select=id`;
+    let cand = [...ids];
+    if (wantMgr) { const mr = await f(`${base}/rest/v1/profiles?company_id=eq.${me.company_id}&role=in.(admin,formand)&active=eq.true&select=id`, { headers: S }); if (mr.ok) cand.push(...(await mr.json()).map(x => x.id).filter(x => UUID.test(String(x)) && x !== user.id)); }
+    cand = [...new Set(cand)].slice(0, 40); if (!cand.length) return json({ ok: true, sent: 0 });
+    const q = `${base}/rest/v1/profiles?id=in.(${cand.join(',')})&company_id=eq.${me.company_id}&active=eq.true&select=id`;
     const pr = await f(q, { headers: S }); const ok = pr.ok ? (await pr.json()).map(x => x.id) : [];
     if (!ok.length) return json({ ok: true, sent: 0 });
     const sr = await f(`${base}/rest/v1/push_subscriptions?user_id=in.(${ok.join(',')})&select=id,endpoint,p256dh,auth`, { headers: S });
