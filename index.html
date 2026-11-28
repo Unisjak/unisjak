@@ -75,6 +75,7 @@
         .border-card { border-color: #E7E3DA; }
         .brand-orange { background-color: #FF5500; color: #fff; }
         .brand-orange-text { color: #E04A00; }
+        .nav-over { display: none !important; }
         .active-tab { color: #12233F; background-color: #12233F; color: #fff; border-radius: 14px; }
         .inactive-tab { color: #566070; }
         .sidebar-active { background-color: #12233F; color: #fff; border-color: #12233F; }
@@ -774,16 +775,17 @@
             </div>
         </main>
 
-        <nav id="mob-nav" class="bg-card border-t border-card p-1.5 flex items-center shrink-0 z-10 overflow-x-auto" style="scrollbar-width:none">
-            <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center p-1.5 active-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-house text-lg"></i><span class="text-[9px] font-bold mt-1">Hjem</span></button>
-            <button onclick="switchTab('overview')" id="nav-overview" style="display:none" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-chart-column text-lg"></i><span class="text-[9px] font-bold mt-1">Overblik</span></button>
-            <button onclick="switchTab('ks')" id="nav-ks" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-camera text-lg"></i><span class="text-[9px] font-bold mt-1">KS</span></button>
-            <button onclick="switchTab('map')" id="nav-map" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-map text-lg"></i><span class="text-[9px] font-bold mt-1">Kort</span></button>
-            <button onclick="switchTab('timer')" id="nav-timer" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-clock text-lg"></i><span class="text-[9px] font-bold mt-1">Timer</span></button>
-            <button onclick="switchTab('shifts')" id="nav-shifts" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-calendar-week text-lg"></i><span class="text-[9px] font-bold mt-1">Vagter</span></button>
-            <button onclick="switchTab('plan')" id="nav-plan" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-chart-gantt text-lg"></i><span id="nav-plan-label" class="text-[9px] font-bold mt-1">Planlægning</span></button>
-            <button onclick="switchTab('materials')" id="nav-materials" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[9px] font-bold mt-1">Materiale</span></button>
-            <button onclick="switchTab('tasks')" id="nav-tasks" class="flex flex-col items-center p-1.5 inactive-tab flex-1 shrink-0 min-w-[58px] whitespace-nowrap"><span class="relative"><i class="fa-solid fa-list-check text-lg"></i><span id="nav-tasks-badge" class="hidden absolute -top-2 -right-3 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center">0</span></span><span class="text-[9px] font-bold mt-1">Opgaver</span></button>
+        <nav id="mob-nav" class="bg-card border-t border-card p-1.5 flex items-center shrink-0 z-10">
+            <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center active-tab flex-1 min-w-0 py-2 justify-center"><i class="fa-solid fa-house text-xl"></i><span class="text-[11px] font-bold mt-1 truncate max-w-full">Hjem</span></button>
+            <button onclick="switchTab('overview')" id="nav-overview" style="display:none" class="flex flex-col items-center inactive-tab flex-1 min-w-0 py-2 justify-center"><i class="fa-solid fa-chart-column text-xl"></i><span class="text-[11px] font-bold mt-1 truncate max-w-full">Overblik</span></button>
+            <button onclick="switchTab('ks')" id="nav-ks" class="flex flex-col items-center inactive-tab flex-1 min-w-0 py-2 justify-center"><i class="fa-solid fa-camera text-xl"></i><span class="text-[11px] font-bold mt-1 truncate max-w-full">KS</span></button>
+            <button onclick="switchTab('map')" id="nav-map" class="flex flex-col items-center inactive-tab flex-1 min-w-0 py-2 justify-center"><i class="fa-solid fa-map text-xl"></i><span class="text-[11px] font-bold mt-1 truncate max-w-full">Kort</span></button>
+            <button onclick="switchTab('timer')" id="nav-timer" class="flex flex-col items-center inactive-tab flex-1 min-w-0 py-2 justify-center"><i class="fa-solid fa-clock text-xl"></i><span class="text-[11px] font-bold mt-1 truncate max-w-full">Timer</span></button>
+            <button onclick="switchTab('shifts')" id="nav-shifts" class="flex flex-col items-center inactive-tab flex-1 min-w-0 py-2 justify-center"><i class="fa-solid fa-calendar-week text-xl"></i><span class="text-[11px] font-bold mt-1 truncate max-w-full">Vagter</span></button>
+            <button onclick="switchTab('plan')" id="nav-plan" class="flex flex-col items-center inactive-tab flex-1 min-w-0 py-2 justify-center"><i class="fa-solid fa-chart-gantt text-xl"></i><span id="nav-plan-label" class="text-[11px] font-bold mt-1 truncate max-w-full">Planlægning</span></button>
+            <button onclick="switchTab('materials')" id="nav-materials" class="flex flex-col items-center inactive-tab flex-1 min-w-0 py-2 justify-center"><i class="fa-solid fa-boxes-stacked text-xl"></i><span class="text-[11px] font-bold mt-1 truncate max-w-full">Materiale</span></button>
+            <button onclick="switchTab('tasks')" id="nav-tasks" class="flex flex-col items-center inactive-tab flex-1 min-w-0 py-2 justify-center"><span class="relative"><i class="fa-solid fa-list-check text-xl"></i><span id="nav-tasks-badge" class="hidden absolute -top-2 -right-3 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center">0</span></span><span class="text-[11px] font-bold mt-1 truncate max-w-full">Opgaver</span></button>
+            <button onclick="navMore()" id="nav-more" style="display:none" class="flex flex-col items-center inactive-tab flex-1 min-w-0 py-2 justify-center"><i class="fa-solid fa-grip text-xl"></i><span class="text-[11px] font-bold mt-1">Mere</span></button>
         </nav>
     </div>
 
@@ -1259,6 +1261,7 @@ const canPlan = () => !!S.profile && !isGuest() && (isAdmin() || S.profile.perm_
 const LBL = () => (S.company && S.company.labels && typeof S.company.labels === 'object') ? S.company.labels : {};
 const lbl = (k, d) => { const v = LBL()[k]; return typeof v === 'string' && v.trim() ? v.trim().slice(0, 40) : d; };
 const hasKs = () => industry() === 'haandvaerk' && modOn('ks') && (!isGuest() || (S.caseReady && S.photos.some(isCasePt)));
+const hasMap = () => hasKs() && !isGuest() && modOn('map') && (isAdmin() || !S.profile || S.profile.perm_map !== false);
 const hasMat = () => hasKs() && modOn('materials') && !isGuest();
 const hasShifts = () => industry() === 'butik';
 async function setCompanyIndustry(cid, val) {
@@ -1279,9 +1282,9 @@ function applyIndustry() {
     const set = (el, on) => { if (el) el.style.display = on ? '' : 'none'; };
     const g = isGuest(), mat = hasMat(), tm = modOn('time') && !g, tk = modOn('tasks'), shOn = sh && modOn('shifts') && !g, plOn = !sh && hasPlan();
     ['pc-nav-ks', 'pc-view-ks', 'nav-ks', 'tab-ks'].forEach(id => set($(id), ks));
-    ['pc-nav-map', 'pc-view-map', 'nav-map', 'tab-map'].forEach(id => set($(id), ks && !g));
-    if (!(ks && !g) && S.pcView === 'map') switchPcView('overview');
-    if (!(ks && !g) && S.mobTab === 'map') switchTab('home');
+    ['pc-nav-map', 'pc-view-map', 'nav-map', 'tab-map'].forEach(id => set($(id), hasMap()));
+    if (!hasMap() && S.pcView === 'map' && !MP.sa) switchPcView('overview');
+    if (!hasMap() && S.mobTab === 'map' && !MP.sa) switchTab('home');
     ['pc-nav-materials', 'pc-view-materials', 'nav-materials', 'tab-materials'].forEach(id => set($(id), mat));
     ['pc-nav-timers', 'pc-view-timers', 'nav-timer', 'tab-timer'].forEach(id => set($(id), tm));
     ['pc-nav-tasks', 'pc-view-tasks', 'nav-tasks', 'tab-tasks'].forEach(id => set($(id), tk));
@@ -1318,6 +1321,7 @@ function applyIndustry() {
     if (!mat && S.mobTab === 'materials') switchTab('home');
     if (!shOn && S.mobTab === 'shifts') switchTab('home');
     if (ks && S.pcView === 'overview') setTimeout(initPcMap, 150);
+    try { navLayout(); } catch (e) { console.warn(e); }
 }
 const DAYS = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const DAYS_SHORT = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
@@ -1794,7 +1798,7 @@ function onChange(table, p) {
     }
     if (table === 'profiles') {
         if (row && row.id === me) {
-            const roleChanged = S.profile.role !== row.role || (('perm_plan' in row) && S.profile.perm_plan !== row.perm_plan);
+            const roleChanged = S.profile.role !== row.role || (('perm_plan' in row) && S.profile.perm_plan !== row.perm_plan) || (('perm_map' in row) && S.profile.perm_map !== row.perm_map);
             S.profile = Object.assign({}, S.profile, row);
             if (!row.active) { toast('Din adgang er deaktiveret.'); sb.auth.signOut(); return; }
             if (roleChanged) refreshAll();
@@ -2915,7 +2919,7 @@ async function empCreate() {
     } finally { btn.disabled = false; }
 }
 /* ---- Superadmin-Kontrolcenter: kunder (CRM), indbakke, kundeindstillinger (kun profiler med is_superadmin) ---- */
-const SA_MODULES = [['ks', 'KS / kvalitetssikring'], ['safety', 'Sikkerhed (grøn/gul/rød)'], ['extra', 'Ekstraarbejde'], ['materials', 'Materialer'], ['time', 'Timer & stempling'], ['tasks', 'Opgaver'], ['plan', 'Planlægning'], ['shifts', 'Vagtplan (butik)']];
+const SA_MODULES = [['ks', 'KS / kvalitetssikring'], ['map', 'Byggepladskort'], ['safety', 'Sikkerhed (grøn/gul/rød)'], ['extra', 'Ekstraarbejde'], ['materials', 'Materialer'], ['time', 'Timer & stempling'], ['tasks', 'Opgaver'], ['plan', 'Planlægning'], ['shifts', 'Vagtplan (butik)']];
 const SA_LABELS = [['sag', 'Sag (ental)'], ['sager', 'Sager (flertal)'], ['ks', 'KS'], ['opgaver', 'Opgaver']];
 const SA_STAGES = [['lead', 'Lead'], ['kontaktet', 'Kontaktet'], ['tilbud', 'Tilbud'], ['proeve', 'Prøve'], ['aktiv', 'Aktiv'], ['inaktiv', 'Inaktiv'], ['tabt', 'Tabt']];
 const SA_SEG = [['', 'Ikke valgt'], ['enkeltmand', 'Enkeltmand'], ['entreprenor', 'Entreprenør'], ['offentlig', 'Offentlig'], ['butik', 'Butik / restaurant'], ['andet', 'Andet']];
@@ -3682,6 +3686,7 @@ function empModalHtml(id) {
         h += mgrRole ? `<p class="text-xs text-gray-400 bg-gray-900 border border-gray-800 rounded-xl p-3"><i class="fa-solid fa-chart-gantt text-orange-500 mr-1.5"></i>Admin har altid adgang til Planlægning.</p>`
             : (('perm_plan' in p) ? `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl p-3.5 cursor-pointer"><span class="min-w-0"><span class="block font-black text-sm text-white"><i class="fa-solid fa-chart-gantt text-orange-500 mr-1.5"></i>Må se Planlægning</span><span class="block text-[11px] text-gray-400">Som standard kun for admin</span></span><input type="checkbox" data-chg="emp-perm-plan" data-user="${p.id}" ${p.perm_plan ? 'checked' : ''} class="w-7 h-7 accent-orange-500 shrink-0"></label>` : `<p class="text-xs text-amber-300 font-bold">Kør den nyeste unisjak_pro.sql for at styre adgang til Planlægning.</p>`);
     }
+    if (admin && !g && hasKs() && modOn('map') && !mgrRole && ('perm_map' in p)) h += `<label class="flex items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-xl p-3.5 cursor-pointer"><span class="min-w-0"><span class="block font-black text-sm text-white"><i class="fa-solid fa-map text-orange-500 mr-1.5"></i>Må se Byggepladskort</span><span class="block text-[11px] text-gray-400">Som standard slået til</span></span><input type="checkbox" data-chg="emp-perm-map" data-user="${p.id}" class="w-6 h-6 accent-orange-500" ${p.perm_map !== false ? 'checked' : ''}></label>`;
     if (admin && 'lang' in p) h += row('Sprog', `<select data-chg="staff-lang" data-user="${p.id}" class="inp" aria-label="Sprog">${Object.keys(UG_LANGS).map(l => `<option value="${l}" ${(p.lang || 'da') === l ? 'selected' : ''}>${UG_LANGS[l]}</option>`).join('')}</select>`);
     if (admin && !g && 'employee_no' in p) h += row('Medarbejdernummer (til løn)', `<input data-chg="set-eno" data-user="${p.id}" class="inp" maxlength="30" value="${esc(p.employee_no || '')}" placeholder="Valgfrit">`);
     if (admin && p.is_draft) h += `<div>${draftControls(p)}</div>`;
@@ -3708,6 +3713,11 @@ async function empNameSave(id) {
     const r = await sb.from('profiles').update({ full_name: name.slice(0, 120) }).eq('id', id).select().single();
     if (r.error) return fail(r.error);
     mergeRow(S.profiles, r.data); toast('Gemt.', 'ok'); renderTeam(); renderEmpModal(true); scheduleRender();
+}
+async function setPermMap(id, on) {
+    const r = await sb.from('profiles').update({ perm_map: !!on }).eq('id', id).select().single();
+    if (r.error) { fail(r.error); return renderEmpModal(true); }
+    mergeRow(S.profiles, r.data); toast(on ? 'Giver adgang til Byggepladskort.' : 'Fjerner adgang til Byggepladskort.', 'ok'); renderEmpModal(true);
 }
 async function setPermPlan(id, on) {
     const r = await sb.from('profiles').update({ perm_plan: !!on }).eq('id', id).select().single();
@@ -5594,12 +5604,35 @@ function renderPcOvKs() {
 }
 
 /* ------------------------------ NAVIGATION ------------------------------ */
+/* Bundmenu: maks. 4 store faste knapper + "Mere" (ingen sidelæns rulning, så tryk aldrig tolkes som swipe) */
+const NAV_ORDER = ['home', 'ks', 'map', 'timer', 'tasks', 'shifts', 'plan', 'materials', 'overview'];
+const NAV_META = { home: ['fa-house', 'Hjem'], overview: ['fa-chart-column', 'Overblik'], ks: ['fa-camera', 'KS'], map: ['fa-map', 'Kort'], timer: ['fa-clock', 'Timer'], shifts: ['fa-calendar-week', 'Vagter'], plan: ['fa-chart-gantt', 'Planlægning'], materials: ['fa-boxes-stacked', 'Materiale'], tasks: ['fa-list-check', 'Opgaver'] };
+function navEnabled() { return NAV_ORDER.filter(t => { const e = $('nav-' + t); return e && e.style.display !== 'none'; }); }
+function navLayout() {
+    const en = navEnabled(), over = en.length > 5 ? en.slice(4) : [];
+    NAV_ORDER.forEach(t => { const e = $('nav-' + t); if (e) e.classList.toggle('nav-over', over.includes(t)); });
+    const m = $('nav-more'); if (!m) return;
+    m.style.display = over.length ? '' : 'none';
+    const act = over.includes(S.mobTab);
+    m.className = 'flex flex-col items-center flex-1 min-w-0 py-2 justify-center ' + (act ? 'active-tab' : 'inactive-tab');
+    const sp = m.querySelector('span'); if (sp) sp.textContent = act ? (NAV_META[S.mobTab] || [0, 'Mere'])[1] : 'Mere';
+}
+function navMore() {
+    const over = navEnabled().filter(t => $('nav-' + t).classList.contains('nav-over')); if (!over.length) return;
+    let o = $('nav-sheet'); if (o) o.remove();
+    o = document.createElement('div'); o.id = 'nav-sheet'; o.className = 'fixed inset-0 z-[90] flex items-end bg-black/60';
+    o.onclick = e => { if (e.target === o) o.remove(); };
+    o.innerHTML = '<div class="w-full bg-card border-t border-card rounded-t-3xl p-4 pb-8"><div class="grid grid-cols-2 gap-3">' + over.map(t => `<button type="button" data-nav="${t}" class="bg-gray-900 border border-gray-800 rounded-2xl py-6 flex flex-col items-center gap-2 text-white"><i class="fa-solid ${NAV_META[t][0]} text-3xl"></i><span class="text-base font-black">${NAV_META[t][1]}</span></button>`).join('') + '</div><button type="button" data-nav="" class="w-full mt-3 py-4 rounded-2xl bg-gray-800 text-gray-200 font-black">Luk</button></div>';
+    o.addEventListener('click', e => { const b = e.target.closest('[data-nav]'); if (!b) return; o.remove(); if (b.dataset.nav) switchTab(b.dataset.nav); });
+    document.body.appendChild(o);
+}
 function switchTab(tab) {
     S.mobTab = tab;
     ['home', 'overview', 'ks', 'map', 'timer', 'shifts', 'plan', 'materials', 'tasks', 'admin'].forEach(t => {
         const el = $('tab-' + t); if (el) el.classList.toggle('hidden', t !== tab);
-        const nav = $('nav-' + t); if (nav) { nav.className = 'flex flex-col items-center p-1.5 flex-1 shrink-0 min-w-[58px] whitespace-nowrap ' + (t === tab ? 'active-tab' : 'inactive-tab'); if (t === tab) { try { nav.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* ignore */ } } }
+        const nav = $('nav-' + t); if (nav) { nav.className = 'flex flex-col items-center flex-1 min-w-0 py-2 justify-center ' + (t === tab ? 'active-tab' : 'inactive-tab'); }
     });
+    navLayout();
     if (tab === 'ks') setTimeout(initMobileMap, 200);
     if (tab === 'map') { if (MP.sa) mapSaReset(); mapOpen(); } else mapStopLocate();
     if (tab === 'overview') renderMobOverview();
@@ -9033,6 +9066,7 @@ async function handleChg(act, el) {
         case 'set-lang': return ugSetLang(el.value);
         case 'pl-crew': if (U.place) U.place.crew = el.value; return;
         case 'staff-lang': return setStaffLang(el.dataset.user, el.value);
+        case 'emp-perm-map': return setPermMap(el.dataset.user, el.checked);
         case 'emp-perm-plan': return setPermPlan(el.dataset.user, el.checked);
         case 'set-eno': return setEmpNo(el.dataset.user, el.value);
         case 'ex-pick': return exPickToggle(el.dataset.id, el.checked);
