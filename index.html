@@ -208,28 +208,27 @@
             </div>
         </header>
 
-        <section class="max-w-6xl mx-auto px-4 pt-10 pb-14 md:pt-20 grid md:grid-cols-2 gap-12 items-center">
-            <div class="space-y-6">
+        <section class="max-w-6xl mx-auto px-4 pt-10 pb-14 md:pt-16 space-y-10">
+            <div class="max-w-3xl mx-auto text-center space-y-6">
                 <span id="lp-badge" class="inline-flex items-center text-xs font-black text-[#12233F] bg-white border border-[#E7E3DA] rounded-full px-3.5 py-1.5">Til håndværkere i byggeriet</span>
                 <h1 class="text-4xl md:text-6xl font-black text-[#12233F] leading-[1.03] tracking-tight"><span id="lp-h1a">Timer og KS.</span><br><span id="lp-h1b" class="brand-orange-text">Færdigt på sekunder.</span></h1>
-                <p id="lp-sub" class="text-lg text-[#566070] max-w-md leading-relaxed">Medarbejderne registrerer timer og dokumenterer kvalitetssikring med foto og GPS direkte fra telefonen. Du får timesedler, diæter og KS-rapporter klar til løn og bygherre.</p>
-                <div class="flex flex-wrap gap-3">
+                <p id="lp-sub" class="text-lg text-[#566070] max-w-xl mx-auto leading-relaxed">Medarbejderne registrerer timer og dokumenterer kvalitetssikring med foto og GPS direkte fra telefonen. Du får timesedler, diæter og KS-rapporter klar til løn og bygherre.</p>
+                <div class="flex flex-wrap justify-center gap-3">
                     <button onclick="lpGo('signup')" class="px-7 py-4 rounded-2xl bg-[#12233F] text-white font-black text-base active:scale-95 hover:brightness-125 transition">Start gratis i 14 dage</button>
                     <button onclick="lpScroll(event,'lp-priser')" class="px-7 py-4 rounded-2xl border-2 border-[#12233F] text-[#12233F] font-black text-base hover:bg-[#12233F] hover:text-white transition">Se priser</button>
                 </div>
                 <p id="lp-from-line" class="text-sm text-[#566070]">Fra 249 kr. pr. måned – derefter 89 kr. pr. ekstra medarbejder.</p>
             </div>
 
-            <div class="flex flex-col items-center w-full min-w-0">
-                <div id="hero-demo" class="w-full" style="max-width:520px">
-                    <div id="hero-box" style="position:relative;margin:0 auto;width:100%;max-width:520px;height:560px"><div id="hero-stage" class="h-stage" role="img" aria-label="Produktdemo: fra løse sedler til timer, KS, fejl og opgaver og færdig rapport"></div></div>
-                    <div class="h-ctl">
-                        <button type="button" id="hero-play" onclick="lpHeroToggle()" aria-label="Pause" class="shrink-0 w-10 h-10 rounded-full bg-[#12233F] text-white flex items-center justify-center active:scale-95"><i class="fa-solid fa-pause"></i></button>
-                        <div id="hero-segs" class="flex gap-2 flex-1 min-w-0"></div>
+            <div class="max-w-5xl mx-auto w-full min-w-0">
+                <div id="lp-film-box" class="relative w-full rounded-3xl overflow-hidden bg-[#0B1426] shadow-2xl border border-[#E7E3DA]" style="aspect-ratio:16/9">
+                    <video id="lp-film" src="film.mp4" poster="film-poster.jpg" muted loop playsinline preload="metadata" class="w-full h-full object-cover" aria-label="Film: fra byggeplads til godkendt tilsynsrapport (eksempelvisning)"></video>
+                    <div class="absolute left-3 bottom-3 right-3 md:left-5 md:bottom-5 flex items-center gap-2.5">
+                        <button type="button" id="lp-film-play" onclick="lpFilmToggle()" aria-label="Pause" class="w-12 h-12 rounded-full bg-white/95 text-[#12233F] flex items-center justify-center active:scale-95 shadow"><i class="fa-solid fa-pause"></i></button>
+                        <button type="button" id="lp-film-snd" onclick="lpFilmSound()" class="h-12 px-5 rounded-full bg-[#F26B1D] text-white font-black text-sm flex items-center gap-2 active:scale-95 shadow"><i class="fa-solid fa-volume-high"></i><span>Hør lyd</span></button>
                     </div>
-                    <p id="hero-time" class="text-[11px] text-[#566070] text-right mt-1 tabular-nums"></p>
                 </div>
-                <p class="text-xs text-[#566070] mt-2 text-center max-w-sm">Fra pladsen til kontoret på under et minut. Tryk på et kapitel for at hoppe direkte dertil.</p>
+                <p class="text-xs text-[#566070] mt-3 text-center">Fra byggepladsen til godkendt rapport på under et minut. Alle visninger er eksempler med fiktive data.</p>
             </div>
         </section>
 
@@ -1574,7 +1573,7 @@ function showScreen(which) {
     show('boot-screen', which === 'boot');
     show('auth-screen', which === 'auth');
     show('landing-screen', which === 'landing');
-    if (which === 'landing') { if (!HERO.raf) lpHeroStart(); } else if (typeof lpHeroStop === 'function') lpHeroStop();
+    if (typeof lpFilmOn === 'function') lpFilmOn(which === 'landing');
     show('onboard-screen', which === 'onboard');
     show('app-root', which === 'app');
     show('sa-screen', which === 'sa');
@@ -9482,7 +9481,33 @@ document.addEventListener('keydown', e => {
 })();
 
 /* ------------------------------ LANDINGSSIDE ------------------------------ */
-function lpGo(tab) { lpHeroStop(); showScreen('auth'); switchAuthTab(tab); }
+function lpGo(tab) { showScreen('auth'); switchAuthTab(tab); }
+/* landingsfilm: lydløs autoplay i loop, pauser uden for skærmen; lyd kun efter klik */
+const FILM = { io: null, vis: false, on: false, user: false };
+function lpFilmEl() { return document.getElementById('lp-film'); }
+function lpFilmUi() {
+    const v = lpFilmEl(); if (!v) return;
+    const p = document.getElementById('lp-film-play'), s = document.getElementById('lp-film-snd');
+    if (p) { p.innerHTML = `<i class="fa-solid ${v.paused ? 'fa-play' : 'fa-pause'}"></i>`; p.setAttribute('aria-label', v.paused ? 'Afspil' : 'Pause'); }
+    if (s) s.innerHTML = v.muted ? '<i class="fa-solid fa-volume-high"></i><span>Hør lyd</span>' : '<i class="fa-solid fa-volume-xmark"></i><span>Slå lyd fra</span>';
+}
+function lpFilmOn(on) {
+    FILM.on = on; const v = lpFilmEl(); if (!v) return;
+    if (!on) { v.pause(); lpFilmUi(); return; }
+    if (!FILM.io && window.IntersectionObserver) {
+        FILM.io = new IntersectionObserver(es => { FILM.vis = es[0].isIntersecting; const w = lpFilmEl(); if (!w || !FILM.on) return; if (FILM.vis && !FILM.user) { const pr = w.play(); if (pr && pr.catch) pr.catch(() => {}); } else if (!FILM.vis) w.pause(); lpFilmUi(); }, { threshold: .35 });
+        FILM.io.observe(document.getElementById('lp-film-box'));
+    }
+    v.onplay = v.onpause = lpFilmUi;
+    if (!FILM.user) { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); }
+    lpFilmUi();
+}
+function lpFilmToggle() { const v = lpFilmEl(); if (!v) return; if (v.paused) { FILM.user = false; const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } else { FILM.user = true; v.pause(); } lpFilmUi(); }
+function lpFilmSound() {
+    const v = lpFilmEl(); if (!v) return;
+    if (v.muted) { v.muted = false; v.currentTime = 0; FILM.user = false; const pr = v.play(); if (pr && pr.catch) pr.catch(() => { v.muted = true; lpFilmUi(); }); } else v.muted = true;
+    lpFilmUi();
+}
 function lpScroll(e, id) { e.preventDefault(); const el = $(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 const LP_PACKS = {
     alt: { name: 'Alt inkluderet', p: 89, first: 249, list: ['Timeregistrering på sekunder – også med tale', 'Diæt og kørsel pr. virksomhed', 'Ugegodkendelse og løn-eksport som CSV og PDF', 'KS med foto og GPS', 'Sikkerhed i grøn, gul og rød', 'Fejl og mangler med ansvarlig og status', 'Ekstraarbejde der kan faktureres', 'KS-rapport som PDF til bygherre', 'Opgaver og pakkelister', 'Materialemodtagelse med foto og oplagssted', 'Udenlandske sjak på dansk, engelsk, tjekkisk og polsk'] }
